@@ -2,6 +2,10 @@
 
 A static web app for browsing and cataloging personal study projects across multiple technologies.
 
+## GitHub :
+- https://github.com/rpokluda72/my-self-study-projects.git
+- https://rpokluda72.github.io/my-self-study-projects/index.html
+
 ## Features
 
 - Hierarchical sidebar navigation (groups → subgroups → projects)
