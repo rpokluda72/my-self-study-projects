@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Study Projects</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="layout">
+
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="app-title">My Study Projects</div>
+        <div class="search-wrap">
+          <input type="text" id="search" placeholder="Search projects…"
+                 autocomplete="off" spellcheck="false">
+        </div>
+        <div class="sidebar-toolbar">
+          <div id="search-count" class="search-count"></div>
+          <button id="btn-collapse-all" title="Collapse all">⊟ Collapse all</button>
+        </div>
+      </div>
+      <nav id="nav"></nav>
+    </aside>
+
+    <main id="content">
+      <div class="welcome">
+        <h1>My Study Projects</h1>
+        <p id="welcome-stats">Loading…</p>
+        <p class="welcome-hint">Select a project from the sidebar.</p>
+      </div>
+    </main>
+
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="projects-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
