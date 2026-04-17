@@ -372,6 +372,13 @@
     return { main, test };
   }
 
+  function renderDepsHtml(depsStr) {
+    if (!depsStr) return '';
+    return depsStr.split(', ')
+      .map(d => `<span class="dep-item">${esc(d)}</span>`)
+      .join('<span class="dep-sep">, </span>');
+  }
+
   function extractDependencies(row) {
     if (row.fileType === 'package') return extractPackageJsonDeps(row.content);
     if (row.fileType === 'pom')     return [...new Set(parsePomDepBlocks(row.content).main)].join(', ');
@@ -468,8 +475,8 @@
           : '';
         const depsCellHtml = showMatch
           ? '<td class="pkg-deps-cell col-deps" style="display:none"></td>'
-          : `<td class="pkg-deps-cell col-deps">${esc(extractDependencies(row))}</td>`;
-        const devDepsCellHtml = `<td class="pkg-deps-cell col-dev-deps" style="display:none">${esc(extractDevDependencies(row))}</td>`;
+          : `<td class="pkg-deps-cell col-deps">${renderDepsHtml(extractDependencies(row))}</td>`;
+        const devDepsCellHtml = `<td class="pkg-deps-cell col-dev-deps" style="display:none">${renderDepsHtml(extractDevDependencies(row))}</td>`;
         const matchCellHtml = showMatch
           ? `<td class="pkg-match-cell col-match">${esc(matchLines[i] || '')}</td>`
           : '<td class="pkg-match-cell col-match" style="display:none"></td>';
@@ -537,7 +544,10 @@
       <button id="pkg-btn-search">Search</button>
       <button id="pkg-btn-clear">Clear</button>
       <span id="pkg-search-count"></span>
-      <button id="pkg-btn-devdeps" class="pkg-devdeps-toggle">Dev-Deps</button>
+      <div class="pkg-deps-btn-group">
+        <button id="pkg-btn-devdeps" class="pkg-devdeps-toggle">Dev-Deps</button>
+        <button id="pkg-btn-deps-orient" class="pkg-devdeps-toggle" title="Toggle deps layout: row / column">Deps: row</button>
+      </div>
     </div>
   </div>
   <table class="packages-table">
@@ -561,6 +571,12 @@
       if (e.key === 'Enter') applyPackageFilters();
     });
     document.getElementById('pkg-btn-clear').addEventListener('click', clearPackageSearch);
+
+    document.getElementById('pkg-btn-deps-orient').addEventListener('click', function () {
+      const colMode = this.textContent === 'Deps: row';
+      this.textContent = colMode ? 'Deps: col' : 'Deps: row';
+      document.querySelector('.packages-table').classList.toggle('pkg-deps-col-mode', colMode);
+    });
 
     document.getElementById('pkg-btn-devdeps').addEventListener('click', function () {
       this.classList.toggle('active');

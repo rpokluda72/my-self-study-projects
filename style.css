@@ -641,8 +641,22 @@ pre.file-content {
 
 .pkg-search-bar button:hover { background: var(--surface-hover); }
 
-.pkg-devdeps-toggle {
+.pkg-deps-btn-group {
+  display: flex;
   margin-left: auto;
+}
+
+.pkg-deps-btn-group .pkg-devdeps-toggle:first-child {
+  border-radius: 6px 0 0 6px;
+  border-right: none;
+}
+
+.pkg-deps-btn-group .pkg-devdeps-toggle:last-child {
+  border-radius: 0 6px 6px 0;
+}
+
+.pkg-devdeps-toggle {
+  margin-left: 0;
   padding: 6px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -749,6 +763,10 @@ pre.file-content {
   color: var(--text-muted);
   line-height: 1.6;
 }
+
+/* Column orientation mode */
+.pkg-deps-col-mode .dep-item { display: block; }
+.pkg-deps-col-mode .dep-sep  { display: none; }
 
 .pkg-match-cell {
   font-family: 'Consolas', 'Monaco', monospace;
