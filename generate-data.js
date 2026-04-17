@@ -20,7 +20,7 @@ const GROUPS_CONFIG = [
     id: 'others',
     name: 'Others',
     root: 'C:/Users/roman/Work/pohovor/projects',
-    skip: ['Shopping', 'screens', 'sql'],
+    skip: ['shopping', 'screens', 'sql'],
   },
   {
     id: 'byClaude',
@@ -42,7 +42,16 @@ function safeStat(p) {
 }
 
 function safeRead(p) {
-  try { return fs.readFileSync(p, 'utf8'); } catch { return null; }
+  try {
+    const buf = fs.readFileSync(p);
+    if (buf[0] === 0xFF && buf[1] === 0xFE) return buf.toString('utf16le').replace(/^\uFEFF/, '');
+    if (buf[0] === 0xFE && buf[1] === 0xFF) {
+      const swapped = Buffer.alloc(buf.length);
+      for (let i = 0; i + 1 < buf.length; i += 2) { swapped[i] = buf[i+1]; swapped[i+1] = buf[i]; }
+      return swapped.toString('utf16le').replace(/^\uFEFF/, '');
+    }
+    return buf.toString('utf8');
+  } catch { return null; }
 }
 
 function safeDir(p) {
@@ -265,29 +274,50 @@ function getBuildFiles(projectDir) {
 
 function getSubfolders(projectDir) {
   const result = [];
-  for (const entry of safeDir(projectDir)) {
-    if (!isSubfolderName(entry)) continue;
-    const subPath = path.join(projectDir, entry);
-    if (!safeStat(subPath)?.isDirectory()) continue;
 
+  function scanSubfolder(subPath, displayName) {
     const readme     = getReadme(subPath);
     const buildFiles = [];
-    function tryBuild(p, name) {
+    function tryBuild(p) {
       const c = safeRead(p);
-      if (c) buildFiles.push({ name: name || path.basename(p), content: c });
+      if (c) buildFiles.push({ name: path.basename(p), content: c });
     }
     tryBuild(path.join(subPath, 'package.json'));
     tryBuild(path.join(subPath, 'pom.xml'));
     tryBuild(path.join(subPath, 'pubspec.yaml'));
 
-    if (!readme && !buildFiles.length) continue;
+    if (readme || buildFiles.length) {
+      result.push({ name: displayName, readme, buildFiles, stack: detectStack(subPath) });
+    }
 
-    result.push({
-      name: entry,
-      readme,
-      buildFiles,
-      stack: detectStack(subPath),
-    });
+    // Recurse into children that look like project sub-dirs (not standard named subfolders themselves)
+    for (const child of safeDir(subPath)) {
+      const childPath = path.join(subPath, child);
+      if (!safeStat(childPath)?.isDirectory()) continue;
+      if (child.startsWith('.') || child === 'node_modules' || child === 'target') continue;
+      const childBuildFiles = [
+        path.join(childPath, 'package.json'),
+        path.join(childPath, 'pom.xml'),
+        path.join(childPath, 'pubspec.yaml'),
+      ].filter(p => safeRead(p));
+      const childReadme = getReadme(childPath);
+      if (childBuildFiles.length || childReadme) {
+        const bfs = childBuildFiles.map(p => ({ name: path.basename(p), content: safeRead(p) }));
+        result.push({
+          name: displayName + '/' + child,
+          readme: childReadme,
+          buildFiles: bfs,
+          stack: detectStack(childPath),
+        });
+      }
+    }
+  }
+
+  for (const entry of safeDir(projectDir)) {
+    if (!isSubfolderName(entry)) continue;
+    const subPath = path.join(projectDir, entry);
+    if (!safeStat(subPath)?.isDirectory()) continue;
+    scanSubfolder(subPath, entry);
   }
   return result;
 }
@@ -311,6 +341,43 @@ function getScreenshots(projectDir, uid) {
     const dst = path.join(targetDir, f);
     try { fs.copyFileSync(src, dst); } catch {}
     result.push(norm(path.join('screens', uid, f)));
+  }
+  return result;
+}
+
+const EXAMPLE_SKIP = new Set([
+  'node_modules', 'target', 'dist', 'build', '.git', '.idea', '.vscode', '.mvn', 'out',
+]);
+
+function getExamples(projectDir, projectUid) {
+  const result = [];
+  for (const entry of safeDir(projectDir)) {
+    if (EXAMPLE_SKIP.has(entry) || entry.startsWith('.')) continue;
+    if (isSubfolderName(entry)) continue;
+    const subPath = path.join(projectDir, entry);
+    if (!safeStat(subPath)?.isDirectory()) continue;
+
+    const readme = getReadme(subPath);
+    const buildFiles = [];
+    const pom = safeRead(path.join(subPath, 'pom.xml'));
+    if (pom) buildFiles.push({ name: 'pom.xml', content: pom });
+    const pkg = safeRead(path.join(subPath, 'package.json'));
+    if (pkg) buildFiles.push({ name: 'package.json', content: pkg });
+
+    const screenFiles = safeDir(subPath).filter(f => /^screen.*\.(png|jpg|jpeg)$/i.test(f));
+    let screenshots = [];
+    if (screenFiles.length) {
+      const uid = `${projectUid}--${entry}`;
+      const targetDir = path.join(OUTPUT_DIR, 'screens', uid);
+      fs.mkdirSync(targetDir, { recursive: true });
+      screenshots = screenFiles.map(f => {
+        try { fs.copyFileSync(path.join(subPath, f), path.join(targetDir, f)); } catch {}
+        return norm(path.join('screens', uid, f));
+      });
+    }
+
+    if (!readme && !buildFiles.length && !screenshots.length) continue;
+    result.push({ name: entry, readme, buildFiles, screenshots });
   }
   return result;
 }
@@ -343,6 +410,7 @@ function buildProject(dir, name, uid) {
     commentsTxt: getCommentsTxt(dir),
     buildFiles:  getBuildFiles(dir),
     subfolders:  getSubfolders(dir),
+    examples:    getExamples(dir, uid),
     screenshots: getScreenshots(dir, uid),
     github:      getGitOrigin(dir),
   };
