@@ -72,7 +72,11 @@ function isSubfolderName(name) {
     || lower.endsWith('-backend')
     || lower.endsWith('-client')
     || lower.endsWith('-server')
-    || lower.endsWith('-mobile');
+    || lower.endsWith('-mobile')
+    || lower.startsWith('frontend-')
+    || lower.startsWith('backend-')
+    || lower.startsWith('client-')
+    || lower.startsWith('server-');
 }
 
 // ─── Tech stack detection ─────────────────────────────────────────────────────
@@ -329,8 +333,21 @@ function getCommentsTxt(projectDir) {
 // Copy screenshots into screens/<uid>/ and return relative paths
 function getScreenshots(projectDir, uid) {
   const files = safeDir(projectDir)
-    .filter(f => /^screen.*\.(png|jpg|jpeg)$/i.test(f));
-  if (!files.length) return [];
+    .filter(f => /\.(png|jpg|jpeg)$/i.test(f) && !safeStat(path.join(projectDir, f))?.isDirectory());
+  // Also collect from standard-named subfolders (frontend-*, backend-*, client, server, etc.)
+  const subFiles = [];
+  for (const entry of safeDir(projectDir)) {
+    if (!isSubfolderName(entry)) continue;
+    const subPath = path.join(projectDir, entry);
+    if (!safeStat(subPath)?.isDirectory()) continue;
+    for (const f of safeDir(subPath)) {
+      if (/\.(png|jpg|jpeg)$/i.test(f) && !safeStat(path.join(subPath, f))?.isDirectory()) {
+        subFiles.push({ f, srcDir: subPath });
+      }
+    }
+  }
+
+  if (!files.length && !subFiles.length) return [];
 
   const targetDir = path.join(OUTPUT_DIR, 'screens', uid);
   fs.mkdirSync(targetDir, { recursive: true });
@@ -338,6 +355,12 @@ function getScreenshots(projectDir, uid) {
   const result = [];
   for (const f of files) {
     const src = path.join(projectDir, f);
+    const dst = path.join(targetDir, f);
+    try { fs.copyFileSync(src, dst); } catch {}
+    result.push(norm(path.join('screens', uid, f)));
+  }
+  for (const { f, srcDir } of subFiles) {
+    const src = path.join(srcDir, f);
     const dst = path.join(targetDir, f);
     try { fs.copyFileSync(src, dst); } catch {}
     result.push(norm(path.join('screens', uid, f)));
