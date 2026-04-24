@@ -12,6 +12,11 @@
       .replace(/"/g, '&quot;');
   }
 
+  function localFileUrl(filePath) {
+    // Convert absolute Windows/Unix path to file:// URL
+    const normalised = filePath.replace(/\\/g, '/');
+    return 'file:///' + normalised.replace(/^\//, '');
+  }
 
   // ── Project registry ───────────────────────────────────────────────────────
 
@@ -41,7 +46,10 @@
     return items.map(item => {
       if (item.type === 'project') {
         const cls = 'nav-item' + (nested ? ' nested' : '');
-        return `<div class="${cls}" data-id="${esc(item.id)}">${esc(item.name)}</div>`;
+        const previewBadge = item.htmlPreview
+          ? `<a class="html-preview-badge" href="${localFileUrl(item.path + '/html_preview/index.html')}" target="_blank" onclick="event.stopPropagation()">HTML</a>`
+          : '';
+        return `<div class="${cls}" data-id="${esc(item.id)}">${esc(item.name)}${previewBadge}</div>`;
       }
       if (item.type === 'group') {
         return `

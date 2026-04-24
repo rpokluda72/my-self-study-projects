@@ -230,6 +230,29 @@ nav#nav::-webkit-scrollbar-thumb { background: #b0b6be; border-radius: 2px; }
   font-weight: 500;
 }
 
+/* HTML preview badge on nav items */
+.html-preview-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  background: #e8f4fd;
+  color: #1565c0;
+  border: 1px solid #90caf9;
+  border-radius: 3px;
+  vertical-align: middle;
+  line-height: 1.4;
+  text-decoration: none;
+  cursor: pointer;
+}
+.html-preview-badge:hover {
+  background: #bbdefb;
+  color: #0d47a1;
+}
+
 /* Search visibility */
 .nav-item.hidden    { display: none; }
 .nav-group.all-hidden   { display: none; }

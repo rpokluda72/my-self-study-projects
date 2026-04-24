@@ -436,6 +436,7 @@ function buildProject(dir, name, uid) {
     examples:    getExamples(dir, uid),
     screenshots: getScreenshots(dir, uid),
     github:      getGitOrigin(dir),
+    htmlPreview: fs.existsSync(path.join(dir, 'html_preview', 'index.html')),
   };
 }
 
