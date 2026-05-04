@@ -1,0 +1,3375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RxJava 3.x Tutorial</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#1e1e2e;--sidebar-bg:#181825;--surface:#24273a;
+  --text:#cdd6f4;--subtext:#a6adc8;--muted:#585b70;
+  --accent:#89b4fa;--accent2:#cba6f7;--green:#a6e3a1;
+  --border:#313244;--hover:#45475a;
+  --mark-y:#f9e2af;--mark-o:#fab387;--red:#f38ba8;
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;display:flex;flex-direction:column}
+#layout{display:flex;flex:1;overflow:hidden}
+#sidebar{width:270px;min-width:270px;background:var(--sidebar-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+#content-area{flex:1;overflow:hidden;display:flex;flex-direction:column}
+#frame{flex:1;width:100%;border:none;background:var(--bg)}
+#sidebar-header{padding:14px 14px 10px;border-bottom:1px solid var(--border)}
+.sidebar-title{font-size:15px;font-weight:700;color:var(--accent2);margin-bottom:2px}
+.sidebar-sub{font-size:11px;color:var(--muted)}
+#sidebar-search{padding:10px 12px;border-bottom:1px solid var(--border)}
+.search-wrap{position:relative;display:flex;align-items:center}
+#search{width:100%;background:#313244;border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 28px 5px 10px;font-size:12px;outline:none}
+#search:focus{border-color:var(--accent)}
+#search::placeholder{color:var(--muted)}
+.search-clear{position:absolute;right:7px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px}
+.search-clear:hover{color:var(--red)}
+#sidebar-controls{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border)}
+#sidebar-controls button{flex:1;background:var(--hover);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:4px 6px;font-size:11px;cursor:pointer}
+#sidebar-controls button:hover{background:var(--accent);color:#1e1e2e}
+#version-list{flex:1;overflow-y:auto;padding:6px 0}
+#version-list::-webkit-scrollbar{width:5px}
+#version-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.version-group{border-bottom:1px solid var(--border)}
+.version-group.no-match{display:none}
+.version-header{display:flex;align-items:center;gap:6px;padding:8px 12px}
+.version-label{font-size:12px;font-weight:600;color:var(--accent);flex:1}
+.version-count{font-size:10px;color:var(--muted)}
+.class-list{overflow:hidden}
+.version-group.collapsed .class-list{display:none}
+.class-list li{list-style:none}
+.class-list li.no-match{display:none}
+/* ── File row (link + toggle button) ──────────────────────────────── */
+.file-row{display:flex;align-items:center;border-left:2px solid transparent;cursor:pointer}
+.file-row:hover{background:var(--hover)}
+.file-link{flex:1;display:flex;align-items:center;padding:5px 4px 5px 28px;
+           text-decoration:none;color:var(--text);font-size:12px;min-width:0;transition:color .12s}
+.file-link.active{color:var(--accent)}
+.file-link.parent-active{color:var(--accent);opacity:.75}
+.file-row:has(.file-link.active){background:var(--surface);border-left-color:var(--accent)}
+.file-row:has(.file-link.parent-active){background:var(--surface);border-left-color:var(--accent)}
+.file-name{font-family:'JetBrains Mono','Fira Code',Consolas,monospace;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.method-toggle{color:var(--muted);padding:5px 10px 5px 4px;font-size:10px;flex-shrink:0;user-select:none}
+/* ── Method sub-list ───────────────────────────────────────────────── */
+.method-list{list-style:none;margin-bottom:2px}
+.method-list.collapsed-methods{display:none}
+.method-list li{list-style:none}
+.method-list a{display:block;padding:3px 12px 3px 40px;text-decoration:none;
+               color:var(--subtext);font-size:11px;border-left:2px solid transparent;
+               font-family:'JetBrains Mono',Consolas,monospace;
+               white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+               transition:background .12s}
+.method-list a:hover{background:var(--hover);color:var(--text)}
+.method-list a.active{background:var(--surface);border-left-color:var(--accent2);color:var(--accent2)}
+/* ── No-match / footer ─────────────────────────────────────────────── */
+#no-match-msg{display:none;padding:14px;text-align:center;color:var(--muted);font-size:12px}
+#no-match-msg.visible{display:block}
+#sidebar-footer{padding:8px 12px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);text-align:center}
+/* ── Welcome screen ────────────────────────────────────────────────── */
+#welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;padding:40px;text-align:center}
+#welcome h2{font-size:22px;font-weight:700;color:var(--accent2)}
+#welcome p{color:var(--subtext);max-width:380px;line-height:1.6}
+.badge-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:4px}
+.badge{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:11px;color:var(--accent);font-family:'JetBrains Mono',Consolas,monospace}
+</style>
+</head>
+<body>
+<div id="layout">
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <div class="sidebar-title">&#9889; RxJava 3.x Tutorial</div>
+      <div class="sidebar-sub">10 topics &nbsp;&#183;&nbsp; Click a file to view</div>
+    </div>
+    <div id="sidebar-search">
+      <div class="search-wrap">
+        <input id="search" type="text" placeholder="Search files &amp; code..." autocomplete="off" spellcheck="false">
+        <button class="search-clear" id="clear-btn" title="Clear">&#x2715;</button>
+      </div>
+    </div>
+    <div id="sidebar-controls">
+      <button id="show-all-btn">&#9660; Expand all</button>
+      <button id="collapse-all-btn">&#9654; Collapse all</button>
+    </div>
+    <div id="version-list">
+      <div class="version-group" id="grp-tutorials">
+        <div class="version-header">
+          <span class="version-label">Tutorial Files</span>
+          <span class="version-count">10 files</span>
+        </div>
+        <ul class="class-list" id="list-tutorials">
+          <li data-cls="observablebasics">
+            <div class="file-row" onclick="toggleMethods('ml-observablebasics')">
+              <a href="01_observable_basics.html" target="frame" onclick="setActive(this);" class="file-link">
+                <span class="file-name">ObservableBasics</span>
+              </a>
+              <span class="method-toggle" id="btn-observablebasics">&#9654;</span>
+            </div>
+          <ul class="method-list collapsed-methods" id="ml-observablebasics">
+            <li><a href="01_observable_basics.html#card-demojust" target="frame" onclick="setMethodActive(this)">demoJust()</a></li>
+            <li><a href="01_observable_basics.html#card-demofromarray" target="frame" onclick="setMethodActive(this)">demoFromArray()</a></li>
+            <li><a href="01_observable_basics.html#card-demofromiterable" target="frame" onclick="setMethodActive(this)">demoFromIterable()</a></li>
+            <li><a href="01_observable_basics.html#card-demorange" target="frame" onclick="setMethodActive(this)">demoRange()</a></li>
+            <li><a href="01_observable_basics.html#card-demoempty" target="frame" onclick="setMethodActive(this)">demoEmpty()</a></li>
+            <li><a href="01_observable_basics.html#card-demonever" target="frame" onclick="setMethodActive(this)">demoNever()</a></li>
+            <li><a href="01_observable_basics.html#card-demoerror" target="frame" onclick="setMethodActive(this)">demoError()</a></li>
+            <li><a href="01_observable_basics.html#card-demofullobserver" target="frame" onclick="setMethodActive(this)">demoFullObserver()</a></li>
+          </ul>
+          </li>
+          <li data-cls="observablecreation">
+            <div class="file-row" onclick="toggleMethods('ml-observablecreation')">
+              <a href="02_observable_creation.html" target="frame" onclick="setActive(this);" class="file-link">
+                <span class="file-name">ObservableCreation</span>
+              </a>
+              <span class="method-toggle" id="btn-observablecreation">&#9654;</span>
+            </div>
+          <ul class="method-list collapsed-methods" id="ml-observablecreation">
+            <li><a href="02_observable_creation.html#card-democreate" target="frame" onclick="setMethodActive(this)">demoCreate()</a></li>
+            <li><a href="02_observable_creation.html#card-demodefer" target="frame" onclick="setMethodActive(this)">demoDefer()</a></li>
+            <li><a href="02_observable_creation.html#card-demofromcallable" target="frame" onclick="setMethodActive(this)">demoFromCallable()</a></li>
+            <li><a href="02_observable_creation.html#card-demointerval" target="frame" onclick="setMethodActive(this)">demoInterval()</a></li>
+            <li><a href="02_observable_creation.html#card-demotimer" target="frame" onclick="setMethodActive(this)">demoTimer()</a></li>
+          </ul>
+          </li>
+          <li data-cls="transformingoperators">
+            <div class="file-row" onclick="toggleMethods('ml-transformingoperators')">
+              <a href="03_transforming_operators.html" target="frame" onclick="setActive(this);" class="file-link">
+                <span class="file-name">TransformingOperators</span>
+              </a>
+              <span class="method-toggle" id="btn-transformingoperators">&#9654;</span>
+            </div>
+          <ul class="method-list collapsed-methods" id="ml-transformingoperators">
+            <li><a href="03_transforming_operators.html#card-demomap" target="frame" onclick="setMethodActive(this)">demoMap()</a></li>
+            <li><a href="03_transforming_operators.html#card-demoflatmap" target="frame" onclick="setMethodActive(this)">demoFlatMap()</a></li>
+            <li><a href="03_transforming_operators.html#card-democoncatmap" target="frame" onclick="setMethodActive(this)">demoConcatMap()</a></li>
+            <li><a href="03_transforming_operators.html#card-demoswitchmap" target="frame" onclick="setMethodActive(this)">demoSwitchMap()</a></li>
+            <li><a href="03_transforming_operators.html#card-demoscan" target="frame" onclick="setMethodActive(this)">demoScan()</a></li>
+            <li><a href="03_transforming_operators.html#card-demobuffer" target="frame" onclick="setMethodActive(this)">demoBuffer()</a></li>
+            <li><a href="03_transforming_operators.html#card-demotolist" target="frame" onclick="setMethodActive(this)">demoToList()</a></li>
+          </ul>
+          </li>
+          <li data-cls="filteringoperators">
+            <div class="file-row" onclick="toggleMethods('ml-filteringoperators')">
+              <a href="04_filtering_operators.html" target="frame" onclick="setActive(this);" class="file-link">
+                <span class="file-name">FilteringOperators</span>
+              </a>
+              <span class="method-toggle" id="btn-filteringoperators">&#9654;</span>
+            </div>
+          <ul class="method-list collapsed-methods" id="ml-filteringoperators">
+            <li><a href="04_filtering_operators.html#card-demofilter" target="frame" onclick="setMethodActive(this)">demoFilter()</a></li>
+            <li><a href="04_filtering_operators.html#card-demotake" target="frame" onclick="setMethodActive(this)">demoTake()</a></li>
+            <li><a href="04_filtering_operators.html#card-demoskip" target="frame" onclick="setMethodActive(this)">demoSkip()</a></li>
+            <li><a href="04_filtering_operators.html#card-demotakelast" target="frame" onclick="setMethodActive(this)">demoTakeLast()</a></li>
+            <li><a href="04_filtering_operators.html#card-demodistinct" target="frame" onclick="setMethodActive(this)">demoDistinct()</a></li>
+            <li><a href="04_filtering_operators.html#card-demodistinctuntilchanged" target="frame" onclick="setMethodActive(this)">demoDistinctUntilChanged()</a></li>
+            <li><a href="04_filtering_operators.html#card-demofirst" target="frame" onclick="setMethodActive(this)">demoFirst()</a></li>
+            <li><a href="04_filtering_operators.html#card-demolast" target="frame" onclick="setMethodActive(this)">demoLast()</a></li>
+            <li><a href="04_filtering_operators.html#card-demoelementat" target="frame" onclick="setMethodActive(this)">demoElementAt()</a></li>
+            <li><a href="04_filtering_operators.html#card-demoignoreelements" target="frame" onclick="setMethodActive(this)">demoIgnoreElements()</a></li>
+          </ul>
+          </li>
+          <li data-cls="combiningoperators">
+            <div class="file-row" onclick="toggleMethods('ml-combiningoperators')">
+              <a href="05_combining_operators.html" target="frame" onclick="setActive(this);" class="file-link">
+                <span class="file-name">CombiningOperators</span>
+              </a>
+              <span class="method-toggle" id="btn-combiningoperators">&#9654;</span>
+            </div>
+          <ul class="method-list collapsed-methods" id="ml-combiningoperators">
+            <li><a href="05_combining_operators.html#card-demomerge" target="frame" onclick="setMethodActive(this)">demoMerge()</a></li>
+            <li><a href="05_combining_operators.html#card-democoncat" target="frame" onclick="setMethodActive(this)">demoConcat()</a></li>
+            <li><a href="05_combining_operators.html#card-demozip" target="frame" onclick="setMethodActive(this)">demoZip()</a></li>
+            <li><a href="05_combining_operators.html#card-democombinelatest" target="frame" onclick="setMethodActive(this)">demoCombineLatest()</a></li>
+            <li><a href="05_combining_operators.html#card-demostartwith" target="frame" onclick="setMethodActive(this)">demoStartWith()</a></li>
+            <li><a href="05_combining_operators.html#card-demoamb" target="frame" onclick="setMethodActive(this)">demoAmb()</a></li>
+          </ul>
+          </li>
+          <li data-cls="errorhandling">
+            <div class="file-row" onclick="toggleMethods('ml-errorhandling')">
+              <a href="06_error_handling.html" target="frame" onclick="setActive(this);" class="file-link">
+                <span class="file-name">ErrorHandling</span>
+              </a>
+              <span class="method-toggle" id="btn-errorhandling">&#9654;</span>
+            </div>
+          <ul class="method-list collapsed-methods" id="ml-errorhandling">
+            <li><a href="06_error_handling.html#card-demoonerrorreturn" target="frame" onclick="setMethodActive(this)">demoOnErrorReturn()</a></li>
+            <li><a href="06_error_handling.html#card-demoonerrorreturnitem" target="frame" onclick="setMethodActive(this)">demoOnErrorReturnItem()</a></li>
+            <li><a href="06_error_handling.html#card-demoonerrorresumenext" target="frame" onclick="setMethodActive(this)">demoOnErrorResumeNext()</a></li>
+            <li><a href="06_error_handling.html#card-demodoonerror" target="frame" onclick="setMethodActive(this)">demoDoOnError()</a></li>
+            <li><a href="06_error_handling.html#card-demoretry" target="frame" onclick="setMethodActive(this)">demoRetry()</a></li>
+            <li><a href="06_error_handling.html#card-demoretrywhen" target="frame" onclick="setMethodActive(this)">demoRetryWhen()</a></li>
+          </ul>
+          </li>
+          <li data-cls="subjects">
+            <div class="file-row" onclick="toggleMethods('ml-subjects')">
+              <a href="07_subjects.html" target="frame" onclick="setActive(this);" class="file-link">
+                <span class="file-name">Subjects</span>
+              </a>
+              <span class="method-toggle" id="btn-subjects">&#9654;</span>
+            </div>
+          <ul class="method-list collapsed-methods" id="ml-subjects">
+            <li><a href="07_subjects.html#card-demopublishsubject" target="frame" onclick="setMethodActive(this)">demoPublishSubject()</a></li>
+            <li><a href="07_subjects.html#card-demobehaviorsubject" target="frame" onclick="setMethodActive(this)">demoBehaviorSubject()</a></li>
+            <li><a href="07_subjects.html#card-demoreplaysubject" target="frame" onclick="setMethodActive(this)">demoReplaySubject()</a></li>
+            <li><a href="07_subjects.html#card-demoasyncsubject" target="frame" onclick="setMethodActive(this)">demoAsyncSubject()</a></li>
+          </ul>
+          </li>
+          <li data-cls="schedulers">
+            <div class="file-row" onclick="toggleMethods('ml-schedulers')">
+              <a href="08_schedulers.html" target="frame" onclick="setActive(this);" class="file-link">
+                <span class="file-name">Schedulers</span>
+              </a>
+              <span class="method-toggle" id="btn-schedulers">&#9654;</span>
+            </div>
+          <ul class="method-list collapsed-methods" id="ml-schedulers">
+            <li><a href="08_schedulers.html#card-demodefaultthread" target="frame" onclick="setMethodActive(this)">demoDefaultThread()</a></li>
+            <li><a href="08_schedulers.html#card-demosubscribeon" target="frame" onclick="setMethodActive(this)">demoSubscribeOn()</a></li>
+            <li><a href="08_schedulers.html#card-demoobserveon" target="frame" onclick="setMethodActive(this)">demoObserveOn()</a></li>
+            <li><a href="08_schedulers.html#card-demosubscribeonandobserveon" target="frame" onclick="setMethodActive(this)">demoSubscribeOnAndObserveOn()</a></li>
+            <li><a href="08_schedulers.html#card-demoioscheduler" target="frame" onclick="setMethodActive(this)">demoIoScheduler()</a></li>
+            <li><a href="08_schedulers.html#card-democomputationscheduler" target="frame" onclick="setMethodActive(this)">demoComputationScheduler()</a></li>
+            <li><a href="08_schedulers.html#card-demonewthreadscheduler" target="frame" onclick="setMethodActive(this)">demoNewThreadScheduler()</a></li>
+            <li><a href="08_schedulers.html#card-demosinglescheduler" target="frame" onclick="setMethodActive(this)">demoSingleScheduler()</a></li>
+          </ul>
+          </li>
+          <li data-cls="flowable">
+            <div class="file-row" onclick="toggleMethods('ml-flowable')">
+              <a href="09_flowable.html" target="frame" onclick="setActive(this);" class="file-link">
+                <span class="file-name">Flowable</span>
+              </a>
+              <span class="method-toggle" id="btn-flowable">&#9654;</span>
+            </div>
+          <ul class="method-list collapsed-methods" id="ml-flowable">
+            <li><a href="09_flowable.html#card-demoflowablebasic" target="frame" onclick="setMethodActive(this)">demoFlowableBasic()</a></li>
+            <li><a href="09_flowable.html#card-demobackpressurebuffer" target="frame" onclick="setMethodActive(this)">demoBackpressureBuffer()</a></li>
+            <li><a href="09_flowable.html#card-demobackpressuredrop" target="frame" onclick="setMethodActive(this)">demoBackpressureDrop()</a></li>
+            <li><a href="09_flowable.html#card-demobackpressurelatest" target="frame" onclick="setMethodActive(this)">demoBackpressureLatest()</a></li>
+            <li><a href="09_flowable.html#card-demoflowablefromrange" target="frame" onclick="setMethodActive(this)">demoFlowableFromRange()</a></li>
+          </ul>
+          </li>
+          <li data-cls="singlemaybecompletable">
+            <div class="file-row" onclick="toggleMethods('ml-singlemaybecompletable')">
+              <a href="10_single_maybe_completable.html" target="frame" onclick="setActive(this);" class="file-link">
+                <span class="file-name">SingleMaybeCompletable</span>
+              </a>
+              <span class="method-toggle" id="btn-singlemaybecompletable">&#9654;</span>
+            </div>
+          <ul class="method-list collapsed-methods" id="ml-singlemaybecompletable">
+            <li><a href="10_single_maybe_completable.html#card-demosinglejust" target="frame" onclick="setMethodActive(this)">demoSingleJust()</a></li>
+            <li><a href="10_single_maybe_completable.html#card-demosingleerror" target="frame" onclick="setMethodActive(this)">demoSingleError()</a></li>
+            <li><a href="10_single_maybe_completable.html#card-demosinglefromcallable" target="frame" onclick="setMethodActive(this)">demoSingleFromCallable()</a></li>
+            <li><a href="10_single_maybe_completable.html#card-demosingleflatmap" target="frame" onclick="setMethodActive(this)">demoSingleFlatMap()</a></li>
+            <li><a href="10_single_maybe_completable.html#card-demomaybejust" target="frame" onclick="setMethodActive(this)">demoMaybeJust()</a></li>
+            <li><a href="10_single_maybe_completable.html#card-demomaybeempty" target="frame" onclick="setMethodActive(this)">demoMaybeEmpty()</a></li>
+            <li><a href="10_single_maybe_completable.html#card-demomaybeerror" target="frame" onclick="setMethodActive(this)">demoMaybeError()</a></li>
+            <li><a href="10_single_maybe_completable.html#card-demomaybefilter" target="frame" onclick="setMethodActive(this)">demoMaybeFilter()</a></li>
+            <li><a href="10_single_maybe_completable.html#card-democompletablefromaction" target="frame" onclick="setMethodActive(this)">demoCompletableFromAction()</a></li>
+            <li><a href="10_single_maybe_completable.html#card-democompletableandthen" target="frame" onclick="setMethodActive(this)">demoCompletableAndThen()</a></li>
+            <li><a href="10_single_maybe_completable.html#card-democompletableerror" target="frame" onclick="setMethodActive(this)">demoCompletableError()</a></li>
+            <li><a href="10_single_maybe_completable.html#card-demochainall" target="frame" onclick="setMethodActive(this)">demoChainAll()</a></li>
+          </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div id="no-match-msg">No files match your search.</div>
+    <div id="sidebar-footer">RxJava 3.1.9 &nbsp;&#183;&nbsp; Java 11</div>
+  </div>
+  <div id="content-area">
+    <div id="welcome">
+      <h2>&#9889; RxJava 3.x Tutorial</h2>
+      <p>Select a tutorial file from the left panel to view its Java source code with syntax highlighting, search, and collapse controls.</p>
+      <div class="badge-row">
+        <span class="badge">Observable</span>
+        <span class="badge">Flowable</span>
+        <span class="badge">Schedulers</span>
+        <span class="badge">Subjects</span>
+        <span class="badge">map / flatMap</span>
+        <span class="badge">filter / zip</span>
+        <span class="badge">Single</span>
+        <span class="badge">Maybe</span>
+        <span class="badge">Completable</span>
+        <span class="badge">Backpressure</span>
+      </div>
+    </div>
+    <iframe id="frame" name="frame" style="display:none"></iframe>
+  </div>
+</div>
+<script>
+const FILE_CODE = {
+  "observablebasics": `package tutorial;
+
+import io.reactivex.rxjava3.core.observable;
+import io.reactivex.rxjava3.core.observer;
+import io.reactivex.rxjava3.disposables.disposable;
+
+/**
+ * tutorial 01 — observable basics
+ *
+ * <p>an {@link observable} is the core type in rxjava. it represents a stream of data or events
+ * that can be observed over time. an {@link observer} subscribes to an observable and reacts to
+ * each emitted item, an error, or the completion signal.
+ *
+ * <p>the three signals an observable can emit:
+ * <ul>
+ *   <li>{@code onnext(t item)}  — a new item in the stream</li>
+ *   <li>{@code onerror(throwable e)} — a terminal error; no more items will follow</li>
+ *   <li>{@code oncomplete()} — the stream ended successfully; no more items will follow</li>
+ * </ul>
+ *
+ * <p>run this class with intellij: right-click → run '_01_observablebasics.main()'
+ */
+public class _01_observablebasics {
+
+    public static void main(string[] args) {
+        demojust();
+        demofromarray();
+        demofromiterable();
+        demorange();
+        demoempty();
+        demonever();
+        demoerror();
+        demofullobserver();
+    }
+
+    // -------------------------------------------------------------------------
+    // observable.just
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observable.just(...)} creates an observable that emits each supplied value in order,
+     * then completes. it accepts 1–10 arguments (varargs overloads).
+     *
+     * <p>use it when you already have a fixed set of known values.
+     */
+    private static void demojust() {
+        system.out.println("=== observable.just ===");
+
+        observable<string> observable = observable.just("alpha", "beta", "gamma");
+
+        // subscribe(onnext) — the simplest form; errors are thrown if they occur
+        observable.subscribe(item -> system.out.println("received: " + item));
+        // → received: alpha
+        // → received: beta
+        // → received: gamma
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // observable.fromarray
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observable.fromarray(t[])} emits each element of an existing array.
+     * equivalent to {@code observable.just(...)} but works with a pre-existing array variable.
+     */
+    private static void demofromarray() {
+        system.out.println("=== observable.fromarray ===");
+
+        integer[] numbers = {10, 20, 30, 40, 50};
+        integer[] numbers2 = new integer[5];
+//        numbers2[0] = 10;
+        for (int i = 0; i < numbers2.length; i++) {
+            numbers2[i] = (i + 1) * 10;
+        }
+
+        observable.fromarray(numbers)
+                .subscribe(n -> system.out.println("number: " + n));
+        // → number: 10
+        // → number: 20
+        // → number: 30
+        // → number: 40
+        // → number: 50
+
+        observable.fromarray(numbers2)
+                .subscribe(n -> system.out.println("number 2 : " + n));
+        // → number 2: 10
+        // → number 2: 20
+        // → number 2: 30
+        // → number 2: 40
+        // → number 2: 50
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // observable.fromiterable
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observable.fromiterable(iterable<t>)} emits each element of any {@link iterable}
+     * (list, set, etc.). the elements are emitted in the iteration order of the collection.
+     */
+    private static void demofromiterable() {
+        system.out.println("=== observable.fromiterable ===");
+
+        java.util.list<string> colors = java.util.arrays.aslist("red", "green", "blue");
+
+        observable.fromiterable(colors)
+                .subscribe(color -> system.out.println("color: " + color));
+        // → color: red
+        // → color: green
+        // → color: blue
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // observable.range
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observable.range(start, count)} emits {@code count} consecutive integers starting
+     * from {@code start}. useful for generating sequences without creating a collection.
+     */
+    private static void demorange() {
+        system.out.println("=== observable.range ===");
+
+        // emits 1, 2, 3, 4, 5
+        observable.range(1, 5)
+                .subscribe(i -> system.out.println("value: " + i));
+        // → value: 1
+        // → value: 2
+        // → value: 3
+        // → value: 4
+        // → value: 5
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // observable.empty
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observable.empty()} emits nothing and immediately calls {@code oncomplete()}.
+     * useful as a no-op placeholder or base case in composition.
+     */
+    private static void demoempty() {
+        system.out.println("=== observable.empty ===");
+
+        observable.empty()
+                .subscribe(
+                        item    -> system.out.println("item: " + item),   // never called
+                        error   -> system.out.println("error: " + error), // never called
+                        ()      -> system.out.println("completed!")        // called immediately
+                );
+        // → completed!
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // observable.never
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observable.never()} emits nothing and never completes or errors.
+     * it represents an infinite, empty stream. useful in testing or as a sentinel.
+     *
+     * <p>because it never terminates, {@code oncomplete} and {@code onerror} are never called.
+     * here we just confirm subscription happened.
+     */
+    private static void demonever() {
+        system.out.println("=== observable.never ===");
+
+        disposable d = observable.never()
+                .subscribe(
+                        item -> system.out.println("item: " + item),
+                        err  -> system.out.println("error: " + err),
+                        ()   -> system.out.println("completed!")  // never reached
+                );
+        // disposed / zlikvidováno
+        system.out.println("subscribed, nothing emitted: isdisposed=" + d.isdisposed()); // → subscribed, nothing emitted: isdisposed=false
+        d.dispose(); // clean up
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // observable.error
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observable.error(throwable)} immediately signals an error to the subscriber
+     * without emitting any items. useful for propagating known errors in a pipeline.
+     */
+    private static void demoerror() {
+        system.out.println("=== observable.error ===");
+
+        observable.error(new runtimeexception("something went wrong"))
+                .subscribe(
+                        item  -> system.out.println("item: " + item),        // never called
+                        error -> system.out.println("caught error: " + error.getmessage()), // called
+                        ()    -> system.out.println("completed!")             // never called
+                );
+        // → caught error: something went wrong
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // full observer interface
+    // -------------------------------------------------------------------------
+
+    /**
+     * instead of lambda shortcuts, you can implement the full {@link observer} interface.
+     * this also gives you access to the {@link disposable}, allowing you to cancel
+     * the subscription from within {@code onsubscribe}.
+     */
+    private static void demofullobserver() {
+        system.out.println("=== full observer interface ===");
+
+        observable<integer> source = observable.range(1, 3);
+
+        source.subscribe(new observer<integer>() {
+
+            private disposable upstream;
+
+            @override
+            public void onsubscribe(disposable d) {
+                this.upstream = d;
+                system.out.println("onsubscribe called"); // → onsubscribe called
+            }
+
+            @override
+            public void onnext(integer value) {
+                system.out.println("onnext: " + value);
+                // → onnext: 1
+                // → onnext: 2
+                // → onnext: 3
+            }
+
+            @override
+            public void onerror(throwable e) {
+                system.out.println("onerror: " + e.getmessage()); // not called here
+            }
+
+            @override
+            public void oncomplete() {
+                system.out.println("oncomplete"); // → oncomplete
+            }
+        });
+
+        system.out.println();
+    }
+}
+/*
+"c:\\program files\\java\\jdk-25\\bin\\java.exe" -dvaadin.copilot.plugindotfilepath=c:\\users\\roman\\work\\claude\\projects\\rxjava\\.idea\\.copilot-plugin "-javaagent:c:\\program files\\jetbrains\\intellij idea 2025.3.1\\lib\\idea_rt.jar=55727" -dfile.encoding=utf-8 -dsun.stdout.encoding=utf-8 -dsun.stderr.encoding=utf-8 -classpath c:\\users\\roman\\work\\claude\\projects\\rxjava\\target\\classes;c:\\users\\roman\\.m2\\repository\\io\\reactivex\\rxjava3\\rxjava\\3.1.9\\rxjava-3.1.9.jar;c:\\users\\roman\\.m2\\repository\\org\\reactivestreams\\reactive-streams\\1.0.4\\reactive-streams-1.0.4.jar tutorial._01_observablebasics
+=== observable.just ===
+received: alpha
+received: beta
+received: gamma
+
+=== observable.fromarray ===
+number: 10
+number: 20
+number: 30
+number: 40
+number: 50
+number 2 : 10
+number 2 : 20
+number 2 : 30
+number 2 : 40
+number 2 : 50
+
+=== observable.fromiterable ===
+color: red
+color: green
+color: blue
+
+=== observable.range ===
+value: 1
+value: 2
+value: 3
+value: 4
+value: 5
+
+=== observable.empty ===
+completed!
+
+=== observable.never ===
+subscribed, nothing emitted: isdisposed=false
+
+=== observable.error ===
+caught error: something went wrong
+
+=== full observer interface ===
+onsubscribe called
+onnext: 1
+onnext: 2
+onnext: 3
+oncomplete
+
+
+process finished with exit code 0
+*/`,
+  "observablecreation": `package tutorial;
+
+import io.reactivex.rxjava3.core.observable;
+import io.reactivex.rxjava3.core.observableemitter;
+
+import java.util.concurrent.timeunit;
+import java.util.concurrent.atomic.atomicinteger;
+
+/**
+ * tutorial 02 — observable creation (advanced factories)
+ *
+ * <p>beyond the static factories in tutorial 01, rxjava provides factories for building
+ * observables from custom logic, lazy evaluation, or time-based sequences.
+ *
+ * <p>topics covered:
+ * <ul>
+ *   <li>{@code observable.create}    — full control via an emitter</li>
+ *   <li>{@code observable.defer}     — lazy factory, evaluated fresh per subscriber</li>
+ *   <li>{@code observable.fromcallable} — wraps a single value-producing call</li>
+ *   <li>{@code observable.interval}  — ticks at a fixed time interval</li>
+ *   <li>{@code observable.timer}     — emits a single {@code 0l} after a delay</li>
+ * </ul>
+ *
+ * <p>run: right-click → run '_02_observablecreation.main()'
+ */
+public class _02_observablecreation {
+
+    public static void main(string[] args) throws interruptedexception {
+        democreate();
+        demodefer();
+        demofromcallable();
+        demointerval();
+        demotimer();
+    }
+
+    // -------------------------------------------------------------------------
+    // observable.create
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observable.create(observableonsubscribe)} gives you full manual control:
+     * you receive an {@link observableemitter} and decide when to call
+     * {@code onnext}, {@code onerror}, and {@code oncomplete}.
+     *
+     * <p>always check {@code emitter.isdisposed()} before emitting to avoid work
+     * after the downstream has unsubscribed.
+     */
+    private static void democreate() {
+        system.out.println("=== observable.create ===");
+
+        observable<string> observable = observable.create((observableemitter<string> emitter) -> {
+            try {
+                emitter.onnext("first");   // emit item 1
+                emitter.onnext("second");  // emit item 2
+                emitter.onnext("third");   // emit item 3
+                emitter.oncomplete();      // signal completion
+            } catch (exception e) {
+                emitter.onerror(e);        // forward any exception as an error signal
+            }
+        });
+
+        observable.subscribe(
+                item -> system.out.println("received: " + item),
+                // → received: first
+                // → received: second
+                // → received: third
+                err  -> system.out.println("error: " + err),
+                ()   -> system.out.println("done!")             // → done!
+        );
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // observable.defer
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observable.defer(callable<observable<t>>)} delays the creation of the observable
+     * until a subscriber subscribes. each subscriber gets a *fresh* observable instance,
+     * so any state captured at creation time is re-evaluated per subscription.
+     *
+     * <p>this solves a common bug where a value is captured once at definition time
+     * instead of being read lazily at subscription time.
+     */
+    private static void demodefer() {
+        system.out.println("=== observable.defer ===");
+
+        atomicinteger counter = new atomicinteger(0);
+
+        // without defer — captures counter.get() once when the observable is defined
+        observable<integer> eager = observable.just(counter.get());
+
+        // with defer — evaluates counter.get() fresh for each subscriber
+        observable<integer> lazy = observable.defer(() -> observable.just(counter.get()));
+
+        counter.set(42); // change the value after defining both observables
+
+        system.out.print("eager (no defer): ");
+        eager.subscribe(v -> system.out.println(v));  // → 0  (captured before counter changed)
+
+        system.out.print("lazy  (defer):    ");
+        lazy.subscribe(v -> system.out.println(v));   // → 42 (reads current value at subscribe time)
+
+        // === observable.defer ===
+        // eager (no defer): 0
+        // lazy  (defer):    42
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // observable.fromcallable
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observable.fromcallable(callable<t>)} wraps a single value-producing call.
+     * the {@link java.util.concurrent.callable} is executed lazily when someone subscribes,
+     * and any checked exception thrown by it is forwarded to {@code onerror}.
+     *
+     * <p>think of it as a lazy version of {@code observable.just(value)} that also handles
+     * exceptions automatically.
+     */
+    private static void demofromcallable() {
+        system.out.println("=== observable.fromcallable ===");
+
+        // simulates a method that might throw a checked exception (e.g., a db call)
+        observable<string> observable = observable.fromcallable(() -> {
+            system.out.println("  [callable executing...]"); // → [callable executing...]
+            return "result from callable";
+        });
+
+        system.out.println("observable defined, callable not yet executed.");
+        // → observable defined, callable not yet executed.
+
+        observable.subscribe(
+                result -> system.out.println("got: " + result),  // → got: result from callable
+                err    -> system.out.println("error: " + err)
+        );
+        // === observable.fromcallable ===
+        // observable defined, callable not yet executed.
+        //   [callable executing...]
+        // got: result from callable
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // observable.interval
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observable.interval(period, timeunit)} emits {@code 0l, 1l, 2l, ...} at a fixed
+     * time interval on the {@code schedulers.computation()} thread.
+     *
+     * <p>it is infinite — use {@code take(n)} to limit items, or {@code dispose()} to cancel.
+     * because it runs on a background thread, we {@code thread.sleep} on the main thread
+     * to wait for the output before the jvm exits.
+     */
+    private static void demointerval() throws interruptedexception {
+        system.out.println("=== observable.interval ===");
+
+        // emit every 300 ms, take the first 4 items
+        observable.interval(300, timeunit.milliseconds)
+                .take(4)
+                .subscribe(tick -> system.out.println("tick: " + tick));
+        // → tick: 0
+        // → tick: 1
+        // → tick: 2
+        // → tick: 3
+
+        thread.sleep(1_500); // wait for all 4 ticks to be emitted
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // observable.timer
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observable.timer(delay, timeunit)} emits a single {@code 0l} after the given
+     * delay, then completes. useful for scheduling a one-shot delayed action.
+     */
+    private static void demotimer() throws interruptedexception {
+        system.out.println("=== observable.timer ===");
+
+        system.out.println("waiting 500 ms...");
+        observable.timer(500, timeunit.milliseconds)
+                .subscribe(
+                        v  -> system.out.println("timer fired! value=" + v), // → timer fired! value=0
+                        e  -> system.out.println("error: " + e),
+                        () -> system.out.println("timer completed.")          // → timer completed.
+                );
+
+        thread.sleep(1_000); // wait for the timer to fire
+        // === observable.timer ===
+        // waiting 500 ms...
+        // timer fired! value=0
+        // timer completed.
+        system.out.println();
+    }
+}
+/*
+"c:\\program files\\java\\jdk-25\\bin\\java.exe" -dvaadin.copilot.plugindotfilepath=c:\\users\\roman\\work\\claude\\projects\\rxjava\\.idea\\.copilot-plugin "-javaagent:c:\\program files\\jetbrains\\intellij idea 2025.3.1\\lib\\idea_rt.jar=55764" -dfile.encoding=utf-8 -dsun.stdout.encoding=utf-8 -dsun.stderr.encoding=utf-8 -classpath c:\\users\\roman\\work\\claude\\projects\\rxjava\\target\\classes;c:\\users\\roman\\.m2\\repository\\io\\reactivex\\rxjava3\\rxjava\\3.1.9\\rxjava-3.1.9.jar;c:\\users\\roman\\.m2\\repository\\org\\reactivestreams\\reactive-streams\\1.0.4\\reactive-streams-1.0.4.jar tutorial._02_observablecreation
+=== observable.create ===
+received: first
+received: second
+received: third
+done!
+
+=== observable.defer ===
+eager (no defer): 0
+lazy  (defer):    42
+
+=== observable.fromcallable ===
+observable defined, callable not yet executed.
+  [callable executing...]
+got: result from callable
+
+=== observable.interval ===
+tick: 0
+tick: 1
+tick: 2
+tick: 3
+
+=== observable.timer ===
+waiting 500 ms...
+timer fired! value=0
+timer completed.
+
+
+process finished with exit code 0
+
+*/`,
+  "transformingoperators": `package tutorial;
+
+import io.reactivex.rxjava3.core.observable;
+
+import java.util.list;
+
+/**
+ * tutorial 03 — transforming operators
+ *
+ * <p>transforming operators take an upstream observable and return a new observable
+ * whose items have been reshaped in some way. they are the "map", "flatmap", and
+ * "reduce" equivalents of the reactive world.
+ *
+ * <p>operators covered:
+ * <ul>
+ *   <li>{@code map}        — transform each item one-to-one</li>
+ *   <li>{@code flatmap}    — transform each item into an observable, merge results</li>
+ *   <li>{@code concatmap}  — like flatmap but preserves (zachová) order</li>
+ *   <li>{@code switchmap}  — like flatmap but cancels the previous inner observable</li>
+ *   <li>{@code scan}       — running accumulation (like reduce but emits intermediates)</li>
+ *   <li>{@code buffer}     — collect items into lists of a fixed size</li>
+ *   <li>{@code tolist}     — collect all items into a single list, emit once</li>
+ * </ul>
+ *
+ * <p>run: right-click → run '_03_transformingoperators.main()'
+ */
+public class _03_transformingoperators {
+
+    public static void main(string[] args) {
+        demomap();
+        demoflatmap();
+        democoncatmap();
+        demoswitchmap();
+        demoscan();
+        demobuffer();
+        demotolist();
+    }
+
+    // -------------------------------------------------------------------------
+    // map
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code map(function<t, r>)} applies a function to every emitted item and emits
+     * the transformed result. the mapping is synchronous and one-to-one (t → r).
+     *
+     * <p>example: convert a stream of strings to their lengths.
+     */
+    private static void demomap() {
+        system.out.println("=== map ===");
+
+        observable.just("hello", "rxjava", "world")
+                .map(s -> s.touppercase() + " (" + s.length() + ")")
+                .subscribe(item -> system.out.println(item));
+        // → hello (5)
+        // → rxjava (6)
+        // → world (5)
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // flatmap
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code flatmap(function<t, observable<r>>)} maps each item to an inner observable,
+     * then *merges* all inner observables into a single output stream.
+     *
+     * <p>because it merges (not concatenates), the order of items from different inner
+     * observables is not guaranteed if they are asynchronous. for synchronous sources
+     * the output order matches input order.
+     *
+     * <p>think of it as: "for each item, produce zero or more new items".
+     */
+    private static void demoflatmap() {
+        system.out.println("=== flatmap ===");
+
+        // for each number, emit the number and its square
+        observable.just(1, 2, 3)
+                .flatmap(n -> observable.just(n, n * n))
+                .subscribe(v -> system.out.println("flatmap item: " + v));
+        // → flatmap item: 1
+        // → flatmap item: 1
+        // → flatmap item: 2
+        // → flatmap item: 4
+        // → flatmap item: 3
+        // → flatmap item: 9
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // concatmap
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code concatmap(function<t, observable<r>>)} is like {@code flatmap} but it
+     * subscribes to each inner observable *sequentially* — it waits for the current
+     * inner observable to complete before subscribing to the next one.
+     *
+     * <p>use {@code concatmap} when order matters and inner sources may be async.
+     */
+    private static void democoncatmap() {
+        system.out.println("=== concatmap ===");
+
+        // emit a word, then each of its characters — in strict order
+        observable.just("hi", "rx")
+                .concatmap(word -> observable.fromarray(word.split("")))
+                .subscribe(ch -> system.out.println("char: " + ch));
+        // → char: h
+        // → char: i
+        // → char: r
+        // → char: x
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // switchmap
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code switchmap(function<t, observable<r>>)} maps each item to an inner observable
+     * but *disposes the previous inner observable* as soon as a new item arrives.
+     *
+     * <p>this is ideal for "cancel the current search, start a new one" patterns
+     * (e.g., autocomplete). with synchronous sources the switch happens so fast that
+     * only the last inner observable's items appear in practice.
+     */
+    private static void demoswitchmap() {
+        system.out.println("=== switchmap ===");
+
+        // each outer item cancels the previous inner observable.
+        // with synchronous sources, only the last inner observable's items are seen.
+        observable.just("a", "b", "c")
+                .switchmap(letter -> observable.just(letter + "1", letter + "2"))
+                .subscribe(v -> system.out.println("switchmap: " + v));
+        // → switchmap: c1
+        // → switchmap: c2
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // scan
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code scan(bifunction<t, t, t>)} applies an accumulator function to each item
+     * and emits *every intermediate accumulated value* (not just the final one).
+     *
+     * <p>contrast with {@code reduce}, which only emits the final value.
+     * {@code scan} is useful for running totals, running max/min, state machines, etc.
+     */
+    private static void demoscan() {
+        system.out.println("=== scan (running sum) ===");
+
+        observable.just(1, 2, 3, 4, 5)
+                .scan((accumulator, nextitem) -> accumulator + nextitem)
+                .subscribe(runningsum -> system.out.println("running sum: " + runningsum));
+        // → running sum: 1
+        // → running sum: 3
+        // → running sum: 6
+        // → running sum: 10
+        // → running sum: 15
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // buffer
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code buffer(count)} collects emitted items into {@link list}s of a fixed size
+     * and emits each list as a single item downstream.
+     *
+     * <p>the last list may be smaller than {@code count} if the source completes with
+     * fewer remaining items.
+     */
+    private static void demobuffer() {
+        system.out.println("=== buffer(3) ===");
+
+        observable.range(1, 9)
+                .buffer(3) // collect into groups of 3
+                .subscribe(batch -> system.out.println("batch: " + batch));
+        // → batch: [1, 2, 3]
+        // → batch: [4, 5, 6]
+        // → batch: [7, 8, 9]
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // tolist
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code tolist()} waits for the source observable to complete, collects all items
+     * into a {@link list}, and emits that list as a single item via a {@code single<list<t>>}.
+     *
+     * <p>only use this on finite observables — an infinite source will never complete
+     * so {@code tolist()} will never emit.
+     */
+    private static void demotolist() {
+        system.out.println("=== tolist ===");
+
+        observable.just("apple", "banana", "cherry")
+                .map(string::touppercase)
+                .tolist()  // returns single<list<string>>
+                .subscribe(
+                        list  -> system.out.println("all items: " + list), // → all items: [apple, banana, cherry]
+                        error -> system.out.println("error: " + error)
+                );
+
+        system.out.println();
+    }
+}
+
+/*
+"c:\\program files\\java\\jdk-25\\bin\\java.exe" -dvaadin.copilot.plugindotfilepath=c:\\users\\roman\\work\\claude\\projects\\rxjava\\.idea\\.copilot-plugin "-javaagent:c:\\program files\\jetbrains\\intellij idea 2025.3.1\\lib\\idea_rt.jar=55760" -dfile.encoding=utf-8 -dsun.stdout.encoding=utf-8 -dsun.stderr.encoding=utf-8 -classpath c:\\users\\roman\\work\\claude\\projects\\rxjava\\target\\classes;c:\\users\\roman\\.m2\\repository\\io\\reactivex\\rxjava3\\rxjava\\3.1.9\\rxjava-3.1.9.jar;c:\\users\\roman\\.m2\\repository\\org\\reactivestreams\\reactive-streams\\1.0.4\\reactive-streams-1.0.4.jar tutorial._03_transformingoperators
+=== map ===
+hello (5)
+rxjava (6)
+world (5)
+
+=== flatmap ===
+flatmap item: 1
+flatmap item: 1
+flatmap item: 2
+flatmap item: 4
+flatmap item: 3
+flatmap item: 9
+
+=== concatmap ===
+char: h
+char: i
+char: r
+char: x
+
+=== switchmap ===
+switchmap: a1
+switchmap: a2
+switchmap: b1
+switchmap: b2
+switchmap: c1
+switchmap: c2
+
+=== scan (running sum) ===
+running sum: 1
+running sum: 3
+running sum: 6
+running sum: 10
+running sum: 15
+
+=== buffer(3) ===
+batch: [1, 2, 3]
+batch: [4, 5, 6]
+batch: [7, 8, 9]
+
+=== tolist ===
+all items: [apple, banana, cherry]
+
+
+process finished with exit code 0
+
+ */`,
+  "filteringoperators": `package tutorial;
+
+import io.reactivex.rxjava3.core.observable;
+
+/**
+ * tutorial 04 — filtering operators
+ *
+ * <p>filtering operators selectively pass items downstream based on a predicate or position,
+ * or they limit the number of items that flow through. no items are transformed — only
+ * selected or dropped.
+ *
+ * <p>operators covered:
+ * <ul>
+ *   <li>{@code filter}               — keep items matching a predicate</li>
+ *   <li>{@code take} / {@code skip}  — take or skip the first n items</li>
+ *   <li>{@code takelast}             — keep only the last n items</li>
+ *   <li>{@code distinct}             — suppress duplicates (globally)</li>
+ *   <li>{@code distinctuntilchanged} — suppress consecutive duplicates only</li>
+ *   <li>{@code first} / {@code last} — emit only the first or last item</li>
+ *   <li>{@code elementat}            — emit the item at a specific index</li>
+ *   <li>{@code ignoreelements}       — discard all items, pass only terminal events</li>
+ * </ul>
+ *
+ * <p>run: right-click → run '_04_filteringoperators.main()'
+ */
+public class _04_filteringoperators {
+
+    public static void main(string[] args) {
+        demofilter();
+        demotake();
+        demoskip();
+        demotakelast();
+        demodistinct();
+        demodistinctuntilchanged();
+        demofirst();
+        demolast();
+        demoelementat();
+        demoignoreelements();
+    }
+
+    // -------------------------------------------------------------------------
+    // filter
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code filter(predicate<t>)} emits only those items for which the predicate returns
+     * {@code true}. items that do not match are silently dropped.
+     */
+    private static void demofilter() {
+        system.out.println("=== filter ===");
+
+        observable.range(1, 10)
+                .filter(n -> n % 2 == 0) // keep only even numbers
+                .subscribe(n -> system.out.println("even: " + n));
+        // === filter ===
+        // even: 2
+        // even: 4
+        // even: 6
+        // even: 8
+        // even: 10
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // take
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code take(n)} emits at most the first {@code n} items, then completes.
+     * items after position {@code n} are never emitted (and the upstream may be disposed).
+     */
+    private static void demotake() {
+        system.out.println("=== take(3) ===");
+
+        observable.range(1, 100)
+                .take(3)
+                .subscribe(n -> system.out.println("taken: " + n));
+        // === take(3) ===
+        // taken: 1
+        // taken: 2
+        // taken: 3
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // skip
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code skip(n)} drops the first {@code n} items and emits everything after them.
+     * it is the complement of {@code take}.
+     */
+    private static void demoskip() {
+        system.out.println("=== skip(3) from range(1,6) ===");
+
+        observable.range(1, 6)
+                .skip(3) // drop 1, 2, 3
+                .subscribe(n -> system.out.println("after skip: " + n));
+        // === skip(3) from range(1,6) ===
+        //after skip: 4
+        //after skip: 5
+        //after skip: 6
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // takelast
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code takelast(n)} waits for the source to complete, then emits only the
+     * last {@code n} items. it must buffer the last n items internally.
+     */
+    private static void demotakelast() {
+        system.out.println("=== takelast(3) ===");
+
+        observable.just("a", "b", "c", "d", "e")
+                .takelast(3)
+                .subscribe(s -> system.out.println("last: " + s));
+        // === takelast(3) ===
+        //last: c
+        //last: d
+        //last: e
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // distinct
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code distinct()} filters out items that have already been seen anywhere
+     * in the stream. it keeps an internal {@code set} of all emitted items.
+     *
+     * <p>use only on finite streams — an infinite stream would grow the set forever.
+     */
+    private static void demodistinct() {
+        system.out.println("=== distinct ===");
+
+        observable.just(1, 2, 2, 3, 1, 4, 3)
+                .distinct()
+                .subscribe(n -> system.out.println("distinct: " + n));
+        // === distinct ===
+        //distinct: 1
+        //distinct: 2
+        //distinct: 3
+        //distinct: 4
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // distinctuntilchanged
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code distinctuntilchanged()} suppresses an item only if it is equal to the
+     * *immediately preceding* item. non-consecutive duplicates are allowed through.
+     *
+     * <p>this is cheaper than {@code distinct()} because it only needs to remember
+     * the last emitted value, not the entire history.
+     */
+    private static void demodistinctuntilchanged() {
+        system.out.println("=== distinctuntilchanged ===");
+
+        observable.just(1, 1, 2, 3, 3, 3, 2)
+                .distinctuntilchanged()
+                .subscribe(n -> system.out.println("duc: " + n));
+        // === distinctuntilchanged ===
+        //duc: 1
+        //duc: 2
+        //duc: 3
+        //duc: 2
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // first
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code first(defaultvalue)} emits the very first item from the stream as a
+     * {@code single<t>}, or the {@code defaultvalue} if the source is empty.
+     *
+     * <p>use {@code firstorerror()} if you want an error when the source is empty.
+     */
+    private static void demofirst() {
+        system.out.println("=== first ===");
+
+        observable.just(10, 20, 30)
+                .first(-1)  // -1 is the default if source is empty
+                .subscribe(
+                        val -> system.out.println("first: " + val), // → first: 10
+                        err -> system.out.println("error: " + err)
+                );
+
+        // empty source uses the default
+        observable.<integer>empty()
+                .first(-1)
+                .subscribe(val -> system.out.println("first (empty): " + val)); // → first (empty): -1
+        // === first ===
+        //first: 10
+        //first (empty): -1
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // last
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code last(defaultvalue)} waits for the source to complete, then emits
+     * only the last item as a {@code single<t>}, or {@code defaultvalue} if empty.
+     */
+    private static void demolast() {
+        system.out.println("=== last ===");
+
+        observable.just("x", "y", "z")
+                .last("none")
+                .subscribe(
+                        val -> system.out.println("last: " + val), // → last: z
+                        err -> system.out.println("error: " + err)
+                );
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // elementat
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code elementat(index)} emits the item at the specified zero-based index
+     * as a {@code maybe<t>}. if the source has fewer items, the maybe completes empty.
+     */
+    private static void demoelementat() {
+        system.out.println("=== elementat ===");
+
+        observable.just("zero", "one", "two", "three")
+                .elementat(2) // zero-based index → "two"
+                .subscribe(
+                        val -> system.out.println("element at 2: " + val), // → element at 2: two
+                        err -> system.out.println("error: " + err)
+                );
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // ignoreelements
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code ignoreelements()} discards all {@code onnext} items and converts the
+     * observable to a {@code completable} that only signals {@code oncomplete} or
+     * {@code onerror}. useful when you only care whether a stream finished, not its values.
+     */
+    private static void demoignoreelements() {
+        system.out.println("=== ignoreelements ===");
+
+        observable.just(1, 2, 3)
+                .ignoreelements()           // returns completable
+                .subscribe(
+                        () -> system.out.println("stream completed (items ignored)"), // → stream completed (items ignored)
+                        err -> system.out.println("error: " + err)
+                );
+
+        system.out.println();
+    }
+}
+
+/*
+"c:\\program files\\java\\jdk-25\\bin\\java.exe" -dvaadin.copilot.plugindotfilepath=c:\\users\\roman\\work\\claude\\projects\\rxjava\\.idea\\.copilot-plugin "-javaagent:c:\\program files\\jetbrains\\intellij idea 2025.3.1\\lib\\idea_rt.jar=55757" -dfile.encoding=utf-8 -dsun.stdout.encoding=utf-8 -dsun.stderr.encoding=utf-8 -classpath c:\\users\\roman\\work\\claude\\projects\\rxjava\\target\\classes;c:\\users\\roman\\.m2\\repository\\io\\reactivex\\rxjava3\\rxjava\\3.1.9\\rxjava-3.1.9.jar;c:\\users\\roman\\.m2\\repository\\org\\reactivestreams\\reactive-streams\\1.0.4\\reactive-streams-1.0.4.jar tutorial._04_filteringoperators
+=== filter ===
+even: 2
+even: 4
+even: 6
+even: 8
+even: 10
+
+=== take(3) ===
+taken: 1
+taken: 2
+taken: 3
+
+=== skip(3) from range(1,6) ===
+after skip: 4
+after skip: 5
+after skip: 6
+
+=== takelast(3) ===
+last: c
+last: d
+last: e
+
+=== distinct ===
+distinct: 1
+distinct: 2
+distinct: 3
+distinct: 4
+
+=== distinctuntilchanged ===
+duc: 1
+duc: 2
+duc: 3
+duc: 2
+
+=== first ===
+first: 10
+first (empty): -1
+
+=== last ===
+last: z
+
+=== elementat ===
+element at 2: two
+
+=== ignoreelements ===
+stream completed (items ignored)
+
+
+process finished with exit code 0
+
+ */`,
+  "combiningoperators": `package tutorial;
+
+import io.reactivex.rxjava3.core.observable;
+
+import java.util.concurrent.timeunit;
+
+/**
+ * tutorial 05 — combining operators
+ *
+ * <p>combining operators merge multiple observables into one. the key difference between them
+ * is *when* they emit and *how* they coordinate items from different sources.
+ *
+ * <p>operators covered:
+ * <ul>
+ *   <li>{@code merge}         — subscribe to all sources simultaneously, emit as items arrive</li>
+ *   <li>{@code concat}        — subscribe sources one-by-one, strictly in order</li>
+ *   <li>{@code zip}           — pair items by position across multiple sources</li>
+ *   <li>{@code combinelatest} — emit whenever any source emits, using the latest from each</li>
+ *   <li>{@code startwithitem} — prepend a fixed item before the source stream</li>
+ *   <li>{@code amb}           — emit from whichever source emits first, ignore the rest</li>
+ * </ul>
+ *
+ * <p>run: right-click → run '_05_combiningoperators.main()'
+ */
+public class _05_combiningoperators {
+
+    public static void main(string[] args) throws interruptedexception {
+        demomerge();
+        democoncat();
+        demozip();
+        democombinelatest();
+        demostartwith();
+        demoamb();
+    }
+
+    // -------------------------------------------------------------------------
+    // merge
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observable.merge(source1, source2, ...)} subscribes to all sources at once
+     * and emits items as they arrive — there is no guaranteed ordering between sources.
+     *
+     * <p>if any source errors, the merged stream errors immediately.
+     * the merged stream completes when all sources have completed.
+     */
+    private static void demomerge() {
+        system.out.println("=== merge ===");
+
+        observable<string> source1 = observable.just("a", "b", "c");
+        observable<string> source2 = observable.just("1", "2", "3");
+
+        // both sources are synchronous here, so source1 completes before source2 starts
+        observable.merge(source1, source2)
+                .subscribe(item -> system.out.println("merged: " + item));
+        // === merge ===
+        //merged: a
+        //merged: b
+        //merged: c
+        //merged: 1
+        //merged: 2
+        //merged: 3
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // concat
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observable.concat(source1, source2, ...)} subscribes to sources *sequentially*:
+     * it only subscribes to source2 after source1 has completed, and so on.
+     *
+     * <p>the output order is always: all items from source1, then all from source2, etc.
+     * use this when strict ordering is required.
+     */
+    private static void democoncat() {
+        system.out.println("=== concat ===");
+
+        observable<string> first  = observable.just("first-1",  "first-2");
+        observable<string> second = observable.just("second-1", "second-2");
+
+        observable.concat(first, second)
+                .subscribe(item -> system.out.println("concat: " + item));
+        // === concat ===
+        //concat: first-1
+        //concat: first-2
+        //concat: second-1
+        //concat: second-2
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // zip
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observable.zip(source1, source2, zipper)} pairs up items by *position*:
+     * the zipper function receives the 1st item of source1 with the 1st item of source2,
+     * the 2nd with the 2nd, etc. it emits a result for each pair.
+     *
+     * <p>the output length equals the length of the *shortest* source.
+     * use zip to combine logically related items from parallel streams.
+     */
+    private static void demozip() {
+        system.out.println("=== zip ===");
+
+        observable<string> names  = observable.just("alice", "bob", "carol");
+        observable<integer> scores = observable.just(95, 87, 92);
+
+        observable.zip(names, scores,
+                (name, score) -> name + " → " + score)
+                .subscribe(result -> system.out.println("zipped: " + result));
+        // === zip ===
+        //zipped: alice → 95
+        //zipped: bob → 87
+        //zipped: carol → 92
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // combinelatest
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observable.combinelatest(source1, source2, combiner)} emits a combined item
+     * *whenever any source emits*, using the most recently emitted value from each source.
+     *
+     * <p>it does not wait for all sources to emit at the same position — it just reacts
+     * to any new emission using the "latest" snapshot of all sources.
+     *
+     * <p>common use case: combining multiple ui input fields — update the result whenever
+     * any field changes.
+     */
+    private static void democombinelatest() throws interruptedexception {
+        system.out.println("=== combinelatest ===");
+
+        // ticks every 100ms, takes 3 values; other ticks every 250ms, takes 2 values
+        observable<long> fast = observable.interval(100, timeunit.milliseconds).take(3);
+        observable<long> slow = observable.interval(250, timeunit.milliseconds).take(2);
+
+        observable.combinelatest(fast, slow,
+                (f, s) -> "fast=" + f + " slow=" + s)
+                .subscribe(combo -> system.out.println("combinelatest: " + combo));
+        // output depends on timing — something like:
+        // === combinelatest ===
+        //combinelatest: fast=1 slow=0
+        //combinelatest: fast=2 slow=0
+        //combinelatest: fast=2 slow=1
+
+        thread.sleep(800); // wait for async sources
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // startwithitem
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code startwithitem(item)} prepends a single item to the beginning of the stream
+     * before the source starts emitting. useful for providing an initial/default value.
+     */
+    private static void demostartwith() {
+        system.out.println("=== startwithitem ===");
+
+        observable.just("b", "c", "d")
+                .startwithitem("a")          // prepend "a"
+                .subscribe(s -> system.out.println("item: " + s));
+        // === startwithitem ===
+        //item: a
+        //item: b
+        //item: c
+        //item: d
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // amb (ambiguous)
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observable.amb(sources)} subscribes to all provided sources simultaneously
+     * and emits from whichever one emits its *first item first*, then disposes all others.
+     *
+     * <p>"amb" stands for "ambiguous" — you don't know in advance which will be first.
+     * useful for racing multiple data sources (e.g., cache vs. network) and using
+     * whichever responds first.
+     */
+    private static void demoamb() throws interruptedexception {
+        system.out.println("=== amb ===");
+
+        // source1 emits after 100ms; source2 emits after 200ms — source1 wins
+        observable<string> source1 = observable.just("fast source")
+                .delay(100, timeunit.milliseconds);
+        observable<string> source2 = observable.just("slow source")
+                .delay(200, timeunit.milliseconds);
+
+        observable.amb(java.util.arrays.aslist(source1, source2))
+                .subscribe(winner -> system.out.println("winner: " + winner));
+        // === amb ===
+        //winner: fast source
+
+        thread.sleep(500);
+        system.out.println();
+    }
+}
+
+/*
+"c:\\program files\\java\\jdk-25\\bin\\java.exe" -dvaadin.copilot.plugindotfilepath=c:\\users\\roman\\work\\claude\\projects\\rxjava\\.idea\\.copilot-plugin "-javaagent:c:\\program files\\jetbrains\\intellij idea 2025.3.1\\lib\\idea_rt.jar=55754" -dfile.encoding=utf-8 -dsun.stdout.encoding=utf-8 -dsun.stderr.encoding=utf-8 -classpath c:\\users\\roman\\work\\claude\\projects\\rxjava\\target\\classes;c:\\users\\roman\\.m2\\repository\\io\\reactivex\\rxjava3\\rxjava\\3.1.9\\rxjava-3.1.9.jar;c:\\users\\roman\\.m2\\repository\\org\\reactivestreams\\reactive-streams\\1.0.4\\reactive-streams-1.0.4.jar tutorial._05_combiningoperators
+=== merge ===
+merged: a
+merged: b
+merged: c
+merged: 1
+merged: 2
+merged: 3
+
+=== concat ===
+concat: first-1
+concat: first-2
+concat: second-1
+concat: second-2
+
+=== zip ===
+zipped: alice → 95
+zipped: bob → 87
+zipped: carol → 92
+
+=== combinelatest ===
+combinelatest: fast=1 slow=0
+combinelatest: fast=2 slow=0
+combinelatest: fast=2 slow=1
+
+=== startwithitem ===
+item: a
+item: b
+item: c
+item: d
+
+=== amb ===
+winner: fast source
+
+
+process finished with exit code 0
+
+ */`,
+  "errorhandling": `package tutorial;
+
+import io.reactivex.rxjava3.core.observable;
+
+import java.util.concurrent.atomic.atomicinteger;
+
+/**
+ * tutorial 06 — error handling
+ *
+ * <p>in rxjava, errors are first-class citizens — they travel down the stream as an
+ * {@code onerror} signal. proper error handling keeps your pipeline alive and predictable
+ * instead of crashing with an unhandled exception.
+ *
+ * <p>operators covered:
+ * <ul>
+ *   <li>{@code onerrorreturn}        — replace an error with a fallback item</li>
+ *   <li>{@code onerrorreturnitem}    — replace an error with a fixed fallback item</li>
+ *   <li>{@code onerrorresumenext}    — replace an error with a fallback observable</li>
+ *   <li>{@code doonerror}            — side-effect on error without intercepting it</li>
+ *   <li>{@code retry}                — re-subscribe on error, up to n times</li>
+ *   <li>{@code retrywhen}            — conditional/delayed retry with custom logic</li>
+ * </ul>
+ *
+ * <p>run: right-click → run '_06_errorhandling.main()'
+ */
+public class _06_errorhandling {
+
+    public static void main(string[] args) throws interruptedexception {
+        demoonerrorreturn();
+        demoonerrorreturnitem();
+        demoonerrorresumenext();
+        demodoonerror();
+        demoretry();
+        demoretrywhen();
+    }
+
+    // -------------------------------------------------------------------------
+    // onerrorreturn
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code onerrorreturn(function<throwable, t>)} intercepts an error signal, maps it
+     * to a fallback item using the provided function, emits that item, then completes normally.
+     *
+     * <p>the stream terminates after the fallback item — you get the fallback and {@code oncomplete},
+     * not further items from the original source.
+     */
+    private static void demoonerrorreturn() {
+        system.out.println("=== onerrorreturn ===");
+
+        observable.just(1, 2, 3)
+                .map(n -> {
+                    if (n == 2) throw new runtimeexception("bad value: " + n);
+                    return n;
+                })
+                .onerrorreturn(err -> {
+                    system.out.println("  handling error: " + err.getmessage()); // → handling error: bad value: 2
+                    return -1; // fallback value
+                })
+                .subscribe(
+                        item -> system.out.println("item: " + item),
+                        err  -> system.out.println("error reached subscriber: " + err),
+                        ()   -> system.out.println("completed normally") // → completed normally
+                );
+        // === onerrorreturn ===
+        //item: 1
+        //  handling error: bad value: 2
+        //item: -1
+        //completed normally
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // onerrorreturnitem
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code onerrorreturnitem(t item)} is a simpler variant of {@code onerrorreturn}
+     * that always returns the same fixed value, regardless of which error occurred.
+     */
+    private static void demoonerrorreturnitem() {
+        system.out.println("=== onerrorreturnitem ===");
+
+        observable.<string>error(new runtimeexception("connection failed"))
+                .onerrorreturnitem("default")
+                .subscribe(
+                        item -> system.out.println("received: " + item), // → received: default
+                        err  -> system.out.println("error: " + err)
+                );
+        // === onerrorreturnitem ===
+        //received: default
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // onerrorresumenext
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code onerrorresumenext(function<throwable, observable<t>>)} intercepts an error
+     * and switches to a fallback observable. the fallback can emit multiple items,
+     * giving you a whole backup stream rather than just one item.
+     */
+    private static void demoonerrorresumenext() {
+        system.out.println("=== onerrorresumenext ===");
+
+        observable<string> primary  = observable.error(new runtimeexception("primary failed"));
+        observable<string> fallback = observable.just("fallback-1", "fallback-2");
+
+        primary.onerrorresumenext(err -> {
+                    system.out.println("  switching to fallback because: " + err.getmessage());
+                    // → switching to fallback because: primary failed
+                    return fallback;
+                })
+                .subscribe(
+                        item -> system.out.println("received: " + item),
+                        err  -> system.out.println("error: " + err),
+                        ()   -> system.out.println("done") // → done
+                );
+        // === onerrorresumenext ===
+        //  switching to fallback because: primary failed
+        //received: fallback-1
+        //received: fallback-2
+        //done
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // doonerror
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code doonerror(consumer<throwable>)} is a *side-effect* operator — it lets you
+     * observe (log, alert, etc.) an error without actually handling or intercepting it.
+     * the error continues to propagate downstream after the side-effect runs.
+     */
+    private static void demodoonerror() {
+        system.out.println("=== doonerror ===");
+
+        observable.<integer>error(new illegalstateexception("bad state"))
+                .doonerror(err -> system.out.println("  [log] error intercepted: " + err.getmessage()))
+                .subscribe(
+                        item -> system.out.println("item: " + item),
+                        err  -> system.out.println("subscriber caught: " + err.getmessage())
+                );
+        // === doonerror ===
+        //  [log] error intercepted: bad state
+        //subscriber caught: bad state
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // retry
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code retry(times)} re-subscribes to the source observable when it errors,
+     * up to {@code times} attempts. if it still errors after all retries, the error
+     * is forwarded to the subscriber.
+     *
+     * <p>each retry re-subscribes from scratch — for cold observables this means
+     * restarting the whole sequence.
+     */
+    private static void demoretry() {
+        system.out.println("=== retry(2) ===");
+
+        atomicinteger attemptcount = new atomicinteger(0);
+
+        observable.create(emitter -> {
+                    int attempt = attemptcount.incrementandget();
+                    system.out.println("  attempt #" + attempt);
+                    if (attempt < 3) {
+                        emitter.onerror(new runtimeexception("fail on attempt " + attempt));
+                    } else {
+                        emitter.onnext("success on attempt " + attempt);
+                        emitter.oncomplete();
+                    }
+                })
+                .retry(3)  // retry up to 3 times
+                .subscribe(
+                        item -> system.out.println("result: " + item),
+                        err  -> system.out.println("final error: " + err.getmessage())
+                );
+        // === retry(2) ===
+        //  attempt #1
+        //  attempt #2
+        //  attempt #3
+        //result: success on attempt 3
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // retrywhen
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code retrywhen(function<observable<throwable>, observable<?>>)} gives you full
+     * control over the retry logic. the function receives an observable of errors and
+     * must return an observable — when that observable emits, a retry happens;
+     * when it completes or errors, the retry chain ends.
+     *
+     * <p>this lets you implement strategies like exponential back-off or retry-only-on-specific-errors.
+     * below we do a simple "retry up to 2 times, but only for runtimeexception".
+     */
+    private static void demoretrywhen() throws interruptedexception {
+        system.out.println("=== retrywhen ===");
+
+        atomicinteger counter = new atomicinteger(0);
+
+        observable.create(emitter -> {
+                    int n = counter.incrementandget();
+                    system.out.println("  try #" + n);
+                    if (n <= 2) {
+                        emitter.onerror(new runtimeexception("transient error #" + n));
+                    } else {
+                        emitter.onnext("ok after " + n + " tries");
+                        emitter.oncomplete();
+                    }
+                })
+                .retrywhen(errors -> errors
+                        .zipwith(observable.range(1, 2), (err, retrynumber) -> retrynumber)
+                        // zip with range(1,2) → allows exactly 2 retries; when range ends, retrywhen stops
+                )
+                .subscribe(
+                        item -> system.out.println("result: " + item),
+                        // → try #1
+                        // → try #2
+                        // → try #3
+                        // → result: ok after 3 tries
+                        err  -> system.out.println("final error: " + err.getmessage())
+                );
+        // .zipwith(observable.range(1, 2)
+        // === retrywhen ===
+        //  try #1
+        //  try #2
+
+        // .zipwith(observable.range(1, 4)
+        // === retrywhen ===
+        //  try #1
+        //  try #2
+        //  try #3
+        //result: ok after 3 tries
+        system.out.println();
+    }
+}
+
+/*
+"c:\\program files\\java\\jdk-25\\bin\\java.exe" -dvaadin.copilot.plugindotfilepath=c:\\users\\roman\\work\\claude\\projects\\rxjava\\.idea\\.copilot-plugin "-javaagent:c:\\program files\\jetbrains\\intellij idea 2025.3.1\\lib\\idea_rt.jar=55750" -dfile.encoding=utf-8 -dsun.stdout.encoding=utf-8 -dsun.stderr.encoding=utf-8 -classpath c:\\users\\roman\\work\\claude\\projects\\rxjava\\target\\classes;c:\\users\\roman\\.m2\\repository\\io\\reactivex\\rxjava3\\rxjava\\3.1.9\\rxjava-3.1.9.jar;c:\\users\\roman\\.m2\\repository\\org\\reactivestreams\\reactive-streams\\1.0.4\\reactive-streams-1.0.4.jar tutorial._06_errorhandling
+=== onerrorreturn ===
+item: 1
+  handling error: bad value: 2
+item: -1
+completed normally
+
+=== onerrorreturnitem ===
+received: default
+
+=== onerrorresumenext ===
+  switching to fallback because: primary failed
+received: fallback-1
+received: fallback-2
+done
+
+=== doonerror ===
+  [log] error intercepted: bad state
+subscriber caught: bad state
+
+=== retry(2) ===
+  attempt #1
+  attempt #2
+  attempt #3
+result: success on attempt 3
+
+=== retrywhen ===
+  try #1
+  try #2
+
+
+process finished with exit code 0
+
+ */`,
+  "subjects": `package tutorial;
+
+import io.reactivex.rxjava3.subjects.asyncsubject;
+import io.reactivex.rxjava3.subjects.behaviorsubject;
+import io.reactivex.rxjava3.subjects.publishsubject;
+import io.reactivex.rxjava3.subjects.replaysubject;
+
+/**
+ * tutorial 07 — subjects
+ *
+ * <p>a {@code subject} is both an {@code observable} (you can subscribe to it) and an
+ * {@code observer} (you can push items into it manually). this makes it a bridge between
+ * imperative code and reactive streams.
+ *
+ * <p>use subjects when you need to push values from non-reactive code into a reactive pipeline,
+ * or when multiple subscribers need to share the same stream.
+ *
+ * <p>subject types covered:
+ * <ul>
+ *   <li>{@link publishsubject}   — emits only items that arrive after subscription</li>
+ *   <li>{@link behaviorsubject}  — replays the last item to new subscribers</li>
+ *   <li>{@link replaysubject}    — replays all (or n) past items to new subscribers</li>
+ *   <li>{@link asyncsubject}     — emits only the last item, and only on completion</li>
+ * </ul>
+ *
+ * <p>run: right-click → run '_07_subjects.main()'
+ */
+public class _07_subjects {
+
+    public static void main(string[] args) {
+        demopublishsubject();
+        demobehaviorsubject();
+        demoreplaysubject();
+        demoasyncsubject();
+    }
+
+    // -------------------------------------------------------------------------
+    // publishsubject
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@link publishsubject} is the simplest subject. subscribers only receive items
+     * emitted *after* they subscribe — they miss anything that was emitted before.
+     *
+     * <p>good analogy: a live radio broadcast — you only hear what's playing right now,
+     * not what played before you tuned in.
+     */
+    private static void demopublishsubject() {
+        system.out.println("=== publishsubject ===");
+
+        publishsubject<string> subject = publishsubject.create();
+
+        // subscriber 1 subscribes before any items are emitted
+        subject.subscribe(item -> system.out.println("subscriber-1: " + item));
+
+        subject.onnext("item a"); // subscriber-1 receives this
+        subject.onnext("item b"); // subscriber-1 receives this
+
+        // subscriber 2 subscribes after "a" and "b" were emitted — misses them!
+        subject.subscribe(item -> system.out.println("subscriber-2: " + item));
+
+        subject.onnext("item c"); // both subscribers receive this
+        subject.oncomplete();
+
+        // === publishsubject ===
+        //subscriber-1: item a
+        //subscriber-1: item b
+        //subscriber-1: item c
+        //subscriber-2: item c
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // behaviorsubject
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@link behaviorsubject} remembers the *last emitted item* (or the initial seed value
+     * if nothing has been emitted yet) and replays it to each new subscriber immediately
+     * upon subscription.
+     *
+     * <p>good analogy: a thermostat display — a new viewer always sees the current temperature,
+     * not a blank screen.
+     */
+    private static void demobehaviorsubject() {
+        system.out.println("=== behaviorsubject ===");
+
+        // create with initial value "initial"
+        behaviorsubject<string> subject = behaviorsubject.createdefault("initial");
+
+        // subscriber 1 immediately receives the current value "initial"
+        subject.subscribe(item -> system.out.println("subscriber-1: " + item));
+        // → subscriber-1: initial
+
+        subject.onnext("update-1");
+        // → subscriber-1: update-1
+
+        subject.onnext("update-2");
+        // → subscriber-1: update-2
+
+        // subscriber 2 subscribes now — immediately receives the latest value "update-2"
+        subject.subscribe(item -> system.out.println("subscriber-2: " + item));
+        // → subscriber-2: update-2
+
+        subject.onnext("update-3");
+        // → subscriber-1: update-3
+        // → subscriber-2: update-3
+
+        subject.oncomplete();
+
+        // you can also query the current value directly:
+        system.out.println("current value (after complete): " + subject.getvalue());
+        // → current value (after complete): update-3
+
+        // === behaviorsubject ===
+        //subscriber-1: initial
+        //subscriber-1: update-1
+        //subscriber-1: update-2
+        //subscriber-2: update-2
+        //subscriber-1: update-3
+        //subscriber-2: update-3
+        //current value (after complete): null
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // replaysubject
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@link replaysubject} buffers all emitted items (or the last n items) and replays
+     * them in full to every new subscriber, regardless of when they subscribe.
+     *
+     * <p>good analogy: a recorded podcast — you can always listen from the beginning
+     * no matter when you press play.
+     *
+     * <p>variants:
+     * <ul>
+     *   <li>{@code replaysubject.create()}          — unbounded buffer (all items)</li>
+     *   <li>{@code replaysubject.createwithsize(n)} — keeps only the last n items</li>
+     *   <li>{@code replaysubject.createwithtime(t, unit, scheduler)} — time-based window</li>
+     * </ul>
+     */
+    private static void demoreplaysubject() {
+        system.out.println("=== replaysubject ===");
+
+        replaysubject<integer> subject = replaysubject.create();
+
+        subject.onnext(10);
+        subject.onnext(20);
+        subject.onnext(30);
+
+        // late subscriber still receives all past items
+        subject.subscribe(n -> system.out.println("subscriber (late): " + n));
+        // → subscriber (late): 10
+        // → subscriber (late): 20
+        // → subscriber (late): 30
+
+        subject.onnext(40); // also receives future items
+        // → subscriber (late): 40
+
+        subject.oncomplete();
+
+        system.out.println("--- replaysubject with size limit (last 2) ---");
+        replaysubject<string> limited = replaysubject.createwithsize(2);
+        limited.onnext("a");
+        limited.onnext("b");
+        limited.onnext("c"); // "a" is evicted; buffer holds ["b", "c"]
+
+        // late subscriber only gets the last 2
+        limited.subscribe(s -> system.out.println("limited replay: " + s));
+        // → limited replay: b
+        // → limited replay: c
+
+        limited.oncomplete();
+
+        // === replaysubject ===
+        //subscriber (late): 10
+        //subscriber (late): 20
+        //subscriber (late): 30
+        //subscriber (late): 40
+        //--- replaysubject with size limit (last 2) ---
+        //limited replay: b
+        //limited replay: c
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // asyncsubject
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@link asyncsubject} only emits the *very last item* emitted by the source,
+     * and it does so only after {@code oncomplete()} is called.
+     *
+     * <p>good analogy: a computation that you submit — you only get the final result
+     * once it finishes, not intermediate values.
+     *
+     * <p>if the subject errors before completing, subscribers only receive the error
+     * (no items at all).
+     */
+    private static void demoasyncsubject() {
+        system.out.println("=== asyncsubject ===");
+
+        asyncsubject<string> subject = asyncsubject.create();
+
+        subject.subscribe(item -> system.out.println("subscriber-1: " + item));
+
+        subject.onnext("value 1"); // intermediate — not yet delivered
+        subject.onnext("value 2"); // intermediate — not yet delivered
+        subject.onnext("value 3"); // this will be the final value
+
+        // subscriber 2 subscribes before completion — also gets only the last value
+        subject.subscribe(item -> system.out.println("subscriber-2: " + item));
+
+        subject.oncomplete(); // triggers delivery of the last item ("value 3") to all subscribers
+
+        // === asyncsubject ===
+        //subscriber-1: value 3
+        //subscriber-2: value 3
+
+        system.out.println();
+    }
+}
+/*
+"c:\\program files\\java\\jdk-25\\bin\\java.exe" -dvaadin.copilot.plugindotfilepath=c:\\users\\roman\\work\\claude\\projects\\rxjava\\.idea\\.copilot-plugin "-javaagent:c:\\program files\\jetbrains\\intellij idea 2025.3.1\\lib\\idea_rt.jar=55747" -dfile.encoding=utf-8 -dsun.stdout.encoding=utf-8 -dsun.stderr.encoding=utf-8 -classpath c:\\users\\roman\\work\\claude\\projects\\rxjava\\target\\classes;c:\\users\\roman\\.m2\\repository\\io\\reactivex\\rxjava3\\rxjava\\3.1.9\\rxjava-3.1.9.jar;c:\\users\\roman\\.m2\\repository\\org\\reactivestreams\\reactive-streams\\1.0.4\\reactive-streams-1.0.4.jar tutorial._07_subjects
+=== publishsubject ===
+subscriber-1: item a
+subscriber-1: item b
+subscriber-1: item c
+subscriber-2: item c
+
+=== behaviorsubject ===
+subscriber-1: initial
+subscriber-1: update-1
+subscriber-1: update-2
+subscriber-2: update-2
+subscriber-1: update-3
+subscriber-2: update-3
+current value (after complete): null
+
+=== replaysubject ===
+subscriber (late): 10
+subscriber (late): 20
+subscriber (late): 30
+subscriber (late): 40
+--- replaysubject with size limit (last 2) ---
+limited replay: b
+limited replay: c
+
+=== asyncsubject ===
+subscriber-1: value 3
+subscriber-2: value 3
+
+
+process finished with exit code 0
+
+ */
+`,
+  "schedulers": `package tutorial;
+
+import io.reactivex.rxjava3.core.observable;
+import io.reactivex.rxjava3.schedulers.schedulers;
+
+/**
+ * tutorial 08 — schedulers (threading)
+ *
+ * <p>by default, rxjava is single-threaded: everything runs on the thread that calls
+ * {@code subscribe()}. schedulers let you move work to other threads.
+ *
+ * <p>two key operators control threading:
+ * <ul>
+ *   <li>{@code subscribeon(scheduler)} — controls which thread the *source* (data production)
+ *       runs on. only the first {@code subscribeon} in a chain has effect.</li>
+ *   <li>{@code observeon(scheduler)} — controls which thread *downstream operators and
+ *       the subscriber* run on. can appear multiple times to switch threads mid-chain.</li>
+ * </ul>
+ *
+ * <p>built-in schedulers:
+ * <ul>
+ *   <li>{@link schedulers#io()}            — elastic thread pool for i/o (db, network, file)</li>
+ *   <li>{@link schedulers#computation()}   — fixed thread pool (cpu count) for cpu work</li>
+ *   <li>{@link schedulers#newthread()}     — creates a new thread for each subscription</li>
+ *   <li>{@link schedulers#single()}        — single background thread, fifo queue</li>
+ *   <li>{@link schedulers#trampoline()}    — queues work on the *current* thread (no new thread)</li>
+ * </ul>
+ *
+ * <p>run: right-click → run '_08_schedulers.main()'
+ */
+public class _08_schedulers {
+
+    public static void main(string[] args) throws interruptedexception {
+        demodefaultthread();
+        demosubscribeon();
+        demoobserveon();
+        demosubscribeonandobserveon();
+        demoioscheduler();
+        democomputationscheduler();
+        demonewthreadscheduler();
+        demosinglescheduler();
+    }
+
+    /** prints the current thread name with a label. */
+    private static void printthread(string label) {
+        system.out.println(label + " → thread: [" + thread.currentthread().getname() + "]");
+    }
+
+    // -------------------------------------------------------------------------
+    // default threading
+    // -------------------------------------------------------------------------
+
+    /**
+     * without any scheduler, everything runs on the calling thread ({@code main}).
+     */
+    private static void demodefaultthread() {
+        system.out.println("=== default thread (no scheduler) ===");
+
+        observable.just("hello")
+                .map(s -> { printthread("map"); return s.touppercase(); }) // → map → thread: [main]
+                .subscribe(s -> printthread("subscriber"));                // → subscriber → thread: [main]
+        // === default thread (no scheduler) ===
+        //map → thread: [main]
+        //subscriber → thread: [main]
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // subscribeon
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code subscribeon(scheduler)} moves the *subscription* (source data production)
+     * to the given scheduler. all operators above it run on that scheduler's thread.
+     *
+     * <p>rule: only the *first* {@code subscribeon} in a chain takes effect — subsequent
+     * ones are ignored because the thread is already selected by the first one.
+     */
+    private static void demosubscribeon() throws interruptedexception {
+        system.out.println("=== subscribeon ===");
+
+        observable.just("data")
+                .doonsubscribe(d -> printthread("doonsubscribe"))
+                .map(s -> { printthread("map"); return s; })
+                .subscribeon(schedulers.io())    // move source to an io thread
+                .subscribe(s -> printthread("subscriber"));
+
+        thread.sleep(300); // wait for async work
+
+        // === subscribeon ===
+        //doonsubscribe → thread: [rxcachedthreadscheduler-1]
+        //map → thread: [rxcachedthreadscheduler-1]
+        //subscriber → thread: [rxcachedthreadscheduler-1]
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // observeon
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observeon(scheduler)} switches the thread for *all downstream* operators
+     * (from that point in the chain). it can appear multiple times to hop between threads.
+     */
+    private static void demoobserveon() throws interruptedexception {
+        system.out.println("=== observeon ===");
+
+        observable.just("data")
+                .map(s -> { printthread("map (before observeon)"); return s; })
+                .observeon(schedulers.newthread())
+                .map(s -> { printthread("map (after observeon)"); return s; })
+                .subscribe(s -> printthread("subscriber"));
+
+        thread.sleep(300);
+        // === observeon ===
+        //map (before observeon) → thread: [main]
+        //map (after observeon) → thread: [rxnewthreadscheduler-1]
+        //subscriber → thread: [rxnewthreadscheduler-1]
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // subscribeon + observeon together
+    // -------------------------------------------------------------------------
+
+    /**
+     * the classic pattern:
+     * <ul>
+     *   <li>{@code subscribeon(schedulers.io())} — produce data on a background io thread</li>
+     *   <li>{@code observeon(schedulers.single())} — deliver results on a specific thread
+     *       (in android this would be {@code androidschedulers.mainthread()})</li>
+     * </ul>
+     */
+    private static void demosubscribeonandobserveon() throws interruptedexception {
+        system.out.println("=== subscribeon + observeon ===");
+
+        observable.fromcallable(() -> {
+                    printthread("source (producing data)");
+                    // → source (producing data) → thread: [rxcachedthreadscheduler-2]
+                    thread.sleep(100); // simulate i/o
+                    return "db result";
+                })
+                .subscribeon(schedulers.io())         // production on io thread
+                .observeon(schedulers.single())       // delivery on single-thread
+                .subscribe(result -> {
+                    printthread("subscriber (consuming result)");
+                    system.out.println("result: " + result); // → result: db result
+                });
+
+        thread.sleep(500);
+        // === subscribeon + observeon ===
+        //source (producing data) → thread: [rxcachedthreadscheduler-1]
+        //subscriber (consuming result) → thread: [rxsinglescheduler-1]
+        //result: db result
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // schedulers.io()
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@link schedulers#io()} maintains an elastic thread pool that grows as needed
+     * and reuses idle threads. perfect for i/o-bound work (network calls, file access,
+     * database queries) where threads spend most of their time waiting.
+     */
+    private static void demoioscheduler() throws interruptedexception {
+        system.out.println("=== schedulers.io() — multiple parallel i/o tasks ===");
+
+        // three "i/o" tasks run in parallel on the io pool
+        for (int i = 1; i <= 3; i++) {
+            final int taskid = i;
+            observable.fromcallable(() -> {
+                        thread.sleep(50);
+                        return "io task " + taskid + " done";
+                    })
+                    .subscribeon(schedulers.io())
+                    .subscribe(msg -> system.out.println(msg + " on [" + thread.currentthread().getname() + "]"));
+        }
+        // output (order may vary, all on different rxcachedthreadscheduler threads):
+        // === schedulers.io() — multiple parallel i/o tasks ===
+        //io task 1 done on [rxcachedthreadscheduler-1]
+        //io task 2 done on [rxcachedthreadscheduler-2]
+        //io task 3 done on [rxcachedthreadscheduler-3]
+
+        thread.sleep(400);
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // schedulers.computation()
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@link schedulers#computation()} uses a fixed-size thread pool equal to the number
+     * of available cpu cores. use it for cpu-intensive work (parsing, calculations, sorting)
+     * where you want to saturate cores without overloading the system.
+     *
+     * <p>do not use it for blocking i/o — a blocked computation thread wastes a cpu slot.
+     */
+    private static void democomputationscheduler() throws interruptedexception {
+        system.out.println("=== schedulers.computation() ===");
+
+        observable.range(1, 4)
+                .flatmap(n -> observable.fromcallable(() -> {
+                            // simulate cpu work
+                            long sum = 0;
+                            for (int i = 0; i < 1_000_000; i++) sum += i;
+                            return "task " + n + " result=" + sum;
+                        })
+                        .subscribeon(schedulers.computation()))
+                .subscribe(result ->
+                        system.out.println(result + " on [" + thread.currentthread().getname() + "]"));
+        // ... (order may vary)
+        // === schedulers.computation() ===
+        //task 1 result=499999500000 on [rxcomputationthreadpool-1]
+        //task 2 result=499999500000 on [rxcomputationthreadpool-1]
+        //task 3 result=499999500000 on [rxcomputationthreadpool-1]
+        //task 4 result=499999500000 on [rxcomputationthreadpool-1]
+
+        thread.sleep(1_000);
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // schedulers.newthread()
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@link schedulers#newthread()} creates a brand-new thread for every subscription.
+     * unlike {@code io()}, threads are not pooled or reused — each subscribe spawns one
+     * fresh thread. use sparingly; prefer {@code io()} for pooling efficiency.
+     */
+    private static void demonewthreadscheduler() throws interruptedexception {
+        system.out.println("=== schedulers.newthread() ===");
+
+        observable.just("task")
+                .subscribeon(schedulers.newthread())
+                .subscribe(t ->
+                        system.out.println(t + " on [" + thread.currentthread().getname() + "]"));
+        // === schedulers.newthread() ===
+        //task on [rxnewthreadscheduler-2]
+
+        thread.sleep(200);
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // schedulers.single()
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@link schedulers#single()} uses a single background thread shared across
+     * all subscribers. tasks are queued and executed one at a time in fifo order.
+     *
+     * <p>useful when you need to serialize operations (e.g., write to a resource
+     * that is not thread-safe) without using synchronization primitives.
+     */
+    private static void demosinglescheduler() throws interruptedexception {
+        system.out.println("=== schedulers.single() — tasks run one at a time ===");
+
+        for (int i = 1; i <= 3; i++) {
+            final int n = i;
+            observable.fromcallable(() -> {
+                        thread.sleep(50);
+                        return "single task " + n;
+                    })
+                    .subscribeon(schedulers.single())
+                    .subscribe(msg ->
+                            system.out.println(msg + " on [" + thread.currentthread().getname() + "]"));
+        }
+        // all tasks run on the same thread, sequentially:
+        // === schedulers.single() — tasks run one at a time ===
+        //single task 1 on [rxsinglescheduler-1]
+        //single task 2 on [rxsinglescheduler-1]
+        //single task 3 on [rxsinglescheduler-1]
+
+        thread.sleep(500);
+        system.out.println();
+    }
+}
+
+/*
+"c:\\program files\\java\\jdk-25\\bin\\java.exe" -dvaadin.copilot.plugindotfilepath=c:\\users\\roman\\work\\claude\\projects\\rxjava\\.idea\\.copilot-plugin "-javaagent:c:\\program files\\jetbrains\\intellij idea 2025.3.1\\lib\\idea_rt.jar=55744" -dfile.encoding=utf-8 -dsun.stdout.encoding=utf-8 -dsun.stderr.encoding=utf-8 -classpath c:\\users\\roman\\work\\claude\\projects\\rxjava\\target\\classes;c:\\users\\roman\\.m2\\repository\\io\\reactivex\\rxjava3\\rxjava\\3.1.9\\rxjava-3.1.9.jar;c:\\users\\roman\\.m2\\repository\\org\\reactivestreams\\reactive-streams\\1.0.4\\reactive-streams-1.0.4.jar tutorial._08_schedulers
+=== default thread (no scheduler) ===
+map → thread: [main]
+subscriber → thread: [main]
+
+=== subscribeon ===
+doonsubscribe → thread: [rxcachedthreadscheduler-1]
+map → thread: [rxcachedthreadscheduler-1]
+subscriber → thread: [rxcachedthreadscheduler-1]
+
+=== observeon ===
+map (before observeon) → thread: [main]
+map (after observeon) → thread: [rxnewthreadscheduler-1]
+subscriber → thread: [rxnewthreadscheduler-1]
+
+=== subscribeon + observeon ===
+source (producing data) → thread: [rxcachedthreadscheduler-1]
+subscriber (consuming result) → thread: [rxsinglescheduler-1]
+result: db result
+
+=== schedulers.io() — multiple parallel i/o tasks ===
+io task 1 done on [rxcachedthreadscheduler-1]
+io task 2 done on [rxcachedthreadscheduler-2]
+io task 3 done on [rxcachedthreadscheduler-3]
+
+=== schedulers.computation() ===
+task 4 result=499999500000 on [rxcomputationthreadpool-4]
+task 1 result=499999500000 on [rxcomputationthreadpool-4]
+task 2 result=499999500000 on [rxcomputationthreadpool-4]
+task 3 result=499999500000 on [rxcomputationthreadpool-4]
+
+=== schedulers.newthread() ===
+task on [rxnewthreadscheduler-2]
+
+=== schedulers.single() — tasks run one at a time ===
+single task 1 on [rxsinglescheduler-1]
+single task 2 on [rxsinglescheduler-1]
+single task 3 on [rxsinglescheduler-1]
+
+
+process finished with exit code 0
+
+ */`,
+  "flowable": `package tutorial;
+
+import io.reactivex.rxjava3.core.flowable;
+import io.reactivex.rxjava3.core.observable;
+import io.reactivex.rxjava3.schedulers.schedulers;
+
+/**
+ * tutorial 09 — flowable and backpressure
+ *
+ * <p>when a producer emits items faster than a consumer can process them, you have a
+ * *backpressure* problem. {@link observable} has no built-in backpressure handling —
+ * if the consumer is too slow, items pile up in memory until an {@link io.reactivex.rxjava3.exceptions.missingbackpressureexception}
+ * or {@link outofmemoryerror} occurs.
+ *
+ * <p>{@link flowable} is the backpressure-aware version of observable. it implements the
+ * <a href="https://www.reactive-streams.org/">reactive streams</a> protocol, where the
+ * subscriber signals how many items it is ready to receive ({@code request(n)}).
+ *
+ * <p>when to use flowable vs observable:
+ * <ul>
+ *   <li>use {@code flowable} when the source can produce faster than the consumer can handle
+ *       (large file reads, database cursors, sensor data, etc.).</li>
+ *   <li>use {@code observable} for ui events, short sequences, or when you control the rate.</li>
+ * </ul>
+ *
+ * <p>backpressure strategies (used with {@code toflowable(backpressurestrategy)}):
+ * <ul>
+ *   <li>{@code buffer}  — buffer all items (can grow unbounded → oom risk)</li>
+ *   <li>{@code drop}    — drop new items when the buffer is full</li>
+ *   <li>{@code latest}  — keep only the latest item, overwriting the buffer</li>
+ *   <li>{@code error}   — throw {@code missingbackpressureexception} when buffer is full</li>
+ *   <li>{@code missing} — no strategy applied; downstream must handle it via operators</li>
+ * </ul>
+ *
+ * <p>run: right-click → run '_09_flowable.main()'
+ */
+public class _09_flowable {
+
+    public static void main(string[] args) throws interruptedexception {
+        demoflowablebasic();
+        demobackpressurebuffer();
+        demobackpressuredrop();
+        demobackpressurelatest();
+        demoflowablefromrange();
+    }
+
+    // -------------------------------------------------------------------------
+    // flowable basics
+    // -------------------------------------------------------------------------
+
+    /**
+     * a simple {@link flowable} works just like an observable for small, synchronous sources.
+     * the difference is internal: the subscriber signals demand via {@code request(n)}.
+     *
+     * <p>when you use the lambda {@code subscribe(onnext)} form, rxjava automatically
+     * requests {@code long.max_value} items — effectively disabling backpressure control
+     * and behaving like an observable.
+     */
+    private static void demoflowablebasic() {
+        system.out.println("=== flowable basics ===");
+
+        flowable.just("a", "b", "c")
+                .subscribe(item -> system.out.println("item: " + item));
+        // === flowable basics ===
+        //item: a
+        //item: b
+        //item: c
+
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // backpressurestrategy.buffer
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code backpressurestrategy.buffer} tells the flowable to buffer all items that
+     * cannot be delivered immediately. the buffer grows without bound, so this is safe
+     * only when you are confident the source won't produce too many items.
+     *
+     * <p>here we create a fast observable (emits 1000 items), convert it to a flowable
+     * with buffer strategy, and slow down the consumer with {@code observeon} so the
+     * buffering kicks in.
+     */
+    private static void demobackpressurebuffer() throws interruptedexception {
+        system.out.println("=== backpressurestrategy.buffer ===");
+
+        observable.range(1, 10)
+                .toflowable(io.reactivex.rxjava3.core.backpressurestrategy.buffer)
+                .observeon(schedulers.computation(), false, 2) // downstream buffer of 2
+                .subscribe(
+                        item -> system.out.println("buffer received: " + item),
+                        err  -> system.out.println("error: " + err)
+                );
+        // === backpressurestrategy.buffer ===
+        //buffer received: 1
+        //buffer received: 2
+        //buffer received: 3
+        //buffer received: 4
+        //buffer received: 5
+        //buffer received: 6
+        //buffer received: 7
+        //buffer received: 8
+        //buffer received: 9
+        //buffer received: 10
+
+        thread.sleep(500);
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // backpressurestrategy.drop
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code backpressurestrategy.drop} discards items that arrive when the downstream
+     * is not ready. the consumer only sees items that fit in its current request window.
+     *
+     * <p>use this when missing some data is acceptable (e.g., live stock price ticks —
+     * you only care about the ones you can process; old ticks can be dropped).
+     */
+    private static void demobackpressuredrop() throws interruptedexception {
+        system.out.println("=== backpressurestrategy.drop ===");
+
+        // fast source: 1..20; small downstream buffer: only some items will be delivered
+        observable.range(1, 20)
+                .toflowable(io.reactivex.rxjava3.core.backpressurestrategy.drop)
+                .observeon(schedulers.computation(), false, 4) // downstream buffer of 4
+                .subscribe(
+                        item -> system.out.println("drop received: " + item),
+                        err  -> system.out.println("error: " + err),
+                        ()   -> system.out.println("drop completed")
+                );
+        // only the first ~4 items (fitting in the buffer) are delivered; rest are dropped.
+        // === backpressurestrategy.drop ===
+        //drop received: 1
+        //drop received: 2
+        //drop received: 3
+        //drop received: 4
+        //drop completed
+        // (remaining items 5-20 were dropped)
+
+        thread.sleep(500);
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // backpressurestrategy.latest
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code backpressurestrategy.latest} keeps only the most recently emitted item
+     * in a 1-item buffer, overwriting the previous one if the consumer hasn't
+     * consumed it yet.
+     *
+     * <p>use this when you always want the freshest data (e.g., gps coordinates,
+     * temperature readings — the latest reading is the most relevant).
+     */
+    private static void demobackpressurelatest() throws interruptedexception {
+        system.out.println("=== backpressurestrategy.latest ===");
+
+        observable.range(1, 20)
+                .toflowable(io.reactivex.rxjava3.core.backpressurestrategy.latest)
+                .observeon(schedulers.computation(), false, 4)
+                .subscribe(
+                        item -> system.out.println("latest received: " + item),
+                        err  -> system.out.println("error: " + err),
+                        ()   -> system.out.println("latest completed")
+                );
+        // you will typically see only a few early items and then the very last item (20),
+        // because intermediate items are replaced by newer ones.
+        // === backpressurestrategy.latest ===
+        //latest received: 1
+        //latest received: 2
+        //latest received: 3
+        //latest received: 4
+        //latest received: 20
+        //latest completed
+
+        thread.sleep(500);
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // flowable.range — natively backpressure-aware
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code flowable.range(start, count)} is the flowable equivalent of
+     * {@code observable.range}. it natively supports backpressure — the source only
+     * produces as many items as the downstream has requested.
+     *
+     * <p>this is the preferred way to create large numeric sequences in a flowable pipeline
+     * because it never buffers: items are generated on demand.
+     */
+    private static void demoflowablefromrange() throws interruptedexception {
+        system.out.println("=== flowable.range (native backpressure) ===");
+
+        flowable.range(1, 1_000_000)       // generates 1 million items on demand
+                .filter(n -> n % 100_000 == 0) // keep every 100,000th
+                .observeon(schedulers.computation())
+                .subscribe(
+                        n   -> system.out.println("milestone: " + n),
+                        err -> system.out.println("error: " + err),
+                        ()  -> system.out.println("done processing 1,000,000 items")
+                );
+
+        thread.sleep(2_000);
+        // === flowable.range (native backpressure) ===
+        //milestone: 100000
+        //milestone: 200000
+        //milestone: 300000
+        //milestone: 400000
+        //milestone: 500000
+        //milestone: 600000
+        //milestone: 700000
+        //milestone: 800000
+        //milestone: 900000
+        //milestone: 1000000
+        //done processing 1,000,000 items
+        system.out.println();
+    }
+}
+
+/*
+"c:\\program files\\java\\jdk-25\\bin\\java.exe" -dvaadin.copilot.plugindotfilepath=c:\\users\\roman\\work\\claude\\projects\\rxjava\\.idea\\.copilot-plugin "-javaagent:c:\\program files\\jetbrains\\intellij idea 2025.3.1\\lib\\idea_rt.jar=55741" -dfile.encoding=utf-8 -dsun.stdout.encoding=utf-8 -dsun.stderr.encoding=utf-8 -classpath c:\\users\\roman\\work\\claude\\projects\\rxjava\\target\\classes;c:\\users\\roman\\.m2\\repository\\io\\reactivex\\rxjava3\\rxjava\\3.1.9\\rxjava-3.1.9.jar;c:\\users\\roman\\.m2\\repository\\org\\reactivestreams\\reactive-streams\\1.0.4\\reactive-streams-1.0.4.jar tutorial._09_flowable
+=== flowable basics ===
+item: a
+item: b
+item: c
+
+=== backpressurestrategy.buffer ===
+buffer received: 1
+buffer received: 2
+buffer received: 3
+buffer received: 4
+buffer received: 5
+buffer received: 6
+buffer received: 7
+buffer received: 8
+buffer received: 9
+buffer received: 10
+
+=== backpressurestrategy.drop ===
+drop received: 1
+drop received: 2
+drop received: 3
+drop received: 4
+drop completed
+
+=== backpressurestrategy.latest ===
+latest received: 1
+latest received: 2
+latest received: 3
+latest received: 4
+latest received: 20
+latest completed
+
+=== flowable.range (native backpressure) ===
+milestone: 100000
+milestone: 200000
+milestone: 300000
+milestone: 400000
+milestone: 500000
+milestone: 600000
+milestone: 700000
+milestone: 800000
+milestone: 900000
+milestone: 1000000
+done processing 1,000,000 items
+
+
+process finished with exit code 0
+
+ */`,
+  "singlemaybecompletable": `package tutorial;
+
+import io.reactivex.rxjava3.core.completable;
+import io.reactivex.rxjava3.core.maybe;
+import io.reactivex.rxjava3.core.single;
+
+/**
+ * tutorial 10 — single, maybe, and completable
+ *
+ * <p>rxjava provides specialized reactive types for streams with a known fixed number of items.
+ * these are more expressive than observable when you know the cardinality up front:
+ *
+ * <ul>
+ *   <li>{@link single}&lt;t&gt;      — emits exactly one item, or an error. never completes empty.
+ *                                     use for http requests, database queries, computations.</li>
+ *   <li>{@link maybe}&lt;t&gt;       — emits zero or one item, then completes (or errors).
+ *                                     use for optional results (nullable cache lookups).</li>
+ *   <li>{@link completable}          — emits no items, only a completion or error signal.
+ *                                     use for fire-and-forget actions (write to db, send email).</li>
+ * </ul>
+ *
+ * <p>run: right-click → run '_10_singlemaybecompletable.main()'
+ */
+public class _10_singlemaybecompletable {
+
+    public static void main(string[] args) {
+        // single
+        demosinglejust();
+        demosingleerror();
+        demosinglefromcallable();
+        demosingleflatmap();
+
+        // maybe
+        demomaybejust();
+        demomaybeempty();
+        demomaybeerror();
+        demomaybefilter();
+
+        // completable
+        democompletablefromaction();
+        democompletableandthen();
+        democompletableerror();
+        demochainall();
+    }
+
+    // =========================================================================
+    //  single
+    // =========================================================================
+
+    // -------------------------------------------------------------------------
+    // single.just
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code single.just(value)} creates a single that immediately emits the given value
+     * and then signals success. the subscriber uses {@code onsuccess} (not {@code onnext}).
+     */
+    private static void demosinglejust() {
+        system.out.println("=== single.just ===");
+
+        single.just(42)
+                .subscribe(
+                        value -> system.out.println("success: " + value), // → success: 42
+                        error -> system.out.println("error: " + error)
+                );
+        // === single.just ===
+        //success: 42
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // single.error
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code single.error(throwable)} creates a single that immediately signals an error.
+     * no success value is ever emitted.
+     */
+    private static void demosingleerror() {
+        system.out.println("=== single.error ===");
+
+        single.error(new runtimeexception("query failed"))
+                .subscribe(
+                        value -> system.out.println("success: " + value), // not called
+                        error -> system.out.println("error: " + error.getmessage()) // → error: query failed
+                );
+        // === single.error ===
+        //error: query failed
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // single.fromcallable
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code single.fromcallable(callable<t>)} lazily executes a {@link java.util.concurrent.callable}
+     * when subscribed. any checked exception thrown is forwarded to {@code onerror}.
+     */
+    private static void demosinglefromcallable() {
+        system.out.println("=== single.fromcallable ===");
+
+        single<string> single = single.fromcallable(() -> {
+            // simulate a database lookup
+            return "user{id=1, name='alice'}";
+        });
+
+        single.subscribe(
+                result -> system.out.println("fetched: " + result), // → fetched: user{id=1, name='alice'}
+                error  -> system.out.println("error: " + error)
+        );
+        // === single.fromcallable ===
+        //fetched: user{id=1, name='alice'}
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // single.flatmap
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code single.flatmap(function<t, single<r>>)} chains two singles together:
+     * when the first single succeeds, its value is fed into a function that returns
+     * a second single. the final result is the second single's value.
+     *
+     * <p>use this to sequence asynchronous operations that depend on each other
+     * (e.g., fetch a user, then fetch that user's orders).
+     */
+    private static void demosingleflatmap() {
+        system.out.println("=== single.flatmap (chain two singles) ===");
+
+        single<integer> userid = single.just(1);
+
+        userid
+                .flatmap(id -> single.fromcallable(() -> "user #" + id + " → alice"))
+                .flatmap(user -> single.fromcallable(() -> user + " (verified)"))
+                .subscribe(
+                        result -> system.out.println("result: " + result),
+                        // → result: user #1 → alice (verified)
+                        error  -> system.out.println("error: " + error)
+                );
+        // === single.flatmap (chain two singles) ===
+        //result: user #1 → alice (verified)
+        system.out.println();
+    }
+
+    // =========================================================================
+    //  maybe
+    // =========================================================================
+
+    // -------------------------------------------------------------------------
+    // maybe.just
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code maybe.just(value)} creates a maybe that emits exactly one item via
+     * {@code onsuccess}, then completes. behaves like a single when a value is present.
+     */
+    private static void demomaybejust() {
+        system.out.println("=== maybe.just ===");
+
+        maybe.just("found it!")
+                .subscribe(
+                        value    -> system.out.println("onsuccess: " + value), // → onsuccess: found it!
+                        error    -> system.out.println("onerror: " + error),
+                        ()       -> system.out.println("oncomplete (no value)")  // not called when value present
+                );
+        // === maybe.just ===
+        //onsuccess: found it!
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // maybe.empty
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code maybe.empty()} creates a maybe that emits no item and immediately completes.
+     * use this to represent a "nothing found" result (like an empty optional).
+     */
+    private static void demomaybeempty() {
+        system.out.println("=== maybe.empty ===");
+
+        maybe.empty()
+                .subscribe(
+                        value -> system.out.println("onsuccess: " + value), // not called
+                        error -> system.out.println("onerror: " + error),   // not called
+                        ()    -> system.out.println("oncomplete (empty)")   // → oncomplete (empty)
+                );
+        // === maybe.empty ===
+        //oncomplete (empty)
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // maybe.error
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code maybe.error(throwable)} signals an error immediately, with no item.
+     */
+    private static void demomaybeerror() {
+        system.out.println("=== maybe.error ===");
+
+        maybe.error(new illegalargumentexception("invalid id"))
+                .subscribe(
+                        value -> system.out.println("onsuccess: " + value),           // not called
+                        error -> system.out.println("onerror: " + error.getmessage()), // → onerror: invalid id
+                        ()    -> system.out.println("oncomplete")                      // not called
+                );
+        // === maybe.error ===
+        //onerror: invalid id
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // observable → maybe via filter + firstelement
+    // -------------------------------------------------------------------------
+
+    /**
+     * a common way to obtain a {@code maybe<t>} is by calling {@code firstelement()} on
+     * a filtered observable — it emits the first matching item, or completes empty if none match.
+     */
+    private static void demomaybefilter() {
+        system.out.println("=== maybe from observable.firstelement ===");
+
+        // find the first even number — exists
+        io.reactivex.rxjava3.core.observable.just(1, 3, 4, 6, 7)
+                .filter(n -> n % 2 == 0)
+                .firstelement()              // returns maybe<integer>
+                .subscribe(
+                        n  -> system.out.println("first even: " + n), // → first even: 4
+                        e  -> system.out.println("error: " + e),
+                        () -> system.out.println("no even found")
+                );
+
+        // find the first even number — does not exist
+        io.reactivex.rxjava3.core.observable.just(1, 3, 5)
+                .filter(n -> n % 2 == 0)
+                .firstelement()
+                .subscribe(
+                        n  -> system.out.println("first even: " + n),
+                        e  -> system.out.println("error: " + e),
+                        () -> system.out.println("no even found") // → no even found
+                );
+        // === maybe from observable.firstelement ===
+        //first even: 4
+        //no even found
+        system.out.println();
+    }
+
+    // =========================================================================
+    //  completable
+    // =========================================================================
+
+    // -------------------------------------------------------------------------
+    // completable.fromaction
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code completable.fromaction(action)} wraps a void operation in a completable.
+     * when subscribed, it runs the action and signals {@code oncomplete} on success,
+     * or {@code onerror} if an exception is thrown.
+     */
+    private static void democompletablefromaction() {
+        system.out.println("=== completable.fromaction ===");
+
+        completable saveaction = completable.fromaction(() -> {
+            system.out.println("  [action] saving to database..."); // → [action] saving to database...
+            // simulate a write operation
+        });
+
+        saveaction.subscribe(
+                ()  -> system.out.println("save completed successfully"), // → save completed successfully
+                err -> system.out.println("save failed: " + err)
+        );
+        // === completable.fromaction ===
+        //  [action] saving to database...
+        //save completed successfully
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // completable.andthen
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code completable.andthen(other)} sequences two reactive sources:
+     * {@code other} only starts after {@code completable} completes successfully.
+     * if {@code completable} errors, {@code other} is never subscribed to.
+     *
+     * <p>you can chain:
+     * <ul>
+     *   <li>{@code completable.andthen(completable)} — sequence two void operations</li>
+     *   <li>{@code completable.andthen(single)}      — run action, then get a value</li>
+     *   <li>{@code completable.andthen(observable)}  — run action, then stream items</li>
+     * </ul>
+     */
+    private static void democompletableandthen() {
+        system.out.println("=== completable.andthen ===");
+
+        completable step1 = completable.fromaction(() ->
+                system.out.println("  step 1: validate input")); // → step 1: validate input
+
+        completable step2 = completable.fromaction(() ->
+                system.out.println("  step 2: persist data"));   // → step 2: persist data
+
+        single<string> step3 = single.fromcallable(() -> {
+            system.out.println("  step 3: fetch confirmation");  // → step 3: fetch confirmation
+            return "confirmation #12345";
+        });
+
+        step1.andthen(step2)
+                .andthen(step3)
+                .subscribe(
+                        result -> system.out.println("final result: " + result),
+                        // → final result: confirmation #12345
+                        error  -> system.out.println("error: " + error)
+                );
+        // === completable.andthen ===
+        //  step 1: validate input
+        //  step 2: persist data
+        //  step 3: fetch confirmation
+        //final result: confirmation #12345
+        system.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // completable.error
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code completable.error(throwable)} creates a completable that immediately errors.
+     * the {@code andthen} chain is aborted — subsequent steps are skipped.
+     */
+    private static void democompletableerror() {
+        system.out.println("=== completable chain with error ===");
+
+        completable failing = completable.error(new runtimeexception("permission denied"));
+        completable next    = completable.fromaction(() ->
+                system.out.println("  this step is skipped")); // never reached
+
+        failing.andthen(next)
+                .subscribe(
+                        ()  -> system.out.println("completed"),
+                        err -> system.out.println("chain failed: " + err.getmessage())
+                        // → chain failed: permission denied
+                );
+        // === completable chain with error ===
+        //chain failed: permission denied
+        system.out.println();
+    }
+
+    // =========================================================================
+    //  combined example
+    // =========================================================================
+
+    /**
+     * a realistic chain mixing all three types:
+     * <ol>
+     *   <li>authenticate (completable) — no value produced</li>
+     *   <li>fetch user id (single)     — produces an integer</li>
+     *   <li>look up profile (maybe)    — profile may or may not exist</li>
+     * </ol>
+     */
+    private static void demochainall() {
+        system.out.println("=== real-world chain: completable → single → maybe ===");
+
+        completable authenticate = completable.fromaction(() ->
+                system.out.println("  [auth] token validated")); // → [auth] token validated
+
+        single<integer> fetchuserid = single.fromcallable(() -> {
+            system.out.println("  [db] fetching user id"); // → [db] fetching user id
+            return 42;
+        });
+
+        authenticate
+                .andthen(fetchuserid)                                  // after auth, get id
+                .flatmapmaybe(id -> maybe.fromcallable(() -> {         // look up profile (may be absent)
+                    system.out.println("  [db] loading profile for id=" + id);
+                    // → [db] loading profile for id=42
+                    return "profile{id=" + id + ", name='bob'}";
+                }))
+                .subscribe(
+                        profile  -> system.out.println("loaded: " + profile),
+                        // → loaded: profile{id=42, name='bob'}
+                        error    -> system.out.println("error: " + error),
+                        ()       -> system.out.println("profile not found")
+                );
+        // === real-world chain: completable → single → maybe ===
+        //  [auth] token validated
+        //  [db] fetching user id
+        //  [db] loading profile for id=42
+        //loaded: profile{id=42, name='bob'}
+        system.out.println();
+    }
+}
+
+/*
+"c:\\program files\\java\\jdk-25\\bin\\java.exe" -dvaadin.copilot.plugindotfilepath=c:\\users\\roman\\work\\claude\\projects\\rxjava\\.idea\\.copilot-plugin "-javaagent:c:\\program files\\jetbrains\\intellij idea 2025.3.1\\lib\\idea_rt.jar=55734" -dfile.encoding=utf-8 -dsun.stdout.encoding=utf-8 -dsun.stderr.encoding=utf-8 -classpath c:\\users\\roman\\work\\claude\\projects\\rxjava\\target\\classes;c:\\users\\roman\\.m2\\repository\\io\\reactivex\\rxjava3\\rxjava\\3.1.9\\rxjava-3.1.9.jar;c:\\users\\roman\\.m2\\repository\\org\\reactivestreams\\reactive-streams\\1.0.4\\reactive-streams-1.0.4.jar tutorial._10_singlemaybecompletable
+=== single.just ===
+success: 42
+
+=== single.error ===
+error: query failed
+
+=== single.fromcallable ===
+fetched: user{id=1, name='alice'}
+
+=== single.flatmap (chain two singles) ===
+result: user #1 → alice (verified)
+
+=== maybe.just ===
+onsuccess: found it!
+
+=== maybe.empty ===
+oncomplete (empty)
+
+=== maybe.error ===
+onerror: invalid id
+
+=== maybe from observable.firstelement ===
+first even: 4
+no even found
+
+=== completable.fromaction ===
+  [action] saving to database...
+save completed successfully
+
+=== completable.andthen ===
+  step 1: validate input
+  step 2: persist data
+  step 3: fetch confirmation
+final result: confirmation #12345
+
+=== completable chain with error ===
+chain failed: permission denied
+
+=== real-world chain: completable → single → maybe ===
+  [auth] token validated
+  [db] fetching user id
+  [db] loading profile for id=42
+loaded: profile{id=42, name='bob'}
+
+
+process finished with exit code 0
+
+ */`
+};
+
+// Expand/collapse all method sub-lists
+document.getElementById('show-all-btn').addEventListener('click',function(){
+  document.querySelectorAll('.method-list').forEach(ul=>{
+    ul.classList.remove('collapsed-methods');
+    const btn=document.getElementById('btn-'+ul.id.replace('ml-',''));
+    if(btn)btn.textContent='\u25bc';
+  });
+});
+document.getElementById('collapse-all-btn').addEventListener('click',function(){
+  document.querySelectorAll('.method-list').forEach(ul=>{
+    ul.classList.add('collapsed-methods');
+    const btn=document.getElementById('btn-'+ul.id.replace('ml-',''));
+    if(btn)btn.textContent='\u25b6';
+  });
+});
+
+function clearAllActive(){
+  document.querySelectorAll('#version-list a').forEach(a=>{
+    a.classList.remove('active');
+    a.classList.remove('parent-active');
+  });
+}
+
+// Toggle the method sub-list by ul id (e.g. 'ml-observablebasics')
+function toggleMethods(ulId){
+  const ul=document.getElementById(ulId);
+  const btn=document.getElementById('btn-'+ulId.replace('ml-',''));
+  if(!ul)return;
+  const collapsed=ul.classList.toggle('collapsed-methods');
+  if(btn)btn.textContent=collapsed?'\u25b6':'\u25bc';
+}
+
+// Expand a method sub-list without toggling (used when navigating to a file)
+function expandMethods(ulId){
+  const ul=document.getElementById(ulId);
+  const btn=document.getElementById('btn-'+ulId.replace('ml-',''));
+  if(ul){ul.classList.remove('collapsed-methods');if(btn)btn.textContent='\u25bc';}
+}
+
+// Called when clicking a file-level link
+function setActive(el){
+  clearAllActive();
+  el.classList.add('active');
+  document.getElementById('welcome').style.display='none';
+  document.getElementById('frame').style.display='block';
+}
+
+// Called when clicking a method sub-item link
+function setMethodActive(el){
+  clearAllActive();
+  el.classList.add('active');
+  // Mark parent file link as parent-active and expand its method list
+  const fileItem=el.closest('li[data-cls]');
+  if(fileItem){
+    const fileLink=fileItem.querySelector('.file-link');
+    if(fileLink)fileLink.classList.add('parent-active');
+    const cls=fileItem.dataset.cls;
+    const ul=document.getElementById('ml-'+cls);
+    const btn=document.getElementById('btn-'+cls);
+    if(ul){ul.classList.remove('collapsed-methods');if(btn)btn.textContent='\u25bc';}
+  }
+  document.getElementById('welcome').style.display='none';
+  document.getElementById('frame').style.display='block';
+}
+
+const searchInput=document.getElementById('search');
+const clearBtn=document.getElementById('clear-btn');
+
+function filterMenu(term){
+  const lower=term.trim().toLowerCase();
+  let anyVisible=false;
+  // Only filter file-level li items (those with data-cls); method sub-items follow their parent
+  document.querySelectorAll('.version-group li[data-cls]').forEach(function(li){
+    const cls=(li.dataset.cls||'');
+    const src=FILE_CODE[cls]||'';
+    const match=!lower||cls.includes(lower)||src.includes(lower);
+    li.classList.toggle('no-match',!match);
+    if(match)anyVisible=true;
+  });
+  document.getElementById('no-match-msg').classList.toggle('visible',!!lower&&!anyVisible);
+}
+
+function sendSearch(term){
+  const frame=document.getElementById('frame');
+  if(frame.contentWindow)frame.contentWindow.postMessage({type:'page-search',term:term},'*');
+}
+
+searchInput.addEventListener('input',function(){filterMenu(this.value);sendSearch(this.value);});
+clearBtn.addEventListener('click',function(){searchInput.value='';filterMenu('');sendSearch('');searchInput.focus();});
+searchInput.addEventListener('keydown',function(e){if(e.key==='Escape'){searchInput.value='';filterMenu('');sendSearch('');}});
+document.getElementById('frame').addEventListener('load',function(){if(searchInput.value)sendSearch(searchInput.value);});
+</script>
+</body>
+</html>

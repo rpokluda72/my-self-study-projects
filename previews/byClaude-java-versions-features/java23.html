@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java 23</title>
+<link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #1e1e2e; color: #cdd6f4; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Page header ── */
+  #page-header {
+    flex-shrink: 0;
+    background: #181825;
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid #313244;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    z-index: 10;
+  }
+  #page-header h1 {
+    font-size: 18px; font-weight: 700; color: #cba6f7; margin-bottom: 8px;
+    letter-spacing: 0.03em;
+  }
+  .toolbar {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
+  }
+  .btn { padding: 4px 12px; border: none; border-radius: 4px; cursor: pointer;
+          font-size: 12px; font-weight: 600; transition: background .15s; }
+  .btn-show  { background: #89b4fa; color: #1e1e2e; }
+  .btn-show:hover  { background: #74c7ec; }
+  .btn-hide  { background: #585b70; color: #cdd6f4; }
+  .btn-hide:hover  { background: #6c7086; }
+  #match-info { font-size: 12px; color: #a6adc8; margin-left: 4px; }
+
+  /* ── Page search bar ── */
+  .page-search-bar {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  #psb-input {
+    flex: 1; min-width: 180px; max-width: 320px;
+    background: #313244; border: 1px solid #45475a; color: #cdd6f4;
+    border-radius: 4px; padding: 5px 10px; font-size: 13px; outline: none;
+  }
+  #psb-input:focus { border-color: #89b4fa; box-shadow: 0 0 0 2px rgba(137,180,250,.2); }
+  #psb-input::placeholder { color: #6c7086; }
+  .psb-btn {
+    padding: 4px 10px; border: 1px solid #45475a; border-radius: 4px;
+    background: #313244; color: #cdd6f4; cursor: pointer; font-size: 12px;
+    transition: background .15s;
+  }
+  .psb-btn:hover { background: #45475a; }
+  .psb-btn:disabled { opacity: .4; cursor: default; }
+  .psb-clear {
+    padding: 4px 10px; border: none; border-radius: 4px;
+    background: #f38ba8; color: #1e1e2e; cursor: pointer; font-size: 12px;
+    font-weight: 600; transition: background .15s;
+  }
+  .psb-clear:hover { background: #eba0ac; }
+  #psb-count { font-size: 12px; color: #a6adc8; min-width: 60px; }
+
+  /* ── Cards container ── */
+  #cards-container {
+    flex: 1; overflow-y: auto; padding: 12px 16px 20px;
+  }
+  .card {
+    margin-bottom: 12px; border-radius: 8px; overflow: hidden;
+    border: 1px solid #313244; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .card.hidden-by-search { display: none; }
+
+  /* ── Card header ── */
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #2a2a3d; padding: 8px 14px; cursor: pointer;
+    user-select: none; transition: background .15s;
+    border-bottom: 1px solid #313244;
+  }
+  .card-header:hover { background: #313244; }
+  .filename { font-size: 14px; font-weight: 600; color: #89dceb; font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+  .toggle-btn {
+    background: none; border: 1px solid #45475a; color: #a6adc8;
+    border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 11px;
+    transition: all .15s; white-space: nowrap;
+  }
+  .toggle-btn:hover { background: #45475a; color: #cdd6f4; }
+
+  /* ── Card body ── */
+  .card-body { overflow: hidden; }
+  .card-body.collapsed { display: none; }
+  .card-body pre { margin: 0; }
+  .card-body pre code.hljs {
+    font-size: 13px; line-height: 1.55; padding: 14px 16px !important;
+    background: #282c34 !important;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  }
+
+  /* ── Search highlights ── */
+  mark.sh         { background: #f9e2af; color: #1e1e2e; border-radius: 2px; }
+  mark.sh-current { background: #fab387; color: #1e1e2e; border-radius: 2px; outline: 2px solid #f38ba8; }
+</style>
+</head>
+<body>
+<div id="page-header">
+  <h1>Java 23</h1>
+  <div class="toolbar">
+    <button class="btn btn-show" onclick="showAll()">&#9660; Show all</button>
+    <button class="btn btn-hide" onclick="collapseAll()">&#9654; Collapse all</button>
+    <span id="match-info"></span>
+  </div>
+  <div class="page-search-bar">
+    <input id="psb-input" placeholder="Search in code…" autocomplete="off" spellcheck="false" />
+    <button class="psb-btn" id="psb-prev" onclick="prevMatch()">&#8593; Prev</button>
+    <button class="psb-btn" id="psb-next" onclick="nextMatch()">&#8595; Next</button>
+    <button class="psb-clear" onclick="clearPageSearch()">&#10005; Clear</button>
+    <span id="psb-count"></span>
+  </div>
+</div>
+<div id="cards-container">
+  <div class="card" id="UnnamedVariables">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="filename">UnnamedVariables.java</span>
+      <button class="toggle-btn">&#x25bc; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package java23;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * &lt;b&gt;Unnamed Variables and Patterns ({@code _})&lt;/b&gt;
+ * &lt;p&gt;
+ * The underscore {@code _} marks a variable that is intentionally unused, signalling to
+ * readers and tools that the value is deliberately discarded. It can be used in:
+ * &lt;ul&gt;
+ *   &lt;li&gt;Catch clauses: {@code catch (IOException _)}&lt;/li&gt;
+ *   &lt;li&gt;Enhanced for loops: {@code for (var _ : list)}&lt;/li&gt;
+ *   &lt;li&gt;Lambda parameters: {@code list.forEach(_ -&gt; count++)}&lt;/li&gt;
+ *   &lt;li&gt;Pattern matching: {@code case Integer _} or {@code instanceof Point(int x, _)}&lt;/li&gt;
+ * &lt;/ul&gt;
+ * Multiple {@code _} declarations are allowed in the same scope (unlike named variables).
+ * History: {@code _} was deprecated as an identifier in Java 8, made a compile error in
+ * Java 9, previewed as unnamed variable in Java 21 (JEP 443) and Java 22; finalized in
+ * Java 23 (JEP 456).
+ *
+ * @see &lt;a href=&quot;https://openjdk.org/jeps/456&quot;&gt;JEP 456 – Unnamed Variables and Patterns&lt;/a&gt;
+ */
+public class UnnamedVariables {
+
+    record Point(int x, int y) {}
+
+    public static void main(String[] args) {
+        System.out.println(&quot;=== Before Java 23: unused variable warnings ===&quot;);
+        demonstrateBefore();
+        System.out.println();
+        System.out.println(&quot;=== Java 23: unnamed variable _ ===&quot;);
+        demonstrateAfter();
+    }
+
+    /** Before Java 23: must name variables even when intentionally unused */
+    static void demonstrateBefore() {
+        // Catch clause — &#x27;e&#x27; is unused but must be named; linters warn about it
+        try {
+            int result = Integer.parseInt(&quot;abc&quot;);
+        } catch (NumberFormatException e) {
+            // &#x27;e&#x27; is ignored — but we had to give it a name
+            System.out.println(&quot;Parse failed (exception details ignored)&quot;);
+        }
+
+        // For-each — element is unused, we only want to count iterations
+        List&lt;String&gt; items = List.of(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;);
+        int count = 0;
+        for (String ignored : items) { // &#x27;ignored&#x27; is a common naming convention
+            count++;
+        }
+        System.out.println(&quot;Count: &quot; + count); // Output: 3
+
+        // Lambda — parameter unused
+        AtomicInteger lambdaCount = new AtomicInteger();
+        items.forEach(element -&gt; lambdaCount.incrementAndGet()); // &#x27;element&#x27; unused
+        System.out.println(&quot;Lambda count: &quot; + lambdaCount.get()); // Output: 3
+    }
+
+    /** Java 23: _ communicates &quot;intentionally unused&quot; to readers and tools */
+    static void demonstrateAfter() {
+        // Catch clause — _ makes the intent explicit: the exception details don&#x27;t matter
+        try {
+            int result = Integer.parseInt(&quot;abc&quot;);
+        } catch (NumberFormatException _) {
+            System.out.println(&quot;Parse failed (exception details ignored)&quot;); // Output: Parse failed
+        }
+
+        // Multiple catch — each _ is independent (same scope, multiple declarations allowed)
+        try {
+            String s = null;
+            s.length();
+        } catch (NullPointerException _) {
+            System.out.println(&quot;NullPointerException caught and ignored&quot;);
+        } catch (Exception _) {
+            System.out.println(&quot;Other exception caught and ignored&quot;);
+        }
+
+        // For-each — only counting, element value not needed
+        List&lt;String&gt; items = List.of(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;);
+        int count = 0;
+        for (var _ : items) {
+            count++;
+        }
+        System.out.println(&quot;Count: &quot; + count); // Output: 3
+
+        // Lambda — parameter not used
+        AtomicInteger lambdaCount = new AtomicInteger();
+        items.forEach(_ -&gt; lambdaCount.incrementAndGet());
+        System.out.println(&quot;Lambda count: &quot; + lambdaCount.get()); // Output: 3
+
+        // Switch — case binds a type but the value is unused
+        Object obj = 42;
+        String desc = switch (obj) {
+            case Integer _ -&gt; &quot;an Integer (value not needed)&quot;;
+            case String  _ -&gt; &quot;a String (value not needed)&quot;;
+            default        -&gt; &quot;something else&quot;;
+        };
+        System.out.println(desc); // Output: an Integer (value not needed)
+
+        // Record pattern — extract only x, ignore y
+        Object point = new Point(3, 7);
+        if (point instanceof Point(int x, int _)) {
+            System.out.println(&quot;x = &quot; + x + &quot; (y ignored)&quot;); // Output: x = 3 (y ignored)
+        }
+
+        // Multiple _ declarations in same scope (not possible with named variables)
+        int _ = 1; // unnamed local variable — valid
+        String _ = &quot;hello&quot;; // second _ in same scope — also valid
+        System.out.println(&quot;Multiple _ declarations in same scope: OK&quot;);
+        // Named variables cannot be re-declared in the same scope, but _ is special.
+    }
+}
+
+// Console output:
+// === Before Java 23: unused variable warnings ===
+// Parse failed (exception details ignored)
+// Count: 3
+// Lambda count: 3
+//
+// === Java 23: unnamed variable _ ===
+// Parse failed (exception details ignored)
+// NullPointerException caught and ignored
+// Count: 3
+// Lambda count: 3
+// an Integer (value not needed)
+// x = 3 (y ignored)
+// Multiple _ declarations in same scope: OK
+</code></pre>
+    </div>
+  </div>
+</div>
+<script>
+// ── Card toggle ──────────────────────────────────────────────────────────────
+function toggleCard(header) {
+  const body = header.nextElementSibling;
+  const btn  = header.querySelector('.toggle-btn');
+  const c    = body.classList.toggle('collapsed');
+  btn.textContent = c ? '\u25b6 Show' : '\u25bc Hide';
+}
+function showAll() {
+  document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+    b.classList.remove('collapsed');
+    b.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+  });
+}
+function collapseAll() {
+  document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+    b.classList.add('collapsed');
+    b.closest('.card').querySelector('.toggle-btn').textContent = '\u25b6 Show';
+  });
+}
+
+// ── Card filter ──────────────────────────────────────────────────────────────
+function applyCardFilter(term) {
+  const lower = term.trim().toLowerCase();
+  let shown = 0;
+  document.querySelectorAll('.card').forEach(card => {
+    const has = !lower || card.querySelector('code').textContent.toLowerCase().includes(lower);
+    card.classList.toggle('hidden-by-search', !has);
+    if (has) shown++;
+  });
+  document.getElementById('match-info').textContent = lower
+    ? (shown === 0 ? 'No files match' : shown + ' file' + (shown > 1 ? 's' : '') + ' match')
+    : '';
+}
+
+// ── In-page text search ──────────────────────────────────────────────────────
+const psbInput = document.getElementById('psb-input');
+const psbCount = document.getElementById('psb-count');
+let marks = [], currentIdx = -1;
+
+function clearMarks() {
+  document.querySelectorAll('mark.sh, mark.sh-current').forEach(m => {
+    const t = document.createTextNode(
+      m.textContent.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    );
+    // actually just replace with text node directly:
+    m.parentNode.replaceChild(document.createTextNode(m.textContent), m);
+  });
+  document.querySelectorAll('.card-body code').forEach(c => c.normalize());
+  marks = []; currentIdx = -1;
+}
+
+function findAll(term) {
+  clearMarks();
+  if (!term.trim()) { updateCount(); return; }
+  const lower = term.toLowerCase();
+  document.querySelectorAll('.card-body code').forEach(code => {
+    const walker = document.createTreeWalker(code, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.textContent, ltxt = text.toLowerCase();
+      let pos = 0, start;
+      const frags = [];
+      while ((start = ltxt.indexOf(lower, pos)) !== -1) {
+        if (start > pos) frags.push(document.createTextNode(text.slice(pos, start)));
+        const m = document.createElement('mark');
+        m.className = 'sh';
+        m.textContent = text.slice(start, start + term.length);
+        frags.push(m); marks.push(m);
+        pos = start + term.length;
+      }
+      if (frags.length) {
+        if (pos < text.length) frags.push(document.createTextNode(text.slice(pos)));
+        node.replaceWith(...frags);
+      }
+    });
+  });
+  updateCount();
+}
+
+function goTo(idx) {
+  if (!marks.length) return;
+  if (currentIdx >= 0) marks[currentIdx].className = 'sh';
+  currentIdx = ((idx % marks.length) + marks.length) % marks.length;
+  const m = marks[currentIdx];
+  m.className = 'sh-current';
+  // auto-expand card if collapsed
+  const body = m.closest('.card-body');
+  if (body && body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    body.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+  }
+  m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  updateCount();
+}
+
+function updateCount() {
+  const v = psbInput.value.trim();
+  if (!v) { psbCount.textContent = ''; return; }
+  psbCount.textContent = marks.length === 0
+    ? '0 matches'
+    : (currentIdx + 1) + ' / ' + marks.length;
+  document.getElementById('psb-prev').disabled = marks.length === 0;
+  document.getElementById('psb-next').disabled = marks.length === 0;
+}
+
+function runPageSearch() {
+  const term = psbInput.value;
+  applyCardFilter(term);
+  findAll(term);
+  if (marks.length) goTo(0);
+}
+function prevMatch() { if (marks.length) goTo(currentIdx - 1); }
+function nextMatch() { if (marks.length) goTo(currentIdx + 1); }
+function clearPageSearch() {
+  psbInput.value = ''; clearMarks(); applyCardFilter(''); updateCount();
+}
+
+psbInput.addEventListener('input', runPageSearch);
+psbInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.shiftKey ? prevMatch() : nextMatch(); }
+  if (e.key === 'Escape') clearPageSearch();
+});
+
+window.addEventListener('message', function(e) {
+  if (!e.data || e.data.type !== 'page-search') return;
+  psbInput.value = e.data.term || '';
+  runPageSearch();
+});
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  hljs.highlightAll();
+  // Hash-based scroll: navigate to specific card when loaded via #CardName
+  if (location.hash) {
+    const target = document.querySelector(location.hash);
+    if (target) {
+      const body = target.querySelector('.card-body');
+      if (body) body.classList.remove('collapsed');
+      setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+    }
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Optional - Java Preview</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── sticky header panel ── */
+    #page-header {
+      flex-shrink: 0;
+      background: #f0f2f5;
+      padding: 16px 20px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    h1 { color: #2d3748; margin-bottom: 10px; font-size: 1.3rem; }
+
+    /* ── toolbar (show/collapse all) ── */
+    .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .toolbar button {
+      padding: 5px 13px; border: none; border-radius: 5px; cursor: pointer;
+      font-size: 0.82rem; font-weight: 600; transition: background 0.15s;
+    }
+    .btn-show { background: #3182ce; color: #fff; }
+    .btn-show:hover { background: #2b6cb0; }
+    .btn-hide { background: #718096; color: #fff; }
+    .btn-hide:hover { background: #4a5568; }
+    .match-info { font-size: 0.82rem; color: #718096; margin-left: 4px; }
+
+    /* ── page search bar ── */
+    .page-search-bar {
+      display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+      background: #fff; border: 1px solid #cbd5e0; border-radius: 7px;
+      padding: 6px 12px;
+    }
+    .page-search-bar input {
+      flex: 1; min-width: 160px; padding: 5px 8px;
+      border: 1px solid #cbd5e0; border-radius: 5px;
+      font-size: 0.85rem; outline: none; color: #2d3748;
+    }
+    .page-search-bar input:focus { border-color: #63b3ed; }
+    .psb-btn {
+      padding: 5px 11px; border: 1px solid #cbd5e0; border-radius: 5px;
+      background: #f7fafc; cursor: pointer; font-size: 0.8rem;
+      color: #4a5568; transition: background 0.12s;
+    }
+    .psb-btn:hover { background: #e2e8f0; }
+    .psb-btn:disabled { opacity: 0.4; cursor: default; }
+    .psb-clear {
+      padding: 5px 9px; border: 1px solid #cbd5e0; border-radius: 5px;
+      background: #f7fafc; cursor: pointer; font-size: 0.85rem;
+      color: #718096; transition: background 0.12s;
+    }
+    .psb-clear:hover { background: #fed7d7; color: #c53030; border-color: #fc8181; }
+    .psb-count { font-size: 0.8rem; color: #718096; white-space: nowrap; min-width: 60px; }
+
+    /* ── highlight marks ── */
+    mark.sh { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 1px; }
+    mark.sh-current { background: #f97316; color: #fff; border-radius: 2px; padding: 0 1px; }
+
+    /* ── scrollable cards area ── */
+    #cards-container {
+      flex: 1; overflow-y: auto;
+      padding: 20px;
+    }
+
+    .card { background: #fff; border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: hidden; }
+    .card.hidden-by-search { display: none; }
+
+    .card-header {
+      background: #2d3748; color: #e2e8f0;
+      padding: 9px 14px;
+      display: flex; align-items: center; gap: 10px; cursor: pointer;
+      user-select: none;
+    }
+    .card-header:hover { background: #3a4a5c; }
+    .card-header .filename { font-size: 0.9rem; font-weight: 700; flex: 1; }
+    .card-header .path { color: #a0aec0; font-size: 0.78rem; }
+    .card-header .toggle-btn {
+      background: none; border: 1px solid #4a5568; border-radius: 4px;
+      color: #a0aec0; font-size: 0.75rem; padding: 2px 8px; cursor: pointer;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .card-header .toggle-btn:hover { border-color: #63b3ed; color: #63b3ed; }
+
+    .card-body { display: block; }
+    .card-body.collapsed { display: none; }
+
+    pre { margin: 0; overflow-x: auto; }
+    pre code.hljs { font-size: 13px; line-height: 1.5; padding: 16px !important; }
+  </style>
+</head>
+<body>
+  <div id="page-header">
+    <h1>Optional</h1>
+    <div class="toolbar">
+      <button class="btn-show" onclick="showAll()">&#9660; Show all</button>
+      <button class="btn-hide" onclick="collapseAll()">&#9654; Collapse all</button>
+      <span class="match-info" id="match-info"></span>
+    </div>
+    <div class="page-search-bar">
+      <input id="psb-input" type="text" placeholder="&#128269; Search in code&hellip;" autocomplete="off">
+      <button class="psb-btn" id="psb-prev" onclick="prevMatch()" disabled title="Previous (Shift+Enter)">&#9650; Prev</button>
+      <button class="psb-btn" id="psb-next" onclick="nextMatch()" disabled title="Next (Enter)">&#9660; Next</button>
+      <button class="psb-clear" onclick="clearPageSearch()" title="Clear (Esc)">&#x2715;</button>
+      <span class="psb-count" id="psb-count"></span>
+    </div>
+  </div>
+  <div id="cards-container">
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Address.java</span>
+        <span class="path">Address.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.optional;
+
+import java.util.Objects;
+
+public class Address {
+    private String street;
+    private int number;
+    private String city;
+    private String state;
+
+    public Address(String street, int number, String city, String state) {
+        this.street = street;
+        this.number = number;
+        this.city = city;
+        this.state = state;
+    }
+
+    public String getStreet() {
+        return street;
+    }
+
+    public void setStreet(String street) {
+        this.street = street;
+    }
+
+    public int getNumber() {
+        return number;
+    }
+
+    public void setNumber(int number) {
+        this.number = number;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;Address{&quot; +
+                &quot;street=&#x27;&quot; + street + &#x27;\&#x27;&#x27; +
+                &quot;, number=&quot; + number +
+                &quot;, city=&#x27;&quot; + city + &#x27;\&#x27;&#x27; +
+                &quot;, state=&#x27;&quot; + state + &#x27;\&#x27;&#x27; +
+                &#x27;}&#x27;;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Address address = (Address) o;
+        return number == address.number &amp;&amp; Objects.equals(street, address.street) &amp;&amp; Objects.equals(city, address.city) &amp;&amp; Objects.equals(state, address.state);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(street, number, city, state);
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">TestOptional.java</span>
+        <span class="path">TestOptional.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.optional;
+
+import java.util.HashMap;
+import java.util.Optional;
+
+public class TestOptional {
+
+    HashMap&lt;Integer, User&gt; users = new HashMap&lt;&gt;();
+    public static void main(String[] args) {
+        TestOptional test = new TestOptional();
+        test.initUsers();
+
+        Optional&lt;User&gt; user_1 = test.findUserById(1);
+        System.out.println(user_1);
+        user_1.ifPresent(System.out::println);
+//        Optional[User{id=1, name=&#x27;name-1&#x27;, age=34, address=Address{street=&#x27;street-1&#x27;, number=100, city=&#x27;city-1&#x27;, state=&#x27;state-1&#x27;}}]
+//        User{id=1, name=&#x27;name-1&#x27;, age=34, address=Address{street=&#x27;street-1&#x27;, number=100, city=&#x27;city-1&#x27;, state=&#x27;state-1&#x27;}}
+        user_1.ifPresent(user -&gt; System.out.println(&quot;user_1.name=&quot; + user.getName()));
+//        user_1.name=name-1
+
+        Optional&lt;User&gt; user_9 = test.findUserById(9);
+        System.out.println(user_9);
+        user_9.ifPresent(System.out::println);
+//        Optional.empty
+        user_9.ifPresent(user -&gt; System.out.println(user.getName()));
+
+
+        String username1 = user_1
+                .filter(User::isOlder35)
+                .map(User::getName)
+                .orElse(&quot;Not older 35&quot;);
+        System.out.println(&quot;username1 : &quot; + username1);
+//        username1 : Not older 35
+
+        Optional&lt;User&gt; user_4 = test.findUserById(4);
+        String username4 = user_4
+                .filter(User::isOlder35)
+                .map(User::getName)
+                .orElse(&quot;Not older 35&quot;);
+        System.out.println(&quot;username4 : &quot; + username4);
+//        username4 : name-4
+
+        User user_2 = test.users.get(2);
+        Optional.ofNullable(user_2.getAddress())
+                .ifPresent(address -&gt; System.out.println(&quot;city=&quot; + address.getCity()));
+//        city=city-2
+
+        User user_11 = test.users.get(11);
+        Optional.ofNullable(user_11)
+                .ifPresent(user -&gt; System.out.println(&quot;user name=&quot; + user.getName()));
+
+           Optional.of(user_2)
+                .ifPresent(user -&gt; System.out.println(&quot;user name=&quot; + user.getName()));
+//        user name=name-2
+
+        // equals &amp; hashCode
+        System.out.println(&quot;user_2.equals(user_1) : &quot; + user_2.equals(user_1));
+        System.out.println(&quot;user_2.equals(test.users.get(2)) : &quot; + user_2.equals(test.users.get(2)));
+        int i = 2;
+        Address address2x = new Address(&quot;street-&quot; + i, 100 * i, &quot;city-&quot; + i, &quot;state-&quot; + i);
+        User user_2x = new User(i, &quot;name-&quot; + i, 33 + i, address2x);
+        System.out.println(&quot;user_2.equals(user_2x) : &quot; + user_2.equals(user_2x));
+
+        System.out.println(&quot;user_2.hashCode() : &quot; + user_2.hashCode());
+        System.out.println(&quot;test.users.get(2).hashCode() : &quot; + test.users.get(2).hashCode());
+        System.out.println(&quot;user_2x.hashCode() : &quot; + user_2x.hashCode());
+        boolean b = user_2.hashCode() == user_2x.hashCode();
+        String bt = b ? &quot;true&quot; : &quot;false&quot;;
+        System.out.println(&quot;user_2.hashCode() == user_2x.hashCode() : &quot; + bt);
+        // System.out.println(&quot;user_2.getAddress().hashCode() : &quot; + user_2.getAddress().hashCode());
+    }
+
+    Optional&lt;User&gt; findUserById(int id) {
+        return users.containsKey(id) ? Optional.of(users.get(id)) : Optional.empty();
+    }
+
+    void initUsers() {
+        for (int i = 0; i &lt; 5; i++) {
+            Address address = new Address(&quot;street-&quot; + i, 100 * i, &quot;city-&quot; + i, &quot;state-&quot; + i);
+            users.put(i, new User(i, &quot;name-&quot; + i, 33 + i, address));
+        }
+    }
+
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">User.java</span>
+        <span class="path">User.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.optional;
+
+import java.util.Objects;
+
+public class User {
+    private int id;
+    private String name;
+    private int age;
+    private Address address;
+
+    public User(int id, String name, int age, Address address) {
+        this.id = id;
+        this.name = name;
+        this.age = age;
+        this.address = address;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public Address getAddress() {
+        return address;
+    }
+
+    public void setAddress(Address address) {
+        this.address = address;
+    }
+
+    public boolean isOlder35() {
+        return age &gt; 35;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;User{&quot; +
+                &quot;id=&quot; + id +
+                &quot;, name=&#x27;&quot; + name + &#x27;\&#x27;&#x27; +
+                &quot;, age=&quot; + age +
+                &quot;, address=&quot; + address +
+                &#x27;}&#x27;;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return id == user.id &amp;&amp; age == user.age &amp;&amp; Objects.equals(name, user.name) &amp;&amp; Objects.equals(address, user.address);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, age, address);
+    }
+}
+</code></pre>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      hljs.highlightAll();
+    });
+
+    // ── per-card toggle ──────────────────────────────────────────────
+    function toggleCard(header) {
+      const body = header.nextElementSibling;
+      const btn  = header.querySelector('.toggle-btn');
+      const collapsed = body.classList.toggle('collapsed');
+      btn.textContent = collapsed ? '\u25b6 Show' : '\u25bc Hide';
+    }
+
+    // ── show / collapse all ──────────────────────────────────────────
+    function showAll() {
+      document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+        b.classList.remove('collapsed');
+        b.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+      });
+    }
+    function collapseAll() {
+      document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+        b.classList.add('collapsed');
+        b.closest('.card').querySelector('.toggle-btn').textContent = '\u25b6 Show';
+      });
+    }
+
+    // ── card-level filter (show/hide cards by match) ─────────────────
+    function applyCardFilter(term) {
+      const lower = term.trim().toLowerCase();
+      let shown = 0;
+      document.querySelectorAll('.card').forEach(card => {
+        const has = !lower || card.querySelector('code').textContent.toLowerCase().includes(lower);
+        card.classList.toggle('hidden-by-search', !has);
+        if (has) shown++;
+      });
+      const info = document.getElementById('match-info');
+      info.textContent = lower
+        ? (shown === 0 ? 'No files match' : shown + ' file' + (shown > 1 ? 's' : '') + ' match')
+        : '';
+    }
+
+    // ── in-page text search ──────────────────────────────────────────
+    let marks = [];
+    let currentIdx = -1;
+    const psbInput = document.getElementById('psb-input');
+    const psbCount = document.getElementById('psb-count');
+
+    function clearMarks() {
+      document.querySelectorAll('mark.sh, mark.sh-current').forEach(m => {
+        m.outerHTML = m.textContent
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      });
+      // normalize() re-merges adjacent text nodes
+      document.querySelectorAll('.card-body code').forEach(c => c.normalize());
+      marks = [];
+      currentIdx = -1;
+    }
+
+    function findAll(term) {
+      clearMarks();
+      if (!term) { updateCount(); return; }
+      const lower = term.toLowerCase();
+
+      document.querySelectorAll('.card-body code').forEach(code => {
+        const walker = document.createTreeWalker(code, NodeFilter.SHOW_TEXT);
+        const nodes = [];
+        let n;
+        while ((n = walker.nextNode())) nodes.push(n);
+
+        nodes.forEach(node => {
+          const text = node.textContent;
+          const ltxt = text.toLowerCase();
+          let pos = 0, start;
+          const frags = [];
+          while ((start = ltxt.indexOf(lower, pos)) !== -1) {
+            if (start > pos) frags.push(document.createTextNode(text.slice(pos, start)));
+            const m = document.createElement('mark');
+            m.className = 'sh';
+            m.textContent = text.slice(start, start + term.length);
+            frags.push(m);
+            marks.push(m);
+            pos = start + term.length;
+          }
+          if (frags.length) {
+            if (pos < text.length) frags.push(document.createTextNode(text.slice(pos)));
+            node.replaceWith(...frags);
+          }
+        });
+      });
+      updateCount();
+    }
+
+    function goTo(idx) {
+      if (!marks.length) return;
+      if (currentIdx >= 0) {
+        marks[currentIdx].className = 'sh';
+      }
+      currentIdx = ((idx % marks.length) + marks.length) % marks.length;
+      const m = marks[currentIdx];
+      m.className = 'sh-current';
+      // expand card if collapsed
+      const body = m.closest('.card-body');
+      if (body && body.classList.contains('collapsed')) {
+        body.classList.remove('collapsed');
+        body.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+      }
+      m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      updateCount();
+    }
+
+    function updateCount() {
+      if (!psbInput.value.trim()) { psbCount.textContent = ''; return; }
+      psbCount.textContent = marks.length === 0
+        ? '0 matches'
+        : (currentIdx + 1) + ' / ' + marks.length;
+      document.getElementById('psb-prev').disabled = marks.length === 0;
+      document.getElementById('psb-next').disabled = marks.length === 0;
+    }
+
+    function runPageSearch() {
+      const term = psbInput.value;
+      applyCardFilter(term);
+      findAll(term);
+      if (marks.length) goTo(0);
+    }
+
+    function prevMatch() { if (marks.length) goTo(currentIdx - 1); }
+    function nextMatch() { if (marks.length) goTo(currentIdx + 1); }
+
+    function clearPageSearch() {
+      psbInput.value = '';
+      clearMarks();
+      applyCardFilter('');
+      updateCount();
+    }
+
+    psbInput.addEventListener('input', runPageSearch);
+    psbInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.shiftKey ? prevMatch() : nextMatch(); }
+      if (e.key === 'Escape') clearPageSearch();
+    });
+
+    // ── messages from sidebar ────────────────────────────────────────
+    window.addEventListener('message', function (e) {
+      if (!e.data) return;
+      if (e.data.type === 'page-search') {
+        psbInput.value = e.data.term || '';
+        runPageSearch();
+      }
+    });
+  </script>
+</body>
+</html>

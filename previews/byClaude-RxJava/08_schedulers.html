@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>08 — Schedulers</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#1e1e2e;--surface:#24273a;--text:#cdd6f4;--subtext:#a6adc8;
+  --accent:#89b4fa;--accent2:#cba6f7;--border:#313244;--hover:#45475a;
+  --mark-y:#f9e2af;--mark-o:#fab387;--red:#f38ba8;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+#header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:10px 16px 8px}
+.header-top{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+h1{font-size:16px;font-weight:600;color:var(--accent2);white-space:nowrap}
+h1 .num{color:var(--accent);margin-right:6px}
+.toolbar{display:flex;align-items:center;gap:6px}
+.toolbar button{background:var(--hover);border:1px solid var(--border);color:var(--text);
+                border-radius:5px;padding:3px 10px;font-size:12px;cursor:pointer}
+.toolbar button:hover{background:var(--accent);color:#1e1e2e}
+.match-info{font-size:12px;color:var(--subtext);margin-left:4px}
+.search-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.search-input-wrap{position:relative;display:flex;align-items:center}
+#psb-input{background:#313244;border:1px solid var(--border);color:var(--text);
+           border-radius:6px;padding:4px 28px 4px 10px;font-size:13px;width:220px;outline:none}
+#psb-input:focus{border-color:var(--accent)}
+.search-clear{position:absolute;right:6px;background:none;border:none;
+              color:var(--subtext);cursor:pointer;font-size:14px}
+.search-clear:hover{color:var(--red)}
+.search-bar button{background:var(--hover);border:1px solid var(--border);color:var(--text);
+                   border-radius:5px;padding:3px 9px;font-size:12px;cursor:pointer}
+.search-bar button:hover:not(:disabled){background:var(--accent);color:#1e1e2e}
+.search-bar button:disabled{opacity:.4;cursor:default}
+#psb-count{font-size:12px;color:var(--accent);min-width:70px}
+#cards{padding:16px}
+/* scroll-margin-top keeps the card below the sticky header when jumped to via hash */
+.card{background:var(--surface);border:1px solid var(--border);
+      border-radius:8px;margin-bottom:14px;overflow:hidden;scroll-margin-top:115px}
+.card.hidden-by-search{display:none}
+.card-header{display:flex;align-items:center;justify-content:space-between;
+             padding:10px 14px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border)}
+.card-header:hover{background:var(--hover)}
+.card-filename{font-family:'JetBrains Mono','Fira Code',Consolas,monospace;
+               font-size:13px;color:var(--accent);font-weight:600}
+.toggle-btn{background:none;border:1px solid var(--border);color:var(--subtext);
+            border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer}
+.toggle-btn:hover{background:var(--accent);color:#1e1e2e;border-color:var(--accent)}
+.card-body{overflow:hidden}
+.card-body.collapsed{display:none}
+.card-body pre{margin:0;border-radius:0}
+.card-body code{font-family:'JetBrains Mono','Fira Code',Consolas,monospace!important;
+                font-size:13px!important;line-height:1.6!important}
+mark.sh{background:var(--mark-y);color:#1e1e2e;border-radius:2px}
+mark.sh-current{background:var(--mark-o);color:#1e1e2e;border-radius:2px;outline:2px solid var(--red)}
+</style>
+</head>
+<body>
+<div id="header">
+  <div class="header-top">
+    <h1><span class="num">08</span>Schedulers</h1>
+    <div class="toolbar">
+      <button onclick="showAll()">&#9660; Show all</button>
+      <button onclick="collapseAll()">&#9654; Collapse all</button>
+      <span id="match-info" class="match-info"></span>
+    </div>
+  </div>
+  <div class="search-bar">
+    <div class="search-input-wrap">
+      <input id="psb-input" type="text" placeholder="Search in code..." autocomplete="off" spellcheck="false">
+      <button class="search-clear" onclick="clearPageSearch()" title="Clear">&#x2715;</button>
+    </div>
+    <button id="psb-prev" onclick="prevMatch()" disabled>&#9664; Prev</button>
+    <button id="psb-next" onclick="nextMatch()" disabled>Next &#9654;</button>
+    <span id="psb-count"></span>
+    <button onclick="copySearch()" title="Copy search text">&#x2398; Copy</button>
+  </div>
+</div>
+<div id="cards">
+  <div class="card" id="card-header">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">_08_Schedulers.java</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package tutorial;
+
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+
+/**
+ * TUTORIAL 08 — Schedulers (Threading)
+ *
+ * &lt;p&gt;By default, RxJava is single-threaded: everything runs on the thread that calls
+ * {@code subscribe()}. Schedulers let you move work to other threads.
+ *
+ * &lt;p&gt;Two key operators control threading:
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code subscribeOn(Scheduler)} — controls which thread the *source* (data production)
+ *       runs on. Only the first {@code subscribeOn} in a chain has effect.&lt;/li&gt;
+ *   &lt;li&gt;{@code observeOn(Scheduler)} — controls which thread *downstream operators and
+ *       the subscriber* run on. Can appear multiple times to switch threads mid-chain.&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;Built-in Schedulers:
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@link Schedulers#io()}            — elastic thread pool for I/O (DB, network, file)&lt;/li&gt;
+ *   &lt;li&gt;{@link Schedulers#computation()}   — fixed thread pool (CPU count) for CPU work&lt;/li&gt;
+ *   &lt;li&gt;{@link Schedulers#newThread()}     — creates a new thread for each subscription&lt;/li&gt;
+ *   &lt;li&gt;{@link Schedulers#single()}        — single background thread, FIFO queue&lt;/li&gt;
+ *   &lt;li&gt;{@link Schedulers#trampoline()}    — queues work on the *current* thread (no new thread)&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;Run: right-click → Run &#x27;_08_Schedulers.main()&#x27;
+ */
+public class _08_Schedulers {
+
+    public static void main(String[] args) throws InterruptedException {
+        demoDefaultThread();
+        demoSubscribeOn();
+        demoObserveOn();
+        demoSubscribeOnAndObserveOn();
+        demoIoScheduler();
+        demoComputationScheduler();
+        demoNewThreadScheduler();
+        demoSingleScheduler();
+    }
+
+    /** Prints the current thread name with a label. */
+    private static void printThread(String label) {
+        System.out.println(label + &quot; → thread: [&quot; + Thread.currentThread().getName() + &quot;]&quot;);
+    }
+
+    // -------------------------------------------------------------------------
+    // Default threading
+    // -------------------------------------------------------------------------
+
+    /**
+     * Without any Scheduler, everything runs on the calling thread ({@code main}).
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demodefaultthread">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoDefaultThread()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoDefaultThread() {
+        System.out.println(&quot;=== Default thread (no Scheduler) ===&quot;);
+
+        Observable.just(&quot;Hello&quot;)
+                .map(s -&gt; { printThread(&quot;map&quot;); return s.toUpperCase(); }) // → map → thread: [main]
+                .subscribe(s -&gt; printThread(&quot;subscriber&quot;));                // → subscriber → thread: [main]
+        // === Default thread (no Scheduler) ===
+        //map → thread: [main]
+        //subscriber → thread: [main]
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // subscribeOn
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code subscribeOn(Scheduler)} moves the *subscription* (source data production)
+     * to the given Scheduler. All operators above it run on that Scheduler&#x27;s thread.
+     *
+     * &lt;p&gt;Rule: only the *first* {@code subscribeOn} in a chain takes effect — subsequent
+     * ones are ignored because the thread is already selected by the first one.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demosubscribeon">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoSubscribeOn()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoSubscribeOn() throws InterruptedException {
+        System.out.println(&quot;=== subscribeOn ===&quot;);
+
+        Observable.just(&quot;data&quot;)
+                .doOnSubscribe(d -&gt; printThread(&quot;doOnSubscribe&quot;))
+                .map(s -&gt; { printThread(&quot;map&quot;); return s; })
+                .subscribeOn(Schedulers.io())    // move source to an IO thread
+                .subscribe(s -&gt; printThread(&quot;subscriber&quot;));
+
+        Thread.sleep(300); // wait for async work
+
+        // === subscribeOn ===
+        //doOnSubscribe → thread: [RxCachedThreadScheduler-1]
+        //map → thread: [RxCachedThreadScheduler-1]
+        //subscriber → thread: [RxCachedThreadScheduler-1]
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // observeOn
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observeOn(Scheduler)} switches the thread for *all downstream* operators
+     * (from that point in the chain). It can appear multiple times to hop between threads.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoobserveon">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoObserveOn()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoObserveOn() throws InterruptedException {
+        System.out.println(&quot;=== observeOn ===&quot;);
+
+        Observable.just(&quot;data&quot;)
+                .map(s -&gt; { printThread(&quot;map (before observeOn)&quot;); return s; })
+                .observeOn(Schedulers.newThread())
+                .map(s -&gt; { printThread(&quot;map (after observeOn)&quot;); return s; })
+                .subscribe(s -&gt; printThread(&quot;subscriber&quot;));
+
+        Thread.sleep(300);
+        // === observeOn ===
+        //map (before observeOn) → thread: [main]
+        //map (after observeOn) → thread: [RxNewThreadScheduler-1]
+        //subscriber → thread: [RxNewThreadScheduler-1]
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // subscribeOn + observeOn together
+    // -------------------------------------------------------------------------
+
+    /**
+     * The classic pattern:
+     * &lt;ul&gt;
+     *   &lt;li&gt;{@code subscribeOn(Schedulers.io())} — produce data on a background IO thread&lt;/li&gt;
+     *   &lt;li&gt;{@code observeOn(Schedulers.single())} — deliver results on a specific thread
+     *       (in Android this would be {@code AndroidSchedulers.mainThread()})&lt;/li&gt;
+     * &lt;/ul&gt;
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demosubscribeonandobserveon">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoSubscribeOnAndObserveOn()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoSubscribeOnAndObserveOn() throws InterruptedException {
+        System.out.println(&quot;=== subscribeOn + observeOn ===&quot;);
+
+        Observable.fromCallable(() -&gt; {
+                    printThread(&quot;source (producing data)&quot;);
+                    // → source (producing data) → thread: [RxCachedThreadScheduler-2]
+                    Thread.sleep(100); // simulate I/O
+                    return &quot;DB result&quot;;
+                })
+                .subscribeOn(Schedulers.io())         // production on IO thread
+                .observeOn(Schedulers.single())       // delivery on single-thread
+                .subscribe(result -&gt; {
+                    printThread(&quot;subscriber (consuming result)&quot;);
+                    System.out.println(&quot;Result: &quot; + result); // → Result: DB result
+                });
+
+        Thread.sleep(500);
+        // === subscribeOn + observeOn ===
+        //source (producing data) → thread: [RxCachedThreadScheduler-1]
+        //subscriber (consuming result) → thread: [RxSingleScheduler-1]
+        //Result: DB result
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Schedulers.io()
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@link Schedulers#io()} maintains an elastic thread pool that grows as needed
+     * and reuses idle threads. Perfect for I/O-bound work (network calls, file access,
+     * database queries) where threads spend most of their time waiting.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoioscheduler">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoIoScheduler()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoIoScheduler() throws InterruptedException {
+        System.out.println(&quot;=== Schedulers.io() — multiple parallel I/O tasks ===&quot;);
+
+        // Three &quot;I/O&quot; tasks run in parallel on the IO pool
+        for (int i = 1; i &lt;= 3; i++) {
+            final int taskId = i;
+            Observable.fromCallable(() -&gt; {
+                        Thread.sleep(50);
+                        return &quot;IO Task &quot; + taskId + &quot; done&quot;;
+                    })
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(msg -&gt; System.out.println(msg + &quot; on [&quot; + Thread.currentThread().getName() + &quot;]&quot;));
+        }
+        // Output (order may vary, all on different RxCachedThreadScheduler threads):
+        // === Schedulers.io() — multiple parallel I/O tasks ===
+        //IO Task 1 done on [RxCachedThreadScheduler-1]
+        //IO Task 2 done on [RxCachedThreadScheduler-2]
+        //IO Task 3 done on [RxCachedThreadScheduler-3]
+
+        Thread.sleep(400);
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Schedulers.computation()
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@link Schedulers#computation()} uses a fixed-size thread pool equal to the number
+     * of available CPU cores. Use it for CPU-intensive work (parsing, calculations, sorting)
+     * where you want to saturate cores without overloading the system.
+     *
+     * &lt;p&gt;Do NOT use it for blocking I/O — a blocked computation thread wastes a CPU slot.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-democomputationscheduler">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoComputationScheduler()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoComputationScheduler() throws InterruptedException {
+        System.out.println(&quot;=== Schedulers.computation() ===&quot;);
+
+        Observable.range(1, 4)
+                .flatMap(n -&gt; Observable.fromCallable(() -&gt; {
+                            // Simulate CPU work
+                            long sum = 0;
+                            for (int i = 0; i &lt; 1_000_000; i++) sum += i;
+                            return &quot;Task &quot; + n + &quot; result=&quot; + sum;
+                        })
+                        .subscribeOn(Schedulers.computation()))
+                .subscribe(result -&gt;
+                        System.out.println(result + &quot; on [&quot; + Thread.currentThread().getName() + &quot;]&quot;));
+        // ... (order may vary)
+        // === Schedulers.computation() ===
+        //Task 1 result=499999500000 on [RxComputationThreadPool-1]
+        //Task 2 result=499999500000 on [RxComputationThreadPool-1]
+        //Task 3 result=499999500000 on [RxComputationThreadPool-1]
+        //Task 4 result=499999500000 on [RxComputationThreadPool-1]
+
+        Thread.sleep(1_000);
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Schedulers.newThread()
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@link Schedulers#newThread()} creates a brand-new thread for every subscription.
+     * Unlike {@code io()}, threads are NOT pooled or reused — each subscribe spawns one
+     * fresh thread. Use sparingly; prefer {@code io()} for pooling efficiency.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demonewthreadscheduler">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoNewThreadScheduler()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoNewThreadScheduler() throws InterruptedException {
+        System.out.println(&quot;=== Schedulers.newThread() ===&quot;);
+
+        Observable.just(&quot;Task&quot;)
+                .subscribeOn(Schedulers.newThread())
+                .subscribe(t -&gt;
+                        System.out.println(t + &quot; on [&quot; + Thread.currentThread().getName() + &quot;]&quot;));
+        // === Schedulers.newThread() ===
+        //Task on [RxNewThreadScheduler-2]
+
+        Thread.sleep(200);
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Schedulers.single()
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@link Schedulers#single()} uses a single background thread shared across
+     * all subscribers. Tasks are queued and executed one at a time in FIFO order.
+     *
+     * &lt;p&gt;Useful when you need to serialize operations (e.g., write to a resource
+     * that is not thread-safe) without using synchronization primitives.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demosinglescheduler">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoSingleScheduler()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoSingleScheduler() throws InterruptedException {
+        System.out.println(&quot;=== Schedulers.single() — tasks run one at a time ===&quot;);
+
+        for (int i = 1; i &lt;= 3; i++) {
+            final int n = i;
+            Observable.fromCallable(() -&gt; {
+                        Thread.sleep(50);
+                        return &quot;Single task &quot; + n;
+                    })
+                    .subscribeOn(Schedulers.single())
+                    .subscribe(msg -&gt;
+                            System.out.println(msg + &quot; on [&quot; + Thread.currentThread().getName() + &quot;]&quot;));
+        }
+        // All tasks run on the SAME thread, sequentially:
+        // === Schedulers.single() — tasks run one at a time ===
+        //Single task 1 on [RxSingleScheduler-1]
+        //Single task 2 on [RxSingleScheduler-1]
+        //Single task 3 on [RxSingleScheduler-1]
+
+        Thread.sleep(500);
+        System.out.println();
+    }
+}
+
+/*
+&quot;C:\Program Files\Java\jdk-25\bin\java.exe&quot; -Dvaadin.copilot.pluginDotFilePath=C:\Users\roman\Work\claude\projects\RxJava\.idea\.copilot-plugin &quot;-javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.3.1\lib\idea_rt.jar=55744&quot; -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -classpath C:\Users\roman\Work\claude\projects\RxJava\target\classes;C:\Users\roman\.m2\repository\io\reactivex\rxjava3\rxjava\3.1.9\rxjava-3.1.9.jar;C:\Users\roman\.m2\repository\org\reactivestreams\reactive-streams\1.0.4\reactive-streams-1.0.4.jar tutorial._08_Schedulers
+=== Default thread (no Scheduler) ===
+map → thread: [main]
+subscriber → thread: [main]
+
+=== subscribeOn ===
+doOnSubscribe → thread: [RxCachedThreadScheduler-1]
+map → thread: [RxCachedThreadScheduler-1]
+subscriber → thread: [RxCachedThreadScheduler-1]
+
+=== observeOn ===
+map (before observeOn) → thread: [main]
+map (after observeOn) → thread: [RxNewThreadScheduler-1]
+subscriber → thread: [RxNewThreadScheduler-1]
+
+=== subscribeOn + observeOn ===
+source (producing data) → thread: [RxCachedThreadScheduler-1]
+subscriber (consuming result) → thread: [RxSingleScheduler-1]
+Result: DB result
+
+=== Schedulers.io() — multiple parallel I/O tasks ===
+IO Task 1 done on [RxCachedThreadScheduler-1]
+IO Task 2 done on [RxCachedThreadScheduler-2]
+IO Task 3 done on [RxCachedThreadScheduler-3]
+
+=== Schedulers.computation() ===
+Task 4 result=499999500000 on [RxComputationThreadPool-4]
+Task 1 result=499999500000 on [RxComputationThreadPool-4]
+Task 2 result=499999500000 on [RxComputationThreadPool-4]
+Task 3 result=499999500000 on [RxComputationThreadPool-4]
+
+=== Schedulers.newThread() ===
+Task on [RxNewThreadScheduler-2]
+
+=== Schedulers.single() — tasks run one at a time ===
+Single task 1 on [RxSingleScheduler-1]
+Single task 2 on [RxSingleScheduler-1]
+Single task 3 on [RxSingleScheduler-1]
+
+
+Process finished with exit code 0
+
+ */</code></pre>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<script>
+hljs.highlightAll();
+function toggleCard(h){const b=h.nextElementSibling,btn=h.querySelector('.toggle-btn'),c=b.classList.toggle('collapsed');btn.textContent=c?'\u25b6 Show':'\u25bc Hide';}
+function showAll(){document.querySelectorAll('.card-body').forEach(b=>{b.classList.remove('collapsed');b.closest('.card').querySelector('.toggle-btn').textContent='\u25bc Hide';});}
+function collapseAll(){document.querySelectorAll('.card-body').forEach(b=>{b.classList.add('collapsed');b.closest('.card').querySelector('.toggle-btn').textContent='\u25b6 Show';});}
+const psbInput=document.getElementById('psb-input'),psbCount=document.getElementById('psb-count');
+let marks=[],currentIdx=-1;
+function clearMarks(){document.querySelectorAll('mark.sh,mark.sh-current').forEach(m=>m.parentNode.replaceChild(document.createTextNode(m.textContent),m));document.querySelectorAll('.card-body code').forEach(c=>c.normalize());marks=[];currentIdx=-1;}
+function findAll(term){clearMarks();if(!term.trim()){updateCount();return;}const lower=term.toLowerCase();document.querySelectorAll('.card-body code').forEach(code=>{const walker=document.createTreeWalker(code,NodeFilter.SHOW_TEXT);const nodes=[];let n;while((n=walker.nextNode()))nodes.push(n);nodes.forEach(node=>{const text=node.textContent,ltxt=text.toLowerCase();let pos=0,start;const frags=[];while((start=ltxt.indexOf(lower,pos))!==-1){if(start>pos)frags.push(document.createTextNode(text.slice(pos,start)));const m=document.createElement('mark');m.className='sh';m.textContent=text.slice(start,start+term.length);frags.push(m);marks.push(m);pos=start+term.length;}if(frags.length){if(pos<text.length)frags.push(document.createTextNode(text.slice(pos)));node.replaceWith(...frags);}});});updateCount();}
+function goTo(idx){if(!marks.length)return;if(currentIdx>=0)marks[currentIdx].className='sh';currentIdx=((idx%marks.length)+marks.length)%marks.length;marks[currentIdx].className='sh-current';const body=marks[currentIdx].closest('.card-body');if(body&&body.classList.contains('collapsed')){body.classList.remove('collapsed');body.closest('.card').querySelector('.toggle-btn').textContent='\u25bc Hide';}marks[currentIdx].scrollIntoView({behavior:'smooth',block:'center'});updateCount();}
+function nextMatch(){if(marks.length)goTo(currentIdx+1);}
+function prevMatch(){if(marks.length)goTo(currentIdx-1);}
+function updateCount(){const v=psbInput.value.trim();if(!v){psbCount.textContent='';return;}psbCount.textContent=marks.length===0?'0 matches':(currentIdx+1)+' / '+marks.length;document.getElementById('psb-prev').disabled=marks.length===0;document.getElementById('psb-next').disabled=marks.length===0;}
+function applyCardFilter(term){const lower=term.trim().toLowerCase();let shown=0;document.querySelectorAll('.card').forEach(card=>{const has=!lower||card.querySelector('code').textContent.toLowerCase().includes(lower);card.classList.toggle('hidden-by-search',!has);if(has)shown++;});document.getElementById('match-info').textContent=lower?(shown===0?'No match':shown+' card'+(shown>1?'s':'')+' match'):'';}
+function runPageSearch(){const term=psbInput.value;applyCardFilter(term);findAll(term);if(marks.length)goTo(0);}
+function clearPageSearch(){psbInput.value='';clearMarks();applyCardFilter('');psbCount.textContent='';document.getElementById('psb-prev').disabled=true;document.getElementById('psb-next').disabled=true;document.getElementById('match-info').textContent='';}
+function copySearch(){if(psbInput.value)navigator.clipboard.writeText(psbInput.value);}
+psbInput.addEventListener('input',runPageSearch);
+psbInput.addEventListener('keydown',function(e){if(e.key==='Enter'){e.shiftKey?prevMatch():nextMatch();}if(e.key==='Escape')clearPageSearch();});
+window.addEventListener('message',function(e){if(!e.data||e.data.type!=='page-search')return;psbInput.value=e.data.term||'';runPageSearch();});
+</script>
+</body>
+</html>

@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Functional Interfaces - Java Preview</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── sticky header panel ── */
+    #page-header {
+      flex-shrink: 0;
+      background: #f0f2f5;
+      padding: 16px 20px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    h1 { color: #2d3748; margin-bottom: 10px; font-size: 1.3rem; }
+
+    /* ── toolbar (show/collapse all) ── */
+    .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .toolbar button {
+      padding: 5px 13px; border: none; border-radius: 5px; cursor: pointer;
+      font-size: 0.82rem; font-weight: 600; transition: background 0.15s;
+    }
+    .btn-show { background: #3182ce; color: #fff; }
+    .btn-show:hover { background: #2b6cb0; }
+    .btn-hide { background: #718096; color: #fff; }
+    .btn-hide:hover { background: #4a5568; }
+    .match-info { font-size: 0.82rem; color: #718096; margin-left: 4px; }
+
+    /* ── page search bar ── */
+    .page-search-bar {
+      display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+      background: #fff; border: 1px solid #cbd5e0; border-radius: 7px;
+      padding: 6px 12px;
+    }
+    .page-search-bar input {
+      flex: 1; min-width: 160px; padding: 5px 8px;
+      border: 1px solid #cbd5e0; border-radius: 5px;
+      font-size: 0.85rem; outline: none; color: #2d3748;
+    }
+    .page-search-bar input:focus { border-color: #63b3ed; }
+    .psb-btn {
+      padding: 5px 11px; border: 1px solid #cbd5e0; border-radius: 5px;
+      background: #f7fafc; cursor: pointer; font-size: 0.8rem;
+      color: #4a5568; transition: background 0.12s;
+    }
+    .psb-btn:hover { background: #e2e8f0; }
+    .psb-btn:disabled { opacity: 0.4; cursor: default; }
+    .psb-clear {
+      padding: 5px 9px; border: 1px solid #cbd5e0; border-radius: 5px;
+      background: #f7fafc; cursor: pointer; font-size: 0.85rem;
+      color: #718096; transition: background 0.12s;
+    }
+    .psb-clear:hover { background: #fed7d7; color: #c53030; border-color: #fc8181; }
+    .psb-count { font-size: 0.8rem; color: #718096; white-space: nowrap; min-width: 60px; }
+
+    /* ── highlight marks ── */
+    mark.sh { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 1px; }
+    mark.sh-current { background: #f97316; color: #fff; border-radius: 2px; padding: 0 1px; }
+
+    /* ── scrollable cards area ── */
+    #cards-container {
+      flex: 1; overflow-y: auto;
+      padding: 20px;
+    }
+
+    .card { background: #fff; border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: hidden; }
+    .card.hidden-by-search { display: none; }
+
+    .card-header {
+      background: #2d3748; color: #e2e8f0;
+      padding: 9px 14px;
+      display: flex; align-items: center; gap: 10px; cursor: pointer;
+      user-select: none;
+    }
+    .card-header:hover { background: #3a4a5c; }
+    .card-header .filename { font-size: 0.9rem; font-weight: 700; flex: 1; }
+    .card-header .path { color: #a0aec0; font-size: 0.78rem; }
+    .card-header .toggle-btn {
+      background: none; border: 1px solid #4a5568; border-radius: 4px;
+      color: #a0aec0; font-size: 0.75rem; padding: 2px 8px; cursor: pointer;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .card-header .toggle-btn:hover { border-color: #63b3ed; color: #63b3ed; }
+
+    .card-body { display: block; }
+    .card-body.collapsed { display: none; }
+
+    pre { margin: 0; overflow-x: auto; }
+    pre code.hljs { font-size: 13px; line-height: 1.5; padding: 16px !important; }
+  </style>
+</head>
+<body>
+  <div id="page-header">
+    <h1>Functional Interfaces</h1>
+    <div class="toolbar">
+      <button class="btn-show" onclick="showAll()">&#9660; Show all</button>
+      <button class="btn-hide" onclick="collapseAll()">&#9654; Collapse all</button>
+      <span class="match-info" id="match-info"></span>
+    </div>
+    <div class="page-search-bar">
+      <input id="psb-input" type="text" placeholder="&#128269; Search in code&hellip;" autocomplete="off">
+      <button class="psb-btn" id="psb-prev" onclick="prevMatch()" disabled title="Previous (Shift+Enter)">&#9650; Prev</button>
+      <button class="psb-btn" id="psb-next" onclick="nextMatch()" disabled title="Next (Enter)">&#9660; Next</button>
+      <button class="psb-clear" onclick="clearPageSearch()" title="Clear (Esc)">&#x2715;</button>
+      <span class="psb-count" id="psb-count"></span>
+    </div>
+  </div>
+  <div id="cards-container">
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">TestConsumer.java</span>
+        <span class="path">functional_interfaces/consumer/TestConsumer.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.functional_interfaces.consumer;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
+
+/**
+ * Represents an operation that accepts a single input argument and returns no result.
+ * Unlike most other functional interfaces, Consumer is expected to operate via side-effects.
+ *
+ * The Consumer interface consists of the following two functions:
+ *
+ * 1. accept() - This method accepts one value and performs the operation on the given argument
+ *
+ * 2. andThen() -  It returns a composed Consumer wherein the parameterized Consumer will be executed after the first one.
+ * If evaluation of either function throws an error, it is relayed to the caller of the composed operation.
+ * Note: The function being passed as the argument should be of type Consumer.
+ */
+public class TestConsumer {
+    public static void main(String[] args) {
+        test1();
+        test2();
+    }
+
+    static void test1() {
+        // Consumer to display a number
+        Consumer&lt;Integer&gt; display = a -&gt; System.out.println(&quot;display-a : &quot; + a); // display-a : 10
+
+        // Implement display using accept()
+        display.accept(10);
+
+        // Consumer to multiply 2 to every integer of a list
+        Consumer&lt;List&lt;Integer&gt; &gt; modify = list -&gt; {
+            for (int i = 0; i &lt; list.size(); i++) {
+                list.set(i, 2 * list.get(i));
+            }
+        };
+
+        // Consumer to display a list of numbers
+        Consumer&lt;List&lt;Integer&gt; &gt;
+                dispList = list -&gt; list.stream().forEach(a -&gt; System.out.print(a + &quot; &quot;));
+        Consumer&lt;List&lt;Integer&gt; &gt;
+                dispList2 = list -&gt; System.out.print(&quot;\ndispList2 : &quot; + Arrays.toString(list.stream().toList().toArray()));
+
+        List&lt;Integer&gt; list = new ArrayList&lt;&gt;();
+        list.add(2);
+        list.add(1);
+        list.add(3);
+        System.out.println(&quot;list-a : &quot; + Arrays.toString(list.toArray())); // list-a : [2, 1, 3]
+
+        // Implement modify using accept()
+        modify.accept(list);
+        System.out.println(&quot;list-b : &quot; + Arrays.toString(list.toArray())); // list-b : [4, 2, 6]
+
+        // Implement dispList using accept()
+        dispList.accept(list); // 4 2 6
+
+        // using addThen()
+        System.out.println(&quot;\nusing addThen()&quot;);
+        modify.andThen(dispList).accept(list);
+        // using addThen()
+        // 8 4 12
+
+        dispList2.accept(list); // dispList2 : [8, 4, 12]
+        modify.accept(list);
+        dispList2.accept(list); // dispList2 : [16, 8, 24]
+
+//        Consumer&lt;Integer&gt; modify2 = a -&gt; Integer.valueOf(a + 11);
+//        Integer int1 = 3;
+//        Integer int2 = 5;
+//        System.out.println(&quot;int1 = &quot; + int1); //
+//        System.out.println(&quot;int2 = &quot; + int2); //
+//        modify2.accept(int1);
+//        modify2.accept(int2);
+//        System.out.println(&quot;int1 = &quot; + int1); //
+//        System.out.println(&quot;int2 = &quot; + int2); //
+    }
+
+    static void test2() {
+        System.out.println(&quot;\n* * * test2&quot;);
+        List&lt;Integer&gt; list = Arrays.asList(1, 2, 3, 4, 5);
+
+        // 2. Higher Order Function
+        // 2.1 This example accepts Consumer as an argument, simulates a forEach to print each item from a list.
+
+        // implementation of the Consumer&#x27;s accept methods.
+        Consumer&lt;Integer&gt; consumer = System.out::println; // 1..5
+        forEach(list, consumer);
+
+        // or call this directly
+        forEach(list, System.out::println); // 1..5
+
+        // 2.2 Same forEach method to accept Consumer as an argument; this time, we will print the length of the string.
+        List&lt;String&gt; list2 = Arrays.asList(&quot;a&quot;, &quot;ab&quot;, &quot;abc&quot;);
+        forEach(list2, (String x) -&gt; System.out.println(x.length())); // 1 2 3
+
+
+    }
+
+    static &lt;T&gt; void forEach(List&lt;T&gt; list, Consumer&lt;T&gt; consumer) {
+        for (T t : list) {
+            consumer.accept(t);
+        }
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">TestFunction.java</span>
+        <span class="path">functional_interfaces/function/TestFunction.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.functional_interfaces.function;
+
+import java.util.*;
+import java.util.function.Function;
+
+/**
+ * Represents a function that accepts one argument and produces a result.
+ * This is a functional interface whose functional method is apply(Object).
+ *
+ * compose
+ * Returns a composed function that first applies the before function to its input, and then applies this function to the result.
+ * If evaluation of either function throws an exception, it is relayed to the caller of the composed function.
+ *
+ * apply
+ * Applies this function to the given argument.
+ *
+ * In Java 8, Function is a functional interface; it takes an argument (object of type T) and returns an object (object of type R).
+ * The argument and output can be a different type.
+ */
+public class TestFunction {
+    public static void main(String[] args) {
+//        TestFunction obj = new TestFunction();
+        test1();
+        test2();
+        test3();
+        test4();
+        test5();
+        test6();
+        test7();
+        test8();
+        test9();
+    }
+
+    static void test1() {
+        Map&lt;String, Integer&gt; nameMap = new HashMap&lt;&gt;();
+        nameMap.put(&quot;A&quot;, 1);
+        Integer value = nameMap.computeIfAbsent(&quot;John&quot;, s -&gt; s.length());
+        System.out.println(&quot;value=&quot; + value); //4
+        Integer value2 = nameMap.computeIfAbsent(&quot;A&quot;, String::length);
+        System.out.println(&quot;value2=&quot; + value2); //1
+        Integer value3 = nameMap.computeIfAbsent(&quot;John&quot;, String::length);
+        System.out.println(&quot;value3=&quot; + value3); //4
+    }
+
+    /*
+    * apply
+    * Applies this function to the given argument.
+    *
+    * compose
+    * Returns a composed function that first applies the before function to its input, and then applies this function to the result.
+    * If evaluation of either function throws an exception, it is relayed to the caller of the composed function.
+    * */
+
+    static void test2() {
+        Function&lt;Integer, String&gt; intToString = Object::toString;
+        Function&lt;String, String&gt; quote = s -&gt; &quot;&#x27;&quot; + s + &quot;&#x27;&quot;;
+
+        Function&lt;Integer, String&gt; quoteIntToString = quote.compose(intToString);
+        System.out.println(&quot;quoteIntToString.apply(5)=&quot; + quoteIntToString.apply(5)); //&#x27;5&#x27;
+        System.out.println(&quot;quote.apply(11)=&quot; + quote.apply(&quot;11&quot;)); //&#x27;11&#x27;
+    }
+
+    static void test3() {
+        Map&lt;String, Integer&gt; salaries = new HashMap&lt;&gt;();
+        salaries.put(&quot;John&quot;, 40000);
+        salaries.put(&quot;Freddy&quot;, 30000);
+        salaries.put(&quot;Samuel&quot;, 50000);
+
+        salaries.replaceAll((name, oldValue) -&gt;
+                name.equals(&quot;Freddy&quot;) ? oldValue : oldValue + 10000);
+        System.out.println(&quot;salaries : &quot; + salaries);//{Samuel=60000, John=50000, Freddy=30000}
+    }
+
+    static void test4() {
+        List&lt;String&gt; names = Arrays.asList(&quot;bob&quot;, &quot;josh&quot;, &quot;megan&quot;);
+
+        names.replaceAll(name -&gt; name.toUpperCase());
+        System.out.println(&quot;names : &quot; + names);//[BOB, JOSH, MEGAN]
+
+        names.replaceAll(String::toLowerCase);
+        System.out.println(&quot;names : &quot; + names);//[bob, josh, megan]
+    }
+
+    static void test5() {
+        List&lt;Integer&gt; values = Arrays.asList(3, 5, 8, 9, 12);
+        int sum = values.stream()
+                .reduce(0, (i1, i2) -&gt; i1 + i2); // reduce(0, Integer::sum);
+        System.out.println(&quot;sum : &quot; + sum);//37, if identity is -1 : sum is 36
+        // The reduce method receives an initial accumulator value and a BinaryOperator function.
+        // The arguments of this function are a pair of values of the same type
+    }
+
+    static void test6() {
+        // lambda expression to define the calculate method
+        Square s = (int x) -&gt; x * x; //interface Square { int calculate(int x); }
+        System.out.println(&quot;s.calculate(1) : &quot; + s.calculate(1));//1
+        System.out.println(&quot;s.calculate(3) : &quot; + s.calculate(3));//9
+
+        // Function which takes in a number and returns half of it
+        Function&lt;Integer, Double&gt; half = a -&gt; a / 2.0;
+
+        /** Method 1: apply() - returns the function result
+         *     R apply(T t)
+         *     Parameters: This method takes in only one parameter t, which is the function argument
+         *     Return Type: This method returns the function result, which is of type R.
+         */
+
+        // Applying the function to get the result
+        System.out.println(half.apply(10));//5
+        System.out.println(half.apply(15));//7.5
+
+        /** Method 2: andThen()
+         * It returns a composed function wherein the parameterized function will be executed after the first one.
+         * If evaluation of either function throws an error, it is relayed to the caller of the composed function.
+         */
+        // Now triple the output of half function
+        half = half.andThen(a -&gt; 3 * a);
+        System.out.println(half.apply(10));//15.0
+        System.out.println(half.apply(15));//22.5
+
+        /** Method 3: compose()
+         * It returns a composed function wherein the parameterized function will be executed first and then the first one.
+         * If evaluation of either function throws an error, it is relayed to the caller of the composed function.
+         */
+        // Triple the value given to half function
+        half = half.compose(a -&gt; 3 * a);
+        System.out.println(half.apply(10));//45.0
+        System.out.println(half.apply(15));//67.5
+
+        /** Method 4: identity()
+         * This method returns a function that returns its only argument.
+         * If evaluation of either function throws an error, it is relayed to the caller of the composed function.
+         */
+        // Function which takes in a number and returns it
+        Function&lt;Integer, Integer&gt; i = Function.identity();
+        System.out.println(i.apply(10));//10
+
+        /* Using Function on Objects */
+        // create a Function that takes object and returns a greeting with the person&#x27;s name
+        Function&lt;Person, String&gt; greet = person -&gt; &quot;Hello, &quot; + person.name;
+
+        Person p = new Person(&quot;Geek1&quot;, 25);
+        System.out.println(&quot;Person p :&quot; + greet.apply(p));// Hello, Geek1
+
+        /* Handling Multiple Conditions Using Function */
+        Function&lt;Integer, Integer&gt; addFive = a -&gt; a + 5;
+        Function&lt;Integer, Integer&gt; multiplyByTwo = a -&gt; a * 2;
+
+        // Applying functions sequentially: Add five, then multiply by two
+        Function&lt;Integer, Integer&gt; result = addFive.andThen(multiplyByTwo);
+
+        System.out.println(&quot;result : &quot; + result.apply(3));//16
+
+    }
+
+    static void test7() {
+        MyFunctionalInterface func = (input) -&gt; System.out.println(&quot;Executing: &quot; + input);
+        // interface MyFunctionalInterface { void execute(String input); // Single abstract method ..
+        func.execute(&quot;Hello Functional Interface&quot;);// Executing: Hello Functional Interface
+    }
+
+    static void test8() {
+        Function&lt;Integer, String&gt; functionClass = new FunctionClass();
+        // class FunctionClass implements Function&lt;Integer, String&gt; {
+        //    public String apply(Integer t) {
+        //        return &quot;FunctionClass-&quot; + t + &quot; : &quot; + Integer.toString(t*t);
+        //    }
+        //}
+        System.out.println(functionClass.apply(2));//FunctionClass-2 : 4
+        System.out.println(functionClass.apply(11));//FunctionClass-11 : 121
+
+        // Java Function interface example
+        //Similarly, we can write a Java Function example that uses an inner class to implement the apply method
+        Function&lt;Integer, String&gt; innerClass = new Function&lt;&gt;() {
+            public String apply(Integer t) {
+//                return Integer.toString(t*t);
+                return &quot;innerClass-&quot; + t + &quot; : &quot; + Integer.toString(t * t);//innerClass-3 : 9
+            }
+        };
+        System.out.println(innerClass.apply(3));
+
+        // Java’s Function and lambda expression example
+        Function&lt;Integer, String&gt; verboseLambda = (Integer x)-&gt; { return Integer.toString(x*x); }; // verbose-podrobný
+        System.out.println(&quot;verboseLambda-5 : &quot; + verboseLambda.apply(5));//verboseLambda-5 : 25
+
+        Function&lt;Integer, String&gt; conciseLambda = (Integer x)-&gt; { return Integer.toString(x*x); }; // verbose-stručný
+        System.out.println(&quot;conciseLambda-5 : &quot; + conciseLambda.apply(5));//conciseLambda-5 : 25
+    }
+
+    static void test9() {
+        // 1. Function&lt;T, R&gt;
+        // 1.1 This example takes a &lt;T&gt; String and returns the length of the string as &lt;R&gt; Integer.
+        System.out.println(&quot;\n * * * test9&quot;);
+        Function&lt;String, Integer&gt; func = String::length;
+        Function&lt;String, Integer&gt; func2 = String::length;
+        Integer apply = func.apply(&quot;mkyong&quot;);
+        System.out.println(&quot;apply:&quot; + apply); // 6
+        System.out.println(&quot;func2.apply(\&quot;mkyong\&quot;)&quot; + func2.apply(&quot;mkyong&quot;)); // 6
+
+        // 2. Chain Function&lt;T, R&gt;
+        // 2.1 This example chains the Function with andThen().
+        Function&lt;String, Integer&gt; funcB = String::length;
+        Function&lt;Integer, Integer&gt; funcB2 = x -&gt; x * 2;
+        Integer result = funcB.andThen(funcB2).apply(&quot;mkyong&quot;); // 12
+        System.out.println(result);
+
+        // 3. List -&gt; Map
+        //3.1 This example accepts Function as an argument, convert a List into a Map.
+        TestFunction obj = new TestFunction();
+        List&lt;String&gt; list = Arrays.asList(&quot;node&quot;, &quot;c++&quot;, &quot;java&quot;, &quot;javascript&quot;);
+
+        // lambda
+        Map&lt;String, Integer&gt; map = obj.convertListToMap(list, String::length);
+        System.out.println(map); // {node=4, c++=3, java=4, javascript=10}
+
+        // method reference
+        Map&lt;String, Integer&gt; map2 = obj.convertListToMap(list, obj::getLength);
+        System.out.println(map2); // {node=4, c++=3, java=4, javascript=10}
+
+        // 4. List -&gt; List
+        //4.1 This example accepts Function as an argument, convert a List of String into another List of String, which was hashed with SHA256.
+        List&lt;String&gt; list2 = Arrays.asList(&quot;node&quot;, &quot;c++&quot;, &quot;java&quot;, &quot;javascript&quot;);
+
+        // lambda
+        //List&lt;String&gt; result = obj.map(list2, x -&gt; obj.sha256(x));
+
+        // method reference
+        List&lt;String&gt; result2 = obj.map(list2, obj::sha256);
+        result2.forEach(System.out::println);
+        //3386882
+        //96515
+        //3254818
+        //188995949
+
+
+
+    }
+
+    public &lt;T, R&gt; Map&lt;T, R&gt; convertListToMap(List&lt;T&gt; list, Function&lt;T, R&gt; func) {
+        Map&lt;T, R&gt; result = new HashMap&lt;&gt;();
+        for (T t : list) {
+            result.put(t, func.apply(t));
+        }
+        return result;
+    }
+
+    public Integer getLength(String str) {
+        return str.length();
+    }
+
+    public &lt;T, R&gt; List&lt;R&gt; map(List&lt;T&gt; list, Function&lt;T, R&gt; func) {
+
+        List&lt;R&gt; result = new ArrayList&lt;&gt;();
+        for (T t : list) {
+            result.add(func.apply(t));
+        }
+        return result;
+
+    }
+
+    // sha256 a string
+    public String sha256(String str) {
+//        return DigestUtils.sha256Hex(str);
+        return String.valueOf(str.hashCode());
+    }
+}
+
+interface Square {
+    int calculate(int x);
+}
+
+class Person {
+    String name;
+    int age;
+
+    // creates a constructor
+    Person(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+    // override the toString() method to
+    // display the person details
+    @Override
+    public String toString() {
+        return &quot;Name: &quot; + name + &quot;, Age: &quot; + age;
+    }
+}
+
+@FunctionalInterface // @FunctionalInterface is not required
+interface MyFunctionalInterface {
+    void execute(String input); // Single abstract method
+
+    // Additional default or static methods are allowed
+    default void log(String message) {
+        System.out.println(&quot;Log: &quot; + message);
+    }
+}
+
+class FunctionClass implements Function&lt;Integer, String&gt; {
+    public String apply(Integer t) {
+        return &quot;FunctionClass-&quot; + t + &quot; : &quot; + Integer.toString(t*t);
+    }
+}
+
+
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">TestFunction2.java</span>
+        <span class="path">functional_interfaces/function/TestFunction2.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.functional_interfaces.function;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+
+public class TestFunction2 {
+    public static void main(String[] args) {
+        TestFunction2 obj = new TestFunction2();
+        List&lt;String&gt; list = Arrays.asList(&quot;node&quot;, &quot;c++&quot;, &quot;java&quot;, &quot;javascript&quot;);
+
+        // lambda
+        Map&lt;String, Integer&gt; map = obj.convertListToMap(list, String::length);
+
+        System.out.println(map);    // {node=4, c++=3, java=4, javascript=10}
+
+        // method reference
+        Map&lt;String, Integer&gt; map2 = obj.convertListToMap(list, obj::getLength);
+
+        System.out.println(map2);
+    }
+
+    public &lt;T, R&gt; Map&lt;T, R&gt; convertListToMap(List&lt;T&gt; list, Function&lt;T, R&gt; func) {
+
+        Map&lt;T, R&gt; result = new HashMap&lt;&gt;();
+        for (T t : list) {
+            result.put(t, func.apply(t));
+        }
+        return result;
+
+    }
+
+    public Integer getLength(String str) {
+        return str.length();
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Hosting.java</span>
+        <span class="path">functional_interfaces/predicate/Hosting.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.functional_interfaces.predicate;
+
+public class Hosting {
+    private int Id;
+    private String name;
+    private String url;
+
+    public Hosting(int id, String name, String url) {
+        Id = id;
+        this.name = name;
+        this.url = url;
+    }
+
+    public int getId() {
+        return Id;
+    }
+
+    public void setId(int id) {
+        Id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;Hosting{&quot; +
+                &quot;Id=&quot; + Id +
+                &quot;, name=&#x27;&quot; + name + &#x27;\&#x27;&#x27; +
+                &quot;, url=&#x27;&quot; + url + &#x27;\&#x27;&#x27; +
+                &#x27;}&#x27;;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">TestPredicate.java</span>
+        <span class="path">functional_interfaces/predicate/TestPredicate.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.functional_interfaces.predicate;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+/**
+ * Represents a predicate (boolean-valued function) of one argument.
+ * This is a functional interface whose functional method is test(Object).
+ *
+ * test - Evaluates this predicate on the given argument.
+ *
+ */
+public class TestPredicate {
+    public static void main(String[] args) {
+        testPredicate();
+        testPredicateInCollection();
+        testPredicateInFilter();
+        testPredicateInObject();
+    }    
+
+    static void testPredicate() {
+        Predicate&lt;Integer&gt; lesserthan = i -&gt; (i &lt; 18);
+        System.out.println(lesserthan.test(10)); // true
+
+        Predicate&lt;Integer&gt; greaterThanTen = (i) -&gt; i &gt; 10;
+        Predicate&lt;Integer&gt; lowerThanTwenty = (i) -&gt; i &lt; 20;
+        System.out.println(&quot;15&gt;10 &amp;&amp; 15&lt;20 : &quot; + greaterThanTen.and(lowerThanTwenty).test(15));
+        System.out.println(&quot;15&gt;10 &amp;&amp; 15&lt;20 - negate : &quot; + greaterThanTen.and(lowerThanTwenty).negate().test(15));
+        // 15&gt;10 &amp;&amp; 15&lt;20 : true
+        // 15&gt;10 &amp;&amp; 15&lt;20 - negate : false
+
+        predInFunction(5, (i) -&gt; i &gt; 7); // Invalid Number 5
+        predInFunction(10, (i) -&gt; i &gt; 7); // Valid Number 10
+
+        predicate_or(&quot;And&quot;); // And-outcome=true
+        predicate_or(&quot;and&quot;); // and-outcome=false
+        predicate_or(&quot;Or&quot;); // Or-outcome=false
+        predicate_or(&quot;xxxxxxxxxxxx&quot;); // xxxxxxxxxxxx-outcome=true
+
+        predicate_or_b(&quot;And&quot;); // And-outcome=true
+        predicate_or_b(&quot;and&quot;); // and-outcome=false
+        predicate_or_b(&quot;Or&quot;); // Or-outcome=false
+        predicate_or_b(&quot;xxxxxxxxxxxx&quot;); // xxxxxxxxxxxx-outcome=true
+
+        predicate_and(null); // null : false
+        predicate_and(&quot;Welcome&quot;); // Welcome : false
+        predicate_and(&quot;Welcome to the machine&quot;); // Welcome to the machine : true
+    }
+
+    static void testPredicateInCollection() {
+        List&lt;User2&gt; users = new ArrayList&lt;User2&gt;();
+        users.add(new User2(&quot;John&quot;, &quot;admin&quot;));
+        users.add(new User2(&quot;Peter&quot;, &quot;member&quot;));
+        System.out.println(&quot;users : &quot; + users); // users : [User Name : John, Role :admin, User Name : Peter, Role :member]
+
+        List&lt;User2&gt; admins = process(users, (User2 u) -&gt; u.getRole().equals(&quot;admin&quot;));
+        System.out.println(&quot;admins : &quot; + admins); // admins : [User Name : John, Role :admin]
+
+        List&lt;User2&gt; admins2 = users.stream()
+                .filter((user) -&gt; user.getRole().equals(&quot;admin&quot;))
+                .toList();
+        System.out.println(&quot;admins2 : &quot; + admins2); // admins2 : [User Name : John, Role :admin]
+
+    }
+
+    static void predInFunction(int number, Predicate&lt;Integer&gt; predicate) {
+        if (predicate.test(number)) {
+            System.out.println(&quot;Valid Number &quot; + number);
+        } else  {
+            System.out.println(&quot;Invalid Number &quot; + number);
+        }
+    }
+
+    static void testPredicateInFilter() {
+        // filter() accepts predicate as argument.
+        List&lt;Integer&gt; list = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        List&lt;Integer&gt; collect = list.stream().filter(x -&gt; x &gt; 5).collect(Collectors.toList());
+        System.out.println(&quot;collect:&quot; + collect); // [6, 7, 8, 9, 10]
+
+        //
+        Predicate&lt;Integer&gt; noGreaterThan5 =  x -&gt; x &gt; 5;
+        List&lt;Integer&gt; collect2 = list.stream()
+                .filter(noGreaterThan5)
+                .toList();
+        System.out.println(&quot;collect2:&quot; + collect2); // [6, 7, 8, 9, 10]
+
+        // multiple filters
+        List&lt;Integer&gt; collect3 = list.stream()
+                .filter(x -&gt; x &gt; 5 &amp;&amp; x &lt; 8).toList();
+        System.out.println(&quot;collect3:&quot; + collect3); // [6, 7]
+
+        // Replace with Predicate.and()
+        Predicate&lt;Integer&gt; noLessThan8 = x -&gt; x &lt; 8;
+        List&lt;Integer&gt; collect4 = list.stream()
+                .filter(noGreaterThan5.and(noLessThan8))
+                .toList();
+        System.out.println(&quot;collect4:&quot; + collect4); // [6, 7]
+
+        // Predicate.or()
+        Predicate&lt;String&gt; lengthIs3 = x -&gt; x.length() == 3;
+        Predicate&lt;String&gt; startWithA = x -&gt; x.startsWith(&quot;A&quot;);
+
+        List&lt;String&gt; list2 = Arrays.asList(&quot;A&quot;, &quot;AA&quot;, &quot;AAA&quot;, &quot;B&quot;, &quot;BB&quot;, &quot;BBB&quot;);
+
+        List&lt;String&gt; collect5 = list2.stream()
+                .filter(lengthIs3.or(startWithA))
+                .toList();
+        System.out.println(&quot;collect5:&quot; + collect5); // [A, AA, AAA, BBB]
+
+        // Predicate.negate()
+        //Find all elements not start with ‘A’.
+        List&lt;String&gt; collect6 = list2.stream()
+                .filter(startWithA.negate())
+                .toList();
+        System.out.println(&quot;collect6:&quot; + collect6); // [B, BB, BBB]
+
+        // Predicate.test() in function
+        System.out.println(StringProcessor.filter(
+                list2, x -&gt; x.startsWith(&quot;A&quot;)));  // [A, AA, AAA]
+
+        System.out.println(StringProcessor.filter(
+                list2, x -&gt; x.startsWith(&quot;A&quot;) &amp;&amp; x.length() == 3)); // [AAA]
+
+        // Predicate Chaining
+        //We can chain predicates together.
+        // start with &quot;a&quot; or &quot;m&quot;
+        boolean result = startWithA.or(x -&gt; x.startsWith(&quot;m&quot;)).test(&quot;mkyong&quot;);
+        System.out.println(result);     // true
+
+        // !(start with &quot;a&quot; and length is 3)
+        boolean result2 = startWithA.and(x -&gt; x.length() == 3).negate().test(&quot;abc&quot;);
+        System.out.println(result2);    // false
+
+        // Predicate in Object
+
+    }
+
+    static void testPredicateInObject() {
+        Hosting h1 = new Hosting(1, &quot;amazon&quot;, &quot;aws.amazon.com&quot;);
+        Hosting h2 = new Hosting(2, &quot;linode&quot;, &quot;linode.com&quot;);
+        Hosting h3 = new Hosting(3, &quot;liquidweb&quot;, &quot;liquidweb.com&quot;);
+        Hosting h4 = new Hosting(4, &quot;google&quot;, &quot;google.com&quot;);
+
+        List&lt;Hosting&gt; list = Arrays.asList(new Hosting[]{h1, h2, h3, h4});
+
+        List&lt;Hosting&gt; result = HostingRespository.filterHosting(list, x -&gt; x.getName().startsWith(&quot;g&quot;));
+        System.out.println(&quot;result : &quot; + result);  // google
+
+        List&lt;Hosting&gt; result2 = HostingRespository.filterHosting(list, isDeveloperFriendly());
+        System.out.println(&quot;result2 : &quot; + result2); // linode
+    }
+
+    static Predicate&lt;String&gt; hasLengthOf10 = new Predicate&lt;String&gt;() {
+        @Override
+        public boolean test(String t) {
+            return t.length() &gt; 10;
+        }
+    };
+
+    static Predicate&lt;String&gt; hasLengthOf10_b = t -&gt; t.length() &gt; 10;
+
+
+    static void predicate_or(String text) {
+        Predicate&lt;String&gt; containsLetterA = p -&gt; p.contains(&quot;A&quot;);
+        boolean outcome = hasLengthOf10.or(containsLetterA).test(text);
+        System.out.println(text + &quot;-outcome=&quot; + outcome);
+    }
+
+    static void predicate_or_b(String text) {
+        Predicate&lt;String&gt; containsLetterA = p -&gt; p.contains(&quot;A&quot;);
+        boolean outcome = hasLengthOf10_b.or(containsLetterA).test(text);
+        System.out.println(text + &quot;-outcome=&quot; + outcome);
+    }
+
+    static void predicate_and(String text) {
+        Predicate&lt;String&gt; nonNullPredicate = Objects::nonNull;
+        System.out.println(text + &quot; : &quot; + nonNullPredicate.and(hasLengthOf10).test(text));
+    }
+
+    static List&lt;User2&gt; process(List&lt;User2&gt; users, Predicate&lt;User2&gt; predicate) {
+        List&lt;User2&gt; result = new ArrayList&lt;&gt;();
+        for (User2 user: users)
+            if (predicate.test(user))
+                result.add(user);
+        return result;
+    }
+
+    public static Predicate&lt;Hosting&gt; isDeveloperFriendly() {
+        return n -&gt; n.getName().equals(&quot;linode&quot;);
+    }
+
+}
+
+class StringProcessor {
+    static List&lt;String&gt; filter(List&lt;String&gt; list, Predicate&lt;String&gt; predicate) {
+        return list.stream().filter(predicate::test).collect(Collectors.toList());
+    }
+}
+
+class HostingRespository {
+    public static List&lt;Hosting&gt; filterHosting(List&lt;Hosting&gt; hosting,
+                                              Predicate&lt;Hosting&gt; predicate) {
+        return hosting.stream()
+                .filter(predicate)
+                .collect(Collectors.toList());
+    }
+
+}</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">User2.java</span>
+        <span class="path">functional_interfaces/predicate/User2.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.functional_interfaces.predicate;
+
+public class User2 {
+    String name, role;
+    User2(String a, String b) {
+        name = a;
+        role = b;
+    }
+    String getRole() { return role; }
+    String getName() { return name; }
+    public String toString() {
+        return &quot;User Name : &quot; + name + &quot;, Role :&quot; + role;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Developer.java</span>
+        <span class="path">functional_interfaces/supplier/Developer.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.functional_interfaces.supplier;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+public class Developer {
+    String name;
+    BigDecimal salary;
+    LocalDate start;
+
+    // for factory(Developer::new);
+    public Developer() {
+    }
+
+    // for factory(() -&gt; new Developer(&quot;mkyong&quot;));
+    public Developer(String name) {
+        this.name = name;
+    }
+
+    public BigDecimal getSalary() {
+        return salary;
+    }
+
+    public void setSalary(BigDecimal salary) {
+        this.salary = salary;
+    }
+
+    public LocalDate getStart() {
+        return start;
+    }
+
+    public void setStart(LocalDate start) {
+        this.start = start;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;Developer{&quot; +
+                &quot;name=&#x27;&quot; + name + &#x27;\&#x27;&#x27; +
+                &quot;, salary=&quot; + salary +
+                &quot;, start=&quot; + start +
+                &#x27;}&#x27;;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">TestSupplier.java</span>
+        <span class="path">functional_interfaces/supplier/TestSupplier.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.functional_interfaces.supplier;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Random;
+import java.util.function.Supplier;
+
+/**
+ * Supplier - Represents a supplier of results. (dodavatel)
+ * There is no requirement that a new or distinct result be returned each time the supplier is invoked.
+ * This is a functional interface whose functional method is get().
+ *
+ * The lambda expression assigned to an object of Supplier type is used to define its get() which eventually produces a value.
+ * Suppliers are useful when we don&#x27;t need to supply any value and obtain a result at the same time.
+ * The Supplier interface consists of only one function: get()
+ */
+public class TestSupplier {
+    public static void main(String[] args) {
+        test1();
+        test2();
+        test3();
+    }
+
+    static void test1() {
+        // This function returns a random value.
+        Supplier&lt;Double&gt; randomValue = () -&gt; Math.random();
+        Supplier&lt;Double&gt; randomValue2 = Math::random;
+
+        // Print the random value using get()
+        System.out.println(&quot;randomValue.get() = &quot; + randomValue.get());
+        for (int i = 0; i &lt; 3; i++) {
+            System.out.println(i + &quot;-randomValue.get() = &quot; + randomValue.get());
+        }
+        //randomValue.get() = 0.8978099092383891
+        //0-randomValue.get() = 0.9664481933050743
+        //1-randomValue.get() = 0.8666687108567449
+        //2-randomValue.get() = 0.6385403638298349
+
+        for (int i = 0; i &lt; 3; i++) {
+            System.out.println(i + &quot;-randomValue2.get() = &quot; + randomValue2.get());
+        }
+        //0-randomValue2.get() = 0.9413041509506593
+        //1-randomValue2.get() = 0.8517959075847591
+        //2-randomValue2.get() = 0.30629793057597976
+
+        // Creating the instance of Random class
+        Random r= new Random();
+
+        // Generate random integers in range 0 to 999
+        int r1 = r.nextInt(1000);
+        int r2 = r.nextInt(1000);
+
+        // Printing random integers
+        System.out.println(&quot;Random Integers: &quot; + r1);
+        System.out.println(&quot;Random Integers: &quot; + r2);
+        //Random Integers: 150
+        //Random Integers: 448
+
+        // Generate random doubles
+        double rd1 = r.nextDouble();
+        double rd2 = r.nextDouble();
+
+        // Printing random doubles
+        System.out.println(&quot;Random Doubles: &quot; + rd1);
+        System.out.println(&quot;Random Doubles: &quot; + rd2);
+        //Random Doubles: 0.03295218391615973
+        //Random Doubles: 0.5132991619133634
+
+        Supplier&lt;Integer&gt; randomIntValue = () -&gt; r.nextInt(1000);
+        for (int i = 0; i &lt; 3; i++) {
+            System.out.println(i + &quot;-randomIntValue.get() = &quot; + randomIntValue.get());
+        }
+        //0-randomIntValue.get() = 646
+        //1-randomIntValue.get() = 664
+        //2-randomIntValue.get() = 185
+    }
+
+    static void test2() {
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd HH:mm:ss&quot;);
+
+        Supplier&lt;LocalDateTime&gt; s = () -&gt; LocalDateTime.now();
+        LocalDateTime time = s.get();
+        System.out.println(time); // 2026-03-06T07:58:24.709952900
+
+        Supplier&lt;String&gt; s1 = () -&gt; dtf.format(LocalDateTime.now());
+        String time2 = s1.get();
+        System.out.println(time2); // 2026-03-06 07:58:24
+    }
+
+    static void test3() {
+        Developer obj = factory(Developer::new);
+        System.out.println(obj);// Developer{name=&#x27;default&#x27;, salary=1, start=2017-08-08}
+
+        Developer obj2 = factory(() -&gt; new Developer(&quot;mkyong&quot;));
+        System.out.println(obj2);// Developer{name=&#x27;mkyong&#x27;, salary=1, start=2017-08-08}
+    }
+
+    public static Developer factory(Supplier&lt;? extends Developer&gt; s) {
+
+        Developer developer = s.get();
+        if (developer.getName() == null || &quot;&quot;.equals(developer.getName())) {
+            developer.setName(&quot;default&quot;);
+        }
+        developer.setSalary(BigDecimal.ONE);
+        developer.setStart(LocalDate.of(2017, 8, 8));
+
+        return developer;
+    }
+}</code></pre>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      hljs.highlightAll();
+    });
+
+    // ── per-card toggle ──────────────────────────────────────────────
+    function toggleCard(header) {
+      const body = header.nextElementSibling;
+      const btn  = header.querySelector('.toggle-btn');
+      const collapsed = body.classList.toggle('collapsed');
+      btn.textContent = collapsed ? '\u25b6 Show' : '\u25bc Hide';
+    }
+
+    // ── show / collapse all ──────────────────────────────────────────
+    function showAll() {
+      document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+        b.classList.remove('collapsed');
+        b.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+      });
+    }
+    function collapseAll() {
+      document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+        b.classList.add('collapsed');
+        b.closest('.card').querySelector('.toggle-btn').textContent = '\u25b6 Show';
+      });
+    }
+
+    // ── card-level filter (show/hide cards by match) ─────────────────
+    function applyCardFilter(term) {
+      const lower = term.trim().toLowerCase();
+      let shown = 0;
+      document.querySelectorAll('.card').forEach(card => {
+        const has = !lower || card.querySelector('code').textContent.toLowerCase().includes(lower);
+        card.classList.toggle('hidden-by-search', !has);
+        if (has) shown++;
+      });
+      const info = document.getElementById('match-info');
+      info.textContent = lower
+        ? (shown === 0 ? 'No files match' : shown + ' file' + (shown > 1 ? 's' : '') + ' match')
+        : '';
+    }
+
+    // ── in-page text search ──────────────────────────────────────────
+    let marks = [];
+    let currentIdx = -1;
+    const psbInput = document.getElementById('psb-input');
+    const psbCount = document.getElementById('psb-count');
+
+    function clearMarks() {
+      document.querySelectorAll('mark.sh, mark.sh-current').forEach(m => {
+        m.outerHTML = m.textContent
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      });
+      // normalize() re-merges adjacent text nodes
+      document.querySelectorAll('.card-body code').forEach(c => c.normalize());
+      marks = [];
+      currentIdx = -1;
+    }
+
+    function findAll(term) {
+      clearMarks();
+      if (!term) { updateCount(); return; }
+      const lower = term.toLowerCase();
+
+      document.querySelectorAll('.card-body code').forEach(code => {
+        const walker = document.createTreeWalker(code, NodeFilter.SHOW_TEXT);
+        const nodes = [];
+        let n;
+        while ((n = walker.nextNode())) nodes.push(n);
+
+        nodes.forEach(node => {
+          const text = node.textContent;
+          const ltxt = text.toLowerCase();
+          let pos = 0, start;
+          const frags = [];
+          while ((start = ltxt.indexOf(lower, pos)) !== -1) {
+            if (start > pos) frags.push(document.createTextNode(text.slice(pos, start)));
+            const m = document.createElement('mark');
+            m.className = 'sh';
+            m.textContent = text.slice(start, start + term.length);
+            frags.push(m);
+            marks.push(m);
+            pos = start + term.length;
+          }
+          if (frags.length) {
+            if (pos < text.length) frags.push(document.createTextNode(text.slice(pos)));
+            node.replaceWith(...frags);
+          }
+        });
+      });
+      updateCount();
+    }
+
+    function goTo(idx) {
+      if (!marks.length) return;
+      if (currentIdx >= 0) {
+        marks[currentIdx].className = 'sh';
+      }
+      currentIdx = ((idx % marks.length) + marks.length) % marks.length;
+      const m = marks[currentIdx];
+      m.className = 'sh-current';
+      // expand card if collapsed
+      const body = m.closest('.card-body');
+      if (body && body.classList.contains('collapsed')) {
+        body.classList.remove('collapsed');
+        body.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+      }
+      m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      updateCount();
+    }
+
+    function updateCount() {
+      if (!psbInput.value.trim()) { psbCount.textContent = ''; return; }
+      psbCount.textContent = marks.length === 0
+        ? '0 matches'
+        : (currentIdx + 1) + ' / ' + marks.length;
+      document.getElementById('psb-prev').disabled = marks.length === 0;
+      document.getElementById('psb-next').disabled = marks.length === 0;
+    }
+
+    function runPageSearch() {
+      const term = psbInput.value;
+      applyCardFilter(term);
+      findAll(term);
+      if (marks.length) goTo(0);
+    }
+
+    function prevMatch() { if (marks.length) goTo(currentIdx - 1); }
+    function nextMatch() { if (marks.length) goTo(currentIdx + 1); }
+
+    function clearPageSearch() {
+      psbInput.value = '';
+      clearMarks();
+      applyCardFilter('');
+      updateCount();
+    }
+
+    psbInput.addEventListener('input', runPageSearch);
+    psbInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.shiftKey ? prevMatch() : nextMatch(); }
+      if (e.key === 'Escape') clearPageSearch();
+    });
+
+    // ── messages from sidebar ────────────────────────────────────────
+    window.addEventListener('message', function (e) {
+      if (!e.data) return;
+      if (e.data.type === 'page-search') {
+        psbInput.value = e.data.term || '';
+        runPageSearch();
+      }
+    });
+  </script>
+</body>
+</html>

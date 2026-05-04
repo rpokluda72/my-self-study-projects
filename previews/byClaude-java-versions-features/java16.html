@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java 16</title>
+<link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #1e1e2e; color: #cdd6f4; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Page header ── */
+  #page-header {
+    flex-shrink: 0;
+    background: #181825;
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid #313244;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    z-index: 10;
+  }
+  #page-header h1 {
+    font-size: 18px; font-weight: 700; color: #cba6f7; margin-bottom: 8px;
+    letter-spacing: 0.03em;
+  }
+  .toolbar {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
+  }
+  .btn { padding: 4px 12px; border: none; border-radius: 4px; cursor: pointer;
+          font-size: 12px; font-weight: 600; transition: background .15s; }
+  .btn-show  { background: #89b4fa; color: #1e1e2e; }
+  .btn-show:hover  { background: #74c7ec; }
+  .btn-hide  { background: #585b70; color: #cdd6f4; }
+  .btn-hide:hover  { background: #6c7086; }
+  #match-info { font-size: 12px; color: #a6adc8; margin-left: 4px; }
+
+  /* ── Page search bar ── */
+  .page-search-bar {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  #psb-input {
+    flex: 1; min-width: 180px; max-width: 320px;
+    background: #313244; border: 1px solid #45475a; color: #cdd6f4;
+    border-radius: 4px; padding: 5px 10px; font-size: 13px; outline: none;
+  }
+  #psb-input:focus { border-color: #89b4fa; box-shadow: 0 0 0 2px rgba(137,180,250,.2); }
+  #psb-input::placeholder { color: #6c7086; }
+  .psb-btn {
+    padding: 4px 10px; border: 1px solid #45475a; border-radius: 4px;
+    background: #313244; color: #cdd6f4; cursor: pointer; font-size: 12px;
+    transition: background .15s;
+  }
+  .psb-btn:hover { background: #45475a; }
+  .psb-btn:disabled { opacity: .4; cursor: default; }
+  .psb-clear {
+    padding: 4px 10px; border: none; border-radius: 4px;
+    background: #f38ba8; color: #1e1e2e; cursor: pointer; font-size: 12px;
+    font-weight: 600; transition: background .15s;
+  }
+  .psb-clear:hover { background: #eba0ac; }
+  #psb-count { font-size: 12px; color: #a6adc8; min-width: 60px; }
+
+  /* ── Cards container ── */
+  #cards-container {
+    flex: 1; overflow-y: auto; padding: 12px 16px 20px;
+  }
+  .card {
+    margin-bottom: 12px; border-radius: 8px; overflow: hidden;
+    border: 1px solid #313244; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .card.hidden-by-search { display: none; }
+
+  /* ── Card header ── */
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #2a2a3d; padding: 8px 14px; cursor: pointer;
+    user-select: none; transition: background .15s;
+    border-bottom: 1px solid #313244;
+  }
+  .card-header:hover { background: #313244; }
+  .filename { font-size: 14px; font-weight: 600; color: #89dceb; font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+  .toggle-btn {
+    background: none; border: 1px solid #45475a; color: #a6adc8;
+    border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 11px;
+    transition: all .15s; white-space: nowrap;
+  }
+  .toggle-btn:hover { background: #45475a; color: #cdd6f4; }
+
+  /* ── Card body ── */
+  .card-body { overflow: hidden; }
+  .card-body.collapsed { display: none; }
+  .card-body pre { margin: 0; }
+  .card-body pre code.hljs {
+    font-size: 13px; line-height: 1.55; padding: 14px 16px !important;
+    background: #282c34 !important;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  }
+
+  /* ── Search highlights ── */
+  mark.sh         { background: #f9e2af; color: #1e1e2e; border-radius: 2px; }
+  mark.sh-current { background: #fab387; color: #1e1e2e; border-radius: 2px; outline: 2px solid #f38ba8; }
+</style>
+</head>
+<body>
+<div id="page-header">
+  <h1>Java 16</h1>
+  <div class="toolbar">
+    <button class="btn btn-show" onclick="showAll()">&#9660; Show all</button>
+    <button class="btn btn-hide" onclick="collapseAll()">&#9654; Collapse all</button>
+    <span id="match-info"></span>
+  </div>
+  <div class="page-search-bar">
+    <input id="psb-input" placeholder="Search in code…" autocomplete="off" spellcheck="false" />
+    <button class="psb-btn" id="psb-prev" onclick="prevMatch()">&#8593; Prev</button>
+    <button class="psb-btn" id="psb-next" onclick="nextMatch()">&#8595; Next</button>
+    <button class="psb-clear" onclick="clearPageSearch()">&#10005; Clear</button>
+    <span id="psb-count"></span>
+  </div>
+</div>
+<div id="cards-container">
+  <div class="card" id="Records">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="filename">Records.java</span>
+      <button class="toggle-btn">&#x25bc; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package java16;
+
+import java.util.Objects;
+
+/**
+ * &lt;b&gt;Records&lt;/b&gt;
+ * &lt;p&gt;
+ * Records are a concise syntax for declaring immutable data-carrier classes. The compiler
+ * auto-generates a canonical constructor, accessor methods (named after the components,
+ * not {@code getX()}), and {@code toString}, {@code equals}, and {@code hashCode}
+ * implementations. Records are implicitly {@code final} and cannot extend other classes.
+ * Custom methods, compact constructors (for validation), and interface implementations are
+ * all supported. Previewed in Java 14 (JEP 359) and Java 15 (JEP 384); finalized in
+ * Java 16 (JEP 395).
+ *
+ * @see &lt;a href=&quot;https://openjdk.org/jeps/395&quot;&gt;JEP 395 – Records&lt;/a&gt;
+ */
+public class Records {
+
+    // ── Before: full POJO boilerplate ────────────────────────────────────────
+
+    static final class PointOld {
+        private final int x;
+        private final int y;
+
+        PointOld(int x, int y) { this.x = x; this.y = y; }
+
+        public int getX() { return x; }
+        public int getY() { return y; }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof PointOld that)) return false;
+            return x == that.x &amp;&amp; y == that.y;
+        }
+
+        @Override
+        public int hashCode() { return Objects.hash(x, y); }
+
+        @Override
+        public String toString() { return &quot;PointOld{x=&quot; + x + &quot;, y=&quot; + y + &quot;}&quot;; }
+    }
+
+    // ── After: records ────────────────────────────────────────────────────────
+
+    /** Basic record — one line replaces ~30 lines of POJO */
+    record Point(int x, int y) {
+        /** Custom instance method */
+        double distance() {
+            return Math.sqrt((double) x * x + (double) y * y);
+        }
+    }
+
+    /** Compact constructor — validation logic without repeating field assignments */
+    record PositivePoint(int x, int y) {
+        PositivePoint {
+            // In a compact constructor, fields are assigned automatically after this block
+            if (x &lt; 0 || y &lt; 0) throw new IllegalArgumentException(
+                    &quot;Coordinates must be non-negative, got (&quot; + x + &quot;, &quot; + y + &quot;)&quot;);
+        }
+    }
+
+    /** Record implementing an interface */
+    interface Shape {
+        double area();
+    }
+
+    record Circle(double radius) implements Shape {
+        // Compact constructor for validation
+        Circle {
+            if (radius &lt;= 0) throw new IllegalArgumentException(&quot;Radius must be positive&quot;);
+        }
+
+        @Override
+        public double area() { return Math.PI * radius * radius; }
+    }
+
+    /** Generic record */
+    record Pair&lt;A, B&gt;(A first, B second) {}
+
+    public static void main(String[] args) {
+        System.out.println(&quot;=== Before Java 16: verbose POJO ===&quot;);
+        demonstrateBefore();
+        System.out.println();
+        System.out.println(&quot;=== Java 16: records ===&quot;);
+        demonstrateAfter();
+    }
+
+    /** Before Java 16: manual boilerplate for a simple data class */
+    static void demonstrateBefore() {
+        PointOld p1 = new PointOld(3, 4);
+        PointOld p2 = new PointOld(3, 4);
+        System.out.println(&quot;p1: &quot; + p1);                    // Output: PointOld{x=3, y=4}
+        System.out.println(&quot;p1.equals(p2): &quot; + p1.equals(p2)); // Output: true
+        System.out.println(&quot;p1.getX(): &quot; + p1.getX());      // Output: 3
+    }
+
+    /** Java 16: records — auto-generated constructor, accessors, equals, hashCode, toString */
+    static void demonstrateAfter() {
+        // Canonical constructor and auto-generated toString
+        Point p1 = new Point(3, 4);
+        System.out.println(&quot;p1: &quot; + p1); // Output: Point[x=3, y=4]
+
+        // Accessor methods — named after components (no &quot;get&quot; prefix)
+        System.out.println(&quot;p1.x(): &quot; + p1.x()); // Output: 3
+        System.out.println(&quot;p1.y(): &quot; + p1.y()); // Output: 4
+
+        // Auto-generated equals and hashCode
+        Point p2 = new Point(3, 4);
+        Point p3 = new Point(1, 2);
+        System.out.println(&quot;p1.equals(p2): &quot; + p1.equals(p2)); // Output: true
+        System.out.println(&quot;p1.equals(p3): &quot; + p1.equals(p3)); // Output: false
+        System.out.println(&quot;same hash: &quot; + (p1.hashCode() == p2.hashCode())); // Output: true
+
+        // Custom method
+        System.out.printf(&quot;distance(3,4): %.1f%n&quot;, p1.distance()); // Output: 5.0
+
+        // Compact constructor validates input
+        try {
+            new PositivePoint(-1, 5);
+        } catch (IllegalArgumentException e) {
+            System.out.println(&quot;Validation: &quot; + e.getMessage()); // Output: Coordinates must be non-negative...
+        }
+        PositivePoint pp = new PositivePoint(2, 3);
+        System.out.println(&quot;PositivePoint: &quot; + pp); // Output: PositivePoint[x=2, y=3]
+
+        // Record implementing an interface
+        Circle c = new Circle(5.0);
+        System.out.printf(&quot;Circle area: %.2f%n&quot;, c.area()); // Output: 78.54
+
+        // Generic record
+        Pair&lt;String, Integer&gt; pair = new Pair&lt;&gt;(&quot;Hello&quot;, 42);
+        System.out.println(&quot;Pair: &quot; + pair); // Output: Pair[first=Hello, second=42]
+        System.out.println(&quot;first: &quot; + pair.first() + &quot;, second: &quot; + pair.second());
+
+        // Records are final — cannot be subclassed (compiler error if attempted):
+        // class SubPoint extends Point {} // ← compile error
+    }
+}
+
+// Console output:
+// === Before Java 16: verbose POJO ===
+// p1: PointOld{x=3, y=4}
+// p1.equals(p2): true
+// p1.getX(): 3
+//
+// === Java 16: records ===
+// p1: Point[x=3, y=4]
+// p1.x(): 3
+// p1.y(): 4
+// p1.equals(p2): true
+// p1.equals(p3): false
+// same hash: true
+// distance(3,4): 5,0
+// Validation: Coordinates must be non-negative, got (-1, 5)
+// PositivePoint: PositivePoint[x=2, y=3]
+// Circle area: 78,54
+// Pair: Pair[first=Hello, second=42]
+// first: Hello, second: 42
+</code></pre>
+    </div>
+  </div>
+  <div class="card" id="PatternMatchingInstanceof">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="filename">PatternMatchingInstanceof.java</span>
+      <button class="toggle-btn">&#x25bc; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package java16;
+
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * &lt;b&gt;Pattern Matching for {@code instanceof}&lt;/b&gt;
+ * &lt;p&gt;
+ * Pattern matching for {@code instanceof} combines the type test and the cast into a single
+ * expression. When the test succeeds, a &lt;em&gt;pattern variable&lt;/em&gt; is bound to the value
+ * (already cast) and is in scope where the condition is known to be true.
+ * This eliminates the redundant explicit cast that always follows {@code instanceof}.
+ * Previewed in Java 14 (JEP 305) and Java 15 (JEP 375); finalized in Java 16 (JEP 394).
+ *
+ * @see &lt;a href=&quot;https://openjdk.org/jeps/394&quot;&gt;JEP 394 – Pattern Matching for instanceof&lt;/a&gt;
+ */
+public class PatternMatchingInstanceof {
+
+    public static void main(String[] args) {
+        System.out.println(&quot;=== Before Java 16: explicit cast after instanceof ===&quot;);
+        demonstrateBefore();
+        System.out.println();
+        System.out.println(&quot;=== Java 16: pattern matching instanceof ===&quot;);
+        demonstrateAfter();
+    }
+
+    /** Before Java 16: three separate operations — test, cast, use */
+    static void demonstrateBefore() {
+        Object obj = &quot;Hello&quot;;
+
+        // Test, then cast separately — redundant and verbose
+        if (obj instanceof String) {
+            String s = (String) obj; // explicit cast required
+            System.out.println(&quot;Length: &quot; + s.length()); // Output: 5
+        }
+
+        // Multi-type dispatch
+        List&lt;Object&gt; mixed = Arrays.asList(&quot;text&quot;, 42, 3.14, true);
+        for (Object o : mixed) {
+            if (o instanceof String) {
+                String s = (String) o;
+                System.out.println(&quot;String: &quot; + s.toUpperCase());
+            } else if (o instanceof Integer) {
+                Integer i = (Integer) o;
+                System.out.println(&quot;Integer doubled: &quot; + (i * 2));
+            } else {
+                System.out.println(&quot;Other: &quot; + o);
+            }
+        }
+        // Output:
+        // String: TEXT
+        // Integer doubled: 84
+        // Other: 3.14
+        // Other: true
+    }
+
+    /** Java 16: pattern variable bound in the instanceof expression */
+    static void demonstrateAfter() {
+        Object obj = &quot;Hello&quot;;
+
+        // Test + bind in one expression — &#x27;s&#x27; is in scope inside the if block
+        if (obj instanceof String s) {
+            System.out.println(&quot;Length: &quot; + s.length()); // Output: 5
+        }
+
+        // Guard condition with &amp;&amp; — &#x27;s&#x27; only bound when both conditions are true
+        if (obj instanceof String s &amp;&amp; s.length() &gt; 3) {
+            System.out.println(&quot;Long string: &quot; + s.toUpperCase()); // Output: HELLO
+        }
+
+        // Multi-type dispatch — cleaner, no explicit casts
+        List&lt;Object&gt; mixed = Arrays.asList(&quot;text&quot;, 42, 3.14, true);
+        for (Object o : mixed) {
+            if (o instanceof String s) {
+                System.out.println(&quot;String: &quot; + s.toUpperCase());
+            } else if (o instanceof Integer i) {
+                System.out.println(&quot;Integer doubled: &quot; + (i * 2));
+            } else if (o instanceof Double d) {
+                System.out.println(&quot;Double: &quot; + d);
+            } else {
+                System.out.println(&quot;Other: &quot; + o);
+            }
+        }
+        // Output:
+        // String: TEXT
+        // Integer doubled: 84
+        // Double: 3.14
+        // Other: true
+
+        // Scope: &#x27;s&#x27; is NOT in scope in the else branch
+        Object maybeString = 99;
+        if (maybeString instanceof String s) {
+            System.out.println(&quot;Is string: &quot; + s);
+        } else {
+            // &#x27;s&#x27; is not accessible here — the compiler knows the test failed
+            System.out.println(&quot;Not a string: &quot; + maybeString); // Output: Not a string: 99
+        }
+
+        // Negation + early return — &#x27;s&#x27; flows into the rest of the method
+        printUpperIfString(&quot;world&quot;);
+        printUpperIfString(123);
+    }
+
+    static void printUpperIfString(Object obj) {
+        if (!(obj instanceof String s)) {
+            System.out.println(&quot;Not a string — returning&quot;);
+            return;
+        }
+        // &#x27;s&#x27; is in scope here because we know the non-string case returned
+        System.out.println(&quot;Upper: &quot; + s.toUpperCase()); // Output: WORLD
+    }
+}
+
+// Console output:
+// === Before Java 16: explicit cast after instanceof ===
+// Length: 5
+// String: TEXT
+// Integer doubled: 84
+// Other: 3.14
+// Other: true
+//
+// === Java 16: pattern matching instanceof ===
+// Length: 5
+// Long string: HELLO
+// String: TEXT
+// Integer doubled: 84
+// Double: 3.14
+// Other: true
+// Not a string: 99
+// Upper: WORLD
+// Not a string — returning
+</code></pre>
+    </div>
+  </div>
+  <div class="card" id="StreamToList">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="filename">StreamToList.java</span>
+      <button class="toggle-btn">&#x25bc; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package java16;
+
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+/**
+ * &lt;b&gt;Stream.toList()&lt;/b&gt;
+ * &lt;p&gt;
+ * {@code Stream.toList()} is a concise terminal operation added in Java 16 that collects
+ * stream elements into an &lt;em&gt;unmodifiable&lt;/em&gt; {@code List}, replacing the verbose
+ * {@code collect(Collectors.toList())} call. Unlike {@code Collectors.toList()} (which returns
+ * a mutable {@code ArrayList}), {@code toList()} always returns an unmodifiable list.
+ * Introduced in Java 16.
+ *
+ * @see &lt;a href=&quot;https://docs.oracle.com/en/java/se/16/docs/api/java.base/java/util/stream/Stream.html#toList()&quot;&gt;Stream.toList() Javadoc&lt;/a&gt;
+ */
+public class StreamToList {
+
+    public static void main(String[] args) {
+        System.out.println(&quot;=== Before Java 16: Collectors.toList() ===&quot;);
+        demonstrateBefore();
+        System.out.println();
+        System.out.println(&quot;=== Java 16: Stream.toList() ===&quot;);
+        demonstrateAfter();
+    }
+
+    /** Before Java 16: verbose collect() calls */
+    static void demonstrateBefore() {
+        List&lt;String&gt; names = Stream.of(&quot;Alice&quot;, &quot;Bob&quot;, &quot;Charlie&quot;)
+                .filter(s -&gt; s.length() &gt; 3)
+                .collect(Collectors.toList()); // mutable ArrayList returned
+        System.out.println(&quot;Names: &quot; + names); // Output: [Alice, Charlie]
+
+        // Mutable — add() succeeds
+        names.add(&quot;Diana&quot;);
+        System.out.println(&quot;After add: &quot; + names); // Output: [Alice, Charlie, Diana]
+
+        // To get an unmodifiable list was even more verbose
+        List&lt;String&gt; unmod = Stream.of(&quot;X&quot;, &quot;Y&quot;, &quot;Z&quot;)
+                .collect(Collectors.toUnmodifiableList());
+        System.out.println(&quot;Unmodifiable: &quot; + unmod); // Output: [X, Y, Z]
+        try {
+            unmod.add(&quot;W&quot;);
+        } catch (UnsupportedOperationException e) {
+            System.out.println(&quot;Unmod add threw: UnsupportedOperationException&quot;);
+        }
+    }
+
+    /** Java 16: Stream.toList() — concise and always unmodifiable */
+    static void demonstrateAfter() {
+        List&lt;String&gt; names = Stream.of(&quot;Alice&quot;, &quot;Bob&quot;, &quot;Charlie&quot;)
+                .filter(s -&gt; s.length() &gt; 3)
+                .toList(); // shorter, and unmodifiable
+        System.out.println(&quot;Names: &quot; + names); // Output: [Alice, Charlie]
+
+        // toList() result is unmodifiable
+        try {
+            names.add(&quot;Diana&quot;);
+        } catch (UnsupportedOperationException e) {
+            System.out.println(&quot;toList() add threw: UnsupportedOperationException&quot;); // Output: ...
+        }
+
+        // Full pipeline example
+        record Person(String name, int age) {}
+        List&lt;Person&gt; people = List.of(
+                new Person(&quot;Alice&quot;, 30),
+                new Person(&quot;Bob&quot;, 17),
+                new Person(&quot;Charlie&quot;, 25)
+        );
+
+        List&lt;String&gt; adults = people.stream()
+                .filter(p -&gt; p.age() &gt;= 18)
+                .map(Person::name)
+                .sorted()
+                .toList();
+        System.out.println(&quot;Adults: &quot; + adults); // Output: [Alice, Charlie]
+
+        // Contrast: collect(toList()) is still mutable
+        List&lt;String&gt; mutable = Stream.of(&quot;A&quot;, &quot;B&quot;)
+                .collect(Collectors.toList());
+        mutable.add(&quot;C&quot;);
+        System.out.println(&quot;Mutable after add: &quot; + mutable); // Output: [A, B, C]
+
+        System.out.println(&quot;toList() vs collect(toList()): toList() is always unmodifiable&quot;);
+    }
+}
+
+// Console output:
+// === Before Java 16: Collectors.toList() ===
+// Names: [Alice, Charlie]
+// After add: [Alice, Charlie, Diana]
+// Unmodifiable: [X, Y, Z]
+// Unmod add threw: UnsupportedOperationException
+//
+// === Java 16: Stream.toList() ===
+// Names: [Alice, Charlie]
+// toList() add threw: UnsupportedOperationException
+// Adults: [Alice, Charlie]
+// Mutable after add: [A, B, C]
+// toList() vs collect(toList()): toList() is always unmodifiable
+</code></pre>
+    </div>
+  </div>
+</div>
+<script>
+// ── Card toggle ──────────────────────────────────────────────────────────────
+function toggleCard(header) {
+  const body = header.nextElementSibling;
+  const btn  = header.querySelector('.toggle-btn');
+  const c    = body.classList.toggle('collapsed');
+  btn.textContent = c ? '\u25b6 Show' : '\u25bc Hide';
+}
+function showAll() {
+  document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+    b.classList.remove('collapsed');
+    b.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+  });
+}
+function collapseAll() {
+  document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+    b.classList.add('collapsed');
+    b.closest('.card').querySelector('.toggle-btn').textContent = '\u25b6 Show';
+  });
+}
+
+// ── Card filter ──────────────────────────────────────────────────────────────
+function applyCardFilter(term) {
+  const lower = term.trim().toLowerCase();
+  let shown = 0;
+  document.querySelectorAll('.card').forEach(card => {
+    const has = !lower || card.querySelector('code').textContent.toLowerCase().includes(lower);
+    card.classList.toggle('hidden-by-search', !has);
+    if (has) shown++;
+  });
+  document.getElementById('match-info').textContent = lower
+    ? (shown === 0 ? 'No files match' : shown + ' file' + (shown > 1 ? 's' : '') + ' match')
+    : '';
+}
+
+// ── In-page text search ──────────────────────────────────────────────────────
+const psbInput = document.getElementById('psb-input');
+const psbCount = document.getElementById('psb-count');
+let marks = [], currentIdx = -1;
+
+function clearMarks() {
+  document.querySelectorAll('mark.sh, mark.sh-current').forEach(m => {
+    const t = document.createTextNode(
+      m.textContent.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    );
+    // actually just replace with text node directly:
+    m.parentNode.replaceChild(document.createTextNode(m.textContent), m);
+  });
+  document.querySelectorAll('.card-body code').forEach(c => c.normalize());
+  marks = []; currentIdx = -1;
+}
+
+function findAll(term) {
+  clearMarks();
+  if (!term.trim()) { updateCount(); return; }
+  const lower = term.toLowerCase();
+  document.querySelectorAll('.card-body code').forEach(code => {
+    const walker = document.createTreeWalker(code, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.textContent, ltxt = text.toLowerCase();
+      let pos = 0, start;
+      const frags = [];
+      while ((start = ltxt.indexOf(lower, pos)) !== -1) {
+        if (start > pos) frags.push(document.createTextNode(text.slice(pos, start)));
+        const m = document.createElement('mark');
+        m.className = 'sh';
+        m.textContent = text.slice(start, start + term.length);
+        frags.push(m); marks.push(m);
+        pos = start + term.length;
+      }
+      if (frags.length) {
+        if (pos < text.length) frags.push(document.createTextNode(text.slice(pos)));
+        node.replaceWith(...frags);
+      }
+    });
+  });
+  updateCount();
+}
+
+function goTo(idx) {
+  if (!marks.length) return;
+  if (currentIdx >= 0) marks[currentIdx].className = 'sh';
+  currentIdx = ((idx % marks.length) + marks.length) % marks.length;
+  const m = marks[currentIdx];
+  m.className = 'sh-current';
+  // auto-expand card if collapsed
+  const body = m.closest('.card-body');
+  if (body && body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    body.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+  }
+  m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  updateCount();
+}
+
+function updateCount() {
+  const v = psbInput.value.trim();
+  if (!v) { psbCount.textContent = ''; return; }
+  psbCount.textContent = marks.length === 0
+    ? '0 matches'
+    : (currentIdx + 1) + ' / ' + marks.length;
+  document.getElementById('psb-prev').disabled = marks.length === 0;
+  document.getElementById('psb-next').disabled = marks.length === 0;
+}
+
+function runPageSearch() {
+  const term = psbInput.value;
+  applyCardFilter(term);
+  findAll(term);
+  if (marks.length) goTo(0);
+}
+function prevMatch() { if (marks.length) goTo(currentIdx - 1); }
+function nextMatch() { if (marks.length) goTo(currentIdx + 1); }
+function clearPageSearch() {
+  psbInput.value = ''; clearMarks(); applyCardFilter(''); updateCount();
+}
+
+psbInput.addEventListener('input', runPageSearch);
+psbInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.shiftKey ? prevMatch() : nextMatch(); }
+  if (e.key === 'Escape') clearPageSearch();
+});
+
+window.addEventListener('message', function(e) {
+  if (!e.data || e.data.type !== 'page-search') return;
+  psbInput.value = e.data.term || '';
+  runPageSearch();
+});
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  hljs.highlightAll();
+  // Hash-based scroll: navigate to specific card when loaded via #CardName
+  if (location.hash) {
+    const target = document.querySelector(location.hash);
+    if (target) {
+      const body = target.querySelector('.card-body');
+      if (body) body.classList.remove('collapsed');
+      setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+    }
+  }
+});
+</script>
+</body>
+</html>

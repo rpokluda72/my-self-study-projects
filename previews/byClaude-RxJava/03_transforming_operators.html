@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>03 — Transforming Operators</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#1e1e2e;--surface:#24273a;--text:#cdd6f4;--subtext:#a6adc8;
+  --accent:#89b4fa;--accent2:#cba6f7;--border:#313244;--hover:#45475a;
+  --mark-y:#f9e2af;--mark-o:#fab387;--red:#f38ba8;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+#header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:10px 16px 8px}
+.header-top{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+h1{font-size:16px;font-weight:600;color:var(--accent2);white-space:nowrap}
+h1 .num{color:var(--accent);margin-right:6px}
+.toolbar{display:flex;align-items:center;gap:6px}
+.toolbar button{background:var(--hover);border:1px solid var(--border);color:var(--text);
+                border-radius:5px;padding:3px 10px;font-size:12px;cursor:pointer}
+.toolbar button:hover{background:var(--accent);color:#1e1e2e}
+.match-info{font-size:12px;color:var(--subtext);margin-left:4px}
+.search-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.search-input-wrap{position:relative;display:flex;align-items:center}
+#psb-input{background:#313244;border:1px solid var(--border);color:var(--text);
+           border-radius:6px;padding:4px 28px 4px 10px;font-size:13px;width:220px;outline:none}
+#psb-input:focus{border-color:var(--accent)}
+.search-clear{position:absolute;right:6px;background:none;border:none;
+              color:var(--subtext);cursor:pointer;font-size:14px}
+.search-clear:hover{color:var(--red)}
+.search-bar button{background:var(--hover);border:1px solid var(--border);color:var(--text);
+                   border-radius:5px;padding:3px 9px;font-size:12px;cursor:pointer}
+.search-bar button:hover:not(:disabled){background:var(--accent);color:#1e1e2e}
+.search-bar button:disabled{opacity:.4;cursor:default}
+#psb-count{font-size:12px;color:var(--accent);min-width:70px}
+#cards{padding:16px}
+/* scroll-margin-top keeps the card below the sticky header when jumped to via hash */
+.card{background:var(--surface);border:1px solid var(--border);
+      border-radius:8px;margin-bottom:14px;overflow:hidden;scroll-margin-top:115px}
+.card.hidden-by-search{display:none}
+.card-header{display:flex;align-items:center;justify-content:space-between;
+             padding:10px 14px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border)}
+.card-header:hover{background:var(--hover)}
+.card-filename{font-family:'JetBrains Mono','Fira Code',Consolas,monospace;
+               font-size:13px;color:var(--accent);font-weight:600}
+.toggle-btn{background:none;border:1px solid var(--border);color:var(--subtext);
+            border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer}
+.toggle-btn:hover{background:var(--accent);color:#1e1e2e;border-color:var(--accent)}
+.card-body{overflow:hidden}
+.card-body.collapsed{display:none}
+.card-body pre{margin:0;border-radius:0}
+.card-body code{font-family:'JetBrains Mono','Fira Code',Consolas,monospace!important;
+                font-size:13px!important;line-height:1.6!important}
+mark.sh{background:var(--mark-y);color:#1e1e2e;border-radius:2px}
+mark.sh-current{background:var(--mark-o);color:#1e1e2e;border-radius:2px;outline:2px solid var(--red)}
+</style>
+</head>
+<body>
+<div id="header">
+  <div class="header-top">
+    <h1><span class="num">03</span>Transforming Operators</h1>
+    <div class="toolbar">
+      <button onclick="showAll()">&#9660; Show all</button>
+      <button onclick="collapseAll()">&#9654; Collapse all</button>
+      <span id="match-info" class="match-info"></span>
+    </div>
+  </div>
+  <div class="search-bar">
+    <div class="search-input-wrap">
+      <input id="psb-input" type="text" placeholder="Search in code..." autocomplete="off" spellcheck="false">
+      <button class="search-clear" onclick="clearPageSearch()" title="Clear">&#x2715;</button>
+    </div>
+    <button id="psb-prev" onclick="prevMatch()" disabled>&#9664; Prev</button>
+    <button id="psb-next" onclick="nextMatch()" disabled>Next &#9654;</button>
+    <span id="psb-count"></span>
+    <button onclick="copySearch()" title="Copy search text">&#x2398; Copy</button>
+  </div>
+</div>
+<div id="cards">
+  <div class="card" id="card-header">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">_03_TransformingOperators.java</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package tutorial;
+
+import io.reactivex.rxjava3.core.Observable;
+
+import java.util.List;
+
+/**
+ * TUTORIAL 03 — Transforming Operators
+ *
+ * &lt;p&gt;Transforming operators take an upstream Observable and return a new Observable
+ * whose items have been reshaped in some way. They are the &quot;map&quot;, &quot;flatMap&quot;, and
+ * &quot;reduce&quot; equivalents of the reactive world.
+ *
+ * &lt;p&gt;Operators covered:
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code map}        — transform each item one-to-one&lt;/li&gt;
+ *   &lt;li&gt;{@code flatMap}    — transform each item into an Observable, merge results&lt;/li&gt;
+ *   &lt;li&gt;{@code concatMap}  — like flatMap but preserves (zachová) order&lt;/li&gt;
+ *   &lt;li&gt;{@code switchMap}  — like flatMap but cancels the previous inner Observable&lt;/li&gt;
+ *   &lt;li&gt;{@code scan}       — running accumulation (like reduce but emits intermediates)&lt;/li&gt;
+ *   &lt;li&gt;{@code buffer}     — collect items into lists of a fixed size&lt;/li&gt;
+ *   &lt;li&gt;{@code toList}     — collect all items into a single list, emit once&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;Run: right-click → Run &#x27;_03_TransformingOperators.main()&#x27;
+ */
+public class _03_TransformingOperators {
+
+    public static void main(String[] args) {
+        demoMap();
+        demoFlatMap();
+        demoConcatMap();
+        demoSwitchMap();
+        demoScan();
+        demoBuffer();
+        demoToList();
+    }
+
+    // -------------------------------------------------------------------------
+    // map
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code map(Function&lt;T, R&gt;)} applies a function to every emitted item and emits
+     * the transformed result. The mapping is synchronous and one-to-one (T → R).
+     *
+     * &lt;p&gt;Example: convert a stream of strings to their lengths.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demomap">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoMap()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoMap() {
+        System.out.println(&quot;=== map ===&quot;);
+
+        Observable.just(&quot;Hello&quot;, &quot;RxJava&quot;, &quot;World&quot;)
+                .map(s -&gt; s.toUpperCase() + &quot; (&quot; + s.length() + &quot;)&quot;)
+                .subscribe(item -&gt; System.out.println(item));
+        // → HELLO (5)
+        // → RXJAVA (6)
+        // → WORLD (5)
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // flatMap
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code flatMap(Function&lt;T, Observable&lt;R&gt;&gt;)} maps each item to an inner Observable,
+     * then *merges* all inner Observables into a single output stream.
+     *
+     * &lt;p&gt;Because it merges (not concatenates), the order of items from different inner
+     * Observables is NOT guaranteed if they are asynchronous. For synchronous sources
+     * the output order matches input order.
+     *
+     * &lt;p&gt;Think of it as: &quot;for each item, produce zero or more new items&quot;.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoflatmap">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoFlatMap()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoFlatMap() {
+        System.out.println(&quot;=== flatMap ===&quot;);
+
+        // For each number, emit the number and its square
+        Observable.just(1, 2, 3)
+                .flatMap(n -&gt; Observable.just(n, n * n))
+                .subscribe(v -&gt; System.out.println(&quot;flatMap item: &quot; + v));
+        // → flatMap item: 1
+        // → flatMap item: 1
+        // → flatMap item: 2
+        // → flatMap item: 4
+        // → flatMap item: 3
+        // → flatMap item: 9
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // concatMap
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code concatMap(Function&lt;T, Observable&lt;R&gt;&gt;)} is like {@code flatMap} but it
+     * subscribes to each inner Observable *sequentially* — it waits for the current
+     * inner Observable to complete before subscribing to the next one.
+     *
+     * &lt;p&gt;Use {@code concatMap} when order matters and inner sources may be async.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-democoncatmap">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoConcatMap()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoConcatMap() {
+        System.out.println(&quot;=== concatMap ===&quot;);
+
+        // Emit a word, then each of its characters — in strict order
+        Observable.just(&quot;Hi&quot;, &quot;Rx&quot;)
+                .concatMap(word -&gt; Observable.fromArray(word.split(&quot;&quot;)))
+                .subscribe(ch -&gt; System.out.println(&quot;char: &quot; + ch));
+        // → char: H
+        // → char: i
+        // → char: R
+        // → char: x
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // switchMap
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code switchMap(Function&lt;T, Observable&lt;R&gt;&gt;)} maps each item to an inner Observable
+     * but *disposes the previous inner Observable* as soon as a new item arrives.
+     *
+     * &lt;p&gt;This is ideal for &quot;cancel the current search, start a new one&quot; patterns
+     * (e.g., autocomplete). With synchronous sources the switch happens so fast that
+     * only the last inner Observable&#x27;s items appear in practice.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoswitchmap">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoSwitchMap()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoSwitchMap() {
+        System.out.println(&quot;=== switchMap ===&quot;);
+
+        // Each outer item cancels the previous inner observable.
+        // With synchronous sources, only the LAST inner observable&#x27;s items are seen.
+        Observable.just(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;)
+                .switchMap(letter -&gt; Observable.just(letter + &quot;1&quot;, letter + &quot;2&quot;))
+                .subscribe(v -&gt; System.out.println(&quot;switchMap: &quot; + v));
+        // → switchMap: c1
+        // → switchMap: c2
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // scan
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code scan(BiFunction&lt;T, T, T&gt;)} applies an accumulator function to each item
+     * and emits *every intermediate accumulated value* (not just the final one).
+     *
+     * &lt;p&gt;Contrast with {@code reduce}, which only emits the final value.
+     * {@code scan} is useful for running totals, running max/min, state machines, etc.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoscan">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoScan()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoScan() {
+        System.out.println(&quot;=== scan (running sum) ===&quot;);
+
+        Observable.just(1, 2, 3, 4, 5)
+                .scan((accumulator, nextItem) -&gt; accumulator + nextItem)
+                .subscribe(runningSum -&gt; System.out.println(&quot;Running sum: &quot; + runningSum));
+        // → Running sum: 1
+        // → Running sum: 3
+        // → Running sum: 6
+        // → Running sum: 10
+        // → Running sum: 15
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // buffer
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code buffer(count)} collects emitted items into {@link List}s of a fixed size
+     * and emits each list as a single item downstream.
+     *
+     * &lt;p&gt;The last list may be smaller than {@code count} if the source completes with
+     * fewer remaining items.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demobuffer">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoBuffer()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoBuffer() {
+        System.out.println(&quot;=== buffer(3) ===&quot;);
+
+        Observable.range(1, 9)
+                .buffer(3) // collect into groups of 3
+                .subscribe(batch -&gt; System.out.println(&quot;Batch: &quot; + batch));
+        // → Batch: [1, 2, 3]
+        // → Batch: [4, 5, 6]
+        // → Batch: [7, 8, 9]
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // toList
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code toList()} waits for the source Observable to complete, collects all items
+     * into a {@link List}, and emits that list as a single item via a {@code Single&lt;List&lt;T&gt;&gt;}.
+     *
+     * &lt;p&gt;Only use this on finite Observables — an infinite source will never complete
+     * so {@code toList()} will never emit.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demotolist">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoToList()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoToList() {
+        System.out.println(&quot;=== toList ===&quot;);
+
+        Observable.just(&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;)
+                .map(String::toUpperCase)
+                .toList()  // returns Single&lt;List&lt;String&gt;&gt;
+                .subscribe(
+                        list  -&gt; System.out.println(&quot;All items: &quot; + list), // → All items: [APPLE, BANANA, CHERRY]
+                        error -&gt; System.out.println(&quot;Error: &quot; + error)
+                );
+
+        System.out.println();
+    }
+}
+
+/*
+&quot;C:\Program Files\Java\jdk-25\bin\java.exe&quot; -Dvaadin.copilot.pluginDotFilePath=C:\Users\roman\Work\claude\projects\RxJava\.idea\.copilot-plugin &quot;-javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.3.1\lib\idea_rt.jar=55760&quot; -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -classpath C:\Users\roman\Work\claude\projects\RxJava\target\classes;C:\Users\roman\.m2\repository\io\reactivex\rxjava3\rxjava\3.1.9\rxjava-3.1.9.jar;C:\Users\roman\.m2\repository\org\reactivestreams\reactive-streams\1.0.4\reactive-streams-1.0.4.jar tutorial._03_TransformingOperators
+=== map ===
+HELLO (5)
+RXJAVA (6)
+WORLD (5)
+
+=== flatMap ===
+flatMap item: 1
+flatMap item: 1
+flatMap item: 2
+flatMap item: 4
+flatMap item: 3
+flatMap item: 9
+
+=== concatMap ===
+char: H
+char: i
+char: R
+char: x
+
+=== switchMap ===
+switchMap: a1
+switchMap: a2
+switchMap: b1
+switchMap: b2
+switchMap: c1
+switchMap: c2
+
+=== scan (running sum) ===
+Running sum: 1
+Running sum: 3
+Running sum: 6
+Running sum: 10
+Running sum: 15
+
+=== buffer(3) ===
+Batch: [1, 2, 3]
+Batch: [4, 5, 6]
+Batch: [7, 8, 9]
+
+=== toList ===
+All items: [APPLE, BANANA, CHERRY]
+
+
+Process finished with exit code 0
+
+ */</code></pre>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<script>
+hljs.highlightAll();
+function toggleCard(h){const b=h.nextElementSibling,btn=h.querySelector('.toggle-btn'),c=b.classList.toggle('collapsed');btn.textContent=c?'\u25b6 Show':'\u25bc Hide';}
+function showAll(){document.querySelectorAll('.card-body').forEach(b=>{b.classList.remove('collapsed');b.closest('.card').querySelector('.toggle-btn').textContent='\u25bc Hide';});}
+function collapseAll(){document.querySelectorAll('.card-body').forEach(b=>{b.classList.add('collapsed');b.closest('.card').querySelector('.toggle-btn').textContent='\u25b6 Show';});}
+const psbInput=document.getElementById('psb-input'),psbCount=document.getElementById('psb-count');
+let marks=[],currentIdx=-1;
+function clearMarks(){document.querySelectorAll('mark.sh,mark.sh-current').forEach(m=>m.parentNode.replaceChild(document.createTextNode(m.textContent),m));document.querySelectorAll('.card-body code').forEach(c=>c.normalize());marks=[];currentIdx=-1;}
+function findAll(term){clearMarks();if(!term.trim()){updateCount();return;}const lower=term.toLowerCase();document.querySelectorAll('.card-body code').forEach(code=>{const walker=document.createTreeWalker(code,NodeFilter.SHOW_TEXT);const nodes=[];let n;while((n=walker.nextNode()))nodes.push(n);nodes.forEach(node=>{const text=node.textContent,ltxt=text.toLowerCase();let pos=0,start;const frags=[];while((start=ltxt.indexOf(lower,pos))!==-1){if(start>pos)frags.push(document.createTextNode(text.slice(pos,start)));const m=document.createElement('mark');m.className='sh';m.textContent=text.slice(start,start+term.length);frags.push(m);marks.push(m);pos=start+term.length;}if(frags.length){if(pos<text.length)frags.push(document.createTextNode(text.slice(pos)));node.replaceWith(...frags);}});});updateCount();}
+function goTo(idx){if(!marks.length)return;if(currentIdx>=0)marks[currentIdx].className='sh';currentIdx=((idx%marks.length)+marks.length)%marks.length;marks[currentIdx].className='sh-current';const body=marks[currentIdx].closest('.card-body');if(body&&body.classList.contains('collapsed')){body.classList.remove('collapsed');body.closest('.card').querySelector('.toggle-btn').textContent='\u25bc Hide';}marks[currentIdx].scrollIntoView({behavior:'smooth',block:'center'});updateCount();}
+function nextMatch(){if(marks.length)goTo(currentIdx+1);}
+function prevMatch(){if(marks.length)goTo(currentIdx-1);}
+function updateCount(){const v=psbInput.value.trim();if(!v){psbCount.textContent='';return;}psbCount.textContent=marks.length===0?'0 matches':(currentIdx+1)+' / '+marks.length;document.getElementById('psb-prev').disabled=marks.length===0;document.getElementById('psb-next').disabled=marks.length===0;}
+function applyCardFilter(term){const lower=term.trim().toLowerCase();let shown=0;document.querySelectorAll('.card').forEach(card=>{const has=!lower||card.querySelector('code').textContent.toLowerCase().includes(lower);card.classList.toggle('hidden-by-search',!has);if(has)shown++;});document.getElementById('match-info').textContent=lower?(shown===0?'No match':shown+' card'+(shown>1?'s':'')+' match'):'';}
+function runPageSearch(){const term=psbInput.value;applyCardFilter(term);findAll(term);if(marks.length)goTo(0);}
+function clearPageSearch(){psbInput.value='';clearMarks();applyCardFilter('');psbCount.textContent='';document.getElementById('psb-prev').disabled=true;document.getElementById('psb-next').disabled=true;document.getElementById('match-info').textContent='';}
+function copySearch(){if(psbInput.value)navigator.clipboard.writeText(psbInput.value);}
+psbInput.addEventListener('input',runPageSearch);
+psbInput.addEventListener('keydown',function(e){if(e.key==='Enter'){e.shiftKey?prevMatch():nextMatch();}if(e.key==='Escape')clearPageSearch();});
+window.addEventListener('message',function(e){if(!e.data||e.data.type!=='page-search')return;psbInput.value=e.data.term||'';runPageSearch();});
+</script>
+</body>
+</html>

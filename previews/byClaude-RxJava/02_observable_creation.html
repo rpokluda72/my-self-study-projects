@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>02 — Observable Creation</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#1e1e2e;--surface:#24273a;--text:#cdd6f4;--subtext:#a6adc8;
+  --accent:#89b4fa;--accent2:#cba6f7;--border:#313244;--hover:#45475a;
+  --mark-y:#f9e2af;--mark-o:#fab387;--red:#f38ba8;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+#header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:10px 16px 8px}
+.header-top{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+h1{font-size:16px;font-weight:600;color:var(--accent2);white-space:nowrap}
+h1 .num{color:var(--accent);margin-right:6px}
+.toolbar{display:flex;align-items:center;gap:6px}
+.toolbar button{background:var(--hover);border:1px solid var(--border);color:var(--text);
+                border-radius:5px;padding:3px 10px;font-size:12px;cursor:pointer}
+.toolbar button:hover{background:var(--accent);color:#1e1e2e}
+.match-info{font-size:12px;color:var(--subtext);margin-left:4px}
+.search-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.search-input-wrap{position:relative;display:flex;align-items:center}
+#psb-input{background:#313244;border:1px solid var(--border);color:var(--text);
+           border-radius:6px;padding:4px 28px 4px 10px;font-size:13px;width:220px;outline:none}
+#psb-input:focus{border-color:var(--accent)}
+.search-clear{position:absolute;right:6px;background:none;border:none;
+              color:var(--subtext);cursor:pointer;font-size:14px}
+.search-clear:hover{color:var(--red)}
+.search-bar button{background:var(--hover);border:1px solid var(--border);color:var(--text);
+                   border-radius:5px;padding:3px 9px;font-size:12px;cursor:pointer}
+.search-bar button:hover:not(:disabled){background:var(--accent);color:#1e1e2e}
+.search-bar button:disabled{opacity:.4;cursor:default}
+#psb-count{font-size:12px;color:var(--accent);min-width:70px}
+#cards{padding:16px}
+/* scroll-margin-top keeps the card below the sticky header when jumped to via hash */
+.card{background:var(--surface);border:1px solid var(--border);
+      border-radius:8px;margin-bottom:14px;overflow:hidden;scroll-margin-top:115px}
+.card.hidden-by-search{display:none}
+.card-header{display:flex;align-items:center;justify-content:space-between;
+             padding:10px 14px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border)}
+.card-header:hover{background:var(--hover)}
+.card-filename{font-family:'JetBrains Mono','Fira Code',Consolas,monospace;
+               font-size:13px;color:var(--accent);font-weight:600}
+.toggle-btn{background:none;border:1px solid var(--border);color:var(--subtext);
+            border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer}
+.toggle-btn:hover{background:var(--accent);color:#1e1e2e;border-color:var(--accent)}
+.card-body{overflow:hidden}
+.card-body.collapsed{display:none}
+.card-body pre{margin:0;border-radius:0}
+.card-body code{font-family:'JetBrains Mono','Fira Code',Consolas,monospace!important;
+                font-size:13px!important;line-height:1.6!important}
+mark.sh{background:var(--mark-y);color:#1e1e2e;border-radius:2px}
+mark.sh-current{background:var(--mark-o);color:#1e1e2e;border-radius:2px;outline:2px solid var(--red)}
+</style>
+</head>
+<body>
+<div id="header">
+  <div class="header-top">
+    <h1><span class="num">02</span>Observable Creation</h1>
+    <div class="toolbar">
+      <button onclick="showAll()">&#9660; Show all</button>
+      <button onclick="collapseAll()">&#9654; Collapse all</button>
+      <span id="match-info" class="match-info"></span>
+    </div>
+  </div>
+  <div class="search-bar">
+    <div class="search-input-wrap">
+      <input id="psb-input" type="text" placeholder="Search in code..." autocomplete="off" spellcheck="false">
+      <button class="search-clear" onclick="clearPageSearch()" title="Clear">&#x2715;</button>
+    </div>
+    <button id="psb-prev" onclick="prevMatch()" disabled>&#9664; Prev</button>
+    <button id="psb-next" onclick="nextMatch()" disabled>Next &#9654;</button>
+    <span id="psb-count"></span>
+    <button onclick="copySearch()" title="Copy search text">&#x2398; Copy</button>
+  </div>
+</div>
+<div id="cards">
+  <div class="card" id="card-header">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">_02_ObservableCreation.java</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package tutorial;
+
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.ObservableEmitter;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * TUTORIAL 02 — Observable Creation (Advanced Factories)
+ *
+ * &lt;p&gt;Beyond the static factories in Tutorial 01, RxJava provides factories for building
+ * Observables from custom logic, lazy evaluation, or time-based sequences.
+ *
+ * &lt;p&gt;Topics covered:
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code Observable.create}    — full control via an emitter&lt;/li&gt;
+ *   &lt;li&gt;{@code Observable.defer}     — lazy factory, evaluated fresh per subscriber&lt;/li&gt;
+ *   &lt;li&gt;{@code Observable.fromCallable} — wraps a single value-producing call&lt;/li&gt;
+ *   &lt;li&gt;{@code Observable.interval}  — ticks at a fixed time interval&lt;/li&gt;
+ *   &lt;li&gt;{@code Observable.timer}     — emits a single {@code 0L} after a delay&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;Run: right-click → Run &#x27;_02_ObservableCreation.main()&#x27;
+ */
+public class _02_ObservableCreation {
+
+    public static void main(String[] args) throws InterruptedException {
+        demoCreate();
+        demoDefer();
+        demoFromCallable();
+        demoInterval();
+        demoTimer();
+    }
+
+    // -------------------------------------------------------------------------
+    // Observable.create
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.create(ObservableOnSubscribe)} gives you full manual control:
+     * you receive an {@link ObservableEmitter} and decide when to call
+     * {@code onNext}, {@code onError}, and {@code onComplete}.
+     *
+     * &lt;p&gt;Always check {@code emitter.isDisposed()} before emitting to avoid work
+     * after the downstream has unsubscribed.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-democreate">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoCreate()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoCreate() {
+        System.out.println(&quot;=== Observable.create ===&quot;);
+
+        Observable&lt;String&gt; observable = Observable.create((ObservableEmitter&lt;String&gt; emitter) -&gt; {
+            try {
+                emitter.onNext(&quot;First&quot;);   // emit item 1
+                emitter.onNext(&quot;Second&quot;);  // emit item 2
+                emitter.onNext(&quot;Third&quot;);   // emit item 3
+                emitter.onComplete();      // signal completion
+            } catch (Exception e) {
+                emitter.onError(e);        // forward any exception as an error signal
+            }
+        });
+
+        observable.subscribe(
+                item -&gt; System.out.println(&quot;Received: &quot; + item),
+                // → Received: First
+                // → Received: Second
+                // → Received: Third
+                err  -&gt; System.out.println(&quot;Error: &quot; + err),
+                ()   -&gt; System.out.println(&quot;Done!&quot;)             // → Done!
+        );
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Observable.defer
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.defer(Callable&lt;Observable&lt;T&gt;&gt;)} delays the creation of the Observable
+     * until a subscriber subscribes. Each subscriber gets a *fresh* Observable instance,
+     * so any state captured at creation time is re-evaluated per subscription.
+     *
+     * &lt;p&gt;This solves a common bug where a value is captured once at definition time
+     * instead of being read lazily at subscription time.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demodefer">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoDefer()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoDefer() {
+        System.out.println(&quot;=== Observable.defer ===&quot;);
+
+        AtomicInteger counter = new AtomicInteger(0);
+
+        // Without defer — captures counter.get() ONCE when the observable is defined
+        Observable&lt;Integer&gt; eager = Observable.just(counter.get());
+
+        // With defer — evaluates counter.get() fresh for EACH subscriber
+        Observable&lt;Integer&gt; lazy = Observable.defer(() -&gt; Observable.just(counter.get()));
+
+        counter.set(42); // change the value AFTER defining both observables
+
+        System.out.print(&quot;Eager (no defer): &quot;);
+        eager.subscribe(v -&gt; System.out.println(v));  // → 0  (captured before counter changed)
+
+        System.out.print(&quot;Lazy  (defer):    &quot;);
+        lazy.subscribe(v -&gt; System.out.println(v));   // → 42 (reads current value at subscribe time)
+
+        // === Observable.defer ===
+        // Eager (no defer): 0
+        // Lazy  (defer):    42
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Observable.fromCallable
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.fromCallable(Callable&lt;T&gt;)} wraps a single value-producing call.
+     * The {@link java.util.concurrent.Callable} is executed lazily when someone subscribes,
+     * and any checked exception thrown by it is forwarded to {@code onError}.
+     *
+     * &lt;p&gt;Think of it as a lazy version of {@code Observable.just(value)} that also handles
+     * exceptions automatically.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demofromcallable">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoFromCallable()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoFromCallable() {
+        System.out.println(&quot;=== Observable.fromCallable ===&quot;);
+
+        // Simulates a method that might throw a checked exception (e.g., a DB call)
+        Observable&lt;String&gt; observable = Observable.fromCallable(() -&gt; {
+            System.out.println(&quot;  [Callable executing...]&quot;); // → [Callable executing...]
+            return &quot;Result from callable&quot;;
+        });
+
+        System.out.println(&quot;Observable defined, callable not yet executed.&quot;);
+        // → Observable defined, callable not yet executed.
+
+        observable.subscribe(
+                result -&gt; System.out.println(&quot;Got: &quot; + result),  // → Got: Result from callable
+                err    -&gt; System.out.println(&quot;Error: &quot; + err)
+        );
+        // === Observable.fromCallable ===
+        // Observable defined, callable not yet executed.
+        //   [Callable executing...]
+        // Got: Result from callable
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Observable.interval
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.interval(period, TimeUnit)} emits {@code 0L, 1L, 2L, ...} at a fixed
+     * time interval on the {@code Schedulers.computation()} thread.
+     *
+     * &lt;p&gt;It is infinite — use {@code take(n)} to limit items, or {@code dispose()} to cancel.
+     * Because it runs on a background thread, we {@code Thread.sleep} on the main thread
+     * to wait for the output before the JVM exits.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demointerval">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoInterval()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoInterval() throws InterruptedException {
+        System.out.println(&quot;=== Observable.interval ===&quot;);
+
+        // Emit every 300 ms, take the first 4 items
+        Observable.interval(300, TimeUnit.MILLISECONDS)
+                .take(4)
+                .subscribe(tick -&gt; System.out.println(&quot;Tick: &quot; + tick));
+        // → Tick: 0
+        // → Tick: 1
+        // → Tick: 2
+        // → Tick: 3
+
+        Thread.sleep(1_500); // wait for all 4 ticks to be emitted
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Observable.timer
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.timer(delay, TimeUnit)} emits a single {@code 0L} after the given
+     * delay, then completes. Useful for scheduling a one-shot delayed action.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demotimer">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoTimer()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoTimer() throws InterruptedException {
+        System.out.println(&quot;=== Observable.timer ===&quot;);
+
+        System.out.println(&quot;Waiting 500 ms...&quot;);
+        Observable.timer(500, TimeUnit.MILLISECONDS)
+                .subscribe(
+                        v  -&gt; System.out.println(&quot;Timer fired! value=&quot; + v), // → Timer fired! value=0
+                        e  -&gt; System.out.println(&quot;Error: &quot; + e),
+                        () -&gt; System.out.println(&quot;Timer completed.&quot;)          // → Timer completed.
+                );
+
+        Thread.sleep(1_000); // wait for the timer to fire
+        // === Observable.timer ===
+        // Waiting 500 ms...
+        // Timer fired! value=0
+        // Timer completed.
+        System.out.println();
+    }
+}
+/*
+&quot;C:\Program Files\Java\jdk-25\bin\java.exe&quot; -Dvaadin.copilot.pluginDotFilePath=C:\Users\roman\Work\claude\projects\RxJava\.idea\.copilot-plugin &quot;-javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.3.1\lib\idea_rt.jar=55764&quot; -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -classpath C:\Users\roman\Work\claude\projects\RxJava\target\classes;C:\Users\roman\.m2\repository\io\reactivex\rxjava3\rxjava\3.1.9\rxjava-3.1.9.jar;C:\Users\roman\.m2\repository\org\reactivestreams\reactive-streams\1.0.4\reactive-streams-1.0.4.jar tutorial._02_ObservableCreation
+=== Observable.create ===
+Received: First
+Received: Second
+Received: Third
+Done!
+
+=== Observable.defer ===
+Eager (no defer): 0
+Lazy  (defer):    42
+
+=== Observable.fromCallable ===
+Observable defined, callable not yet executed.
+  [Callable executing...]
+Got: Result from callable
+
+=== Observable.interval ===
+Tick: 0
+Tick: 1
+Tick: 2
+Tick: 3
+
+=== Observable.timer ===
+Waiting 500 ms...
+Timer fired! value=0
+Timer completed.
+
+
+Process finished with exit code 0
+
+*/</code></pre>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<script>
+hljs.highlightAll();
+function toggleCard(h){const b=h.nextElementSibling,btn=h.querySelector('.toggle-btn'),c=b.classList.toggle('collapsed');btn.textContent=c?'\u25b6 Show':'\u25bc Hide';}
+function showAll(){document.querySelectorAll('.card-body').forEach(b=>{b.classList.remove('collapsed');b.closest('.card').querySelector('.toggle-btn').textContent='\u25bc Hide';});}
+function collapseAll(){document.querySelectorAll('.card-body').forEach(b=>{b.classList.add('collapsed');b.closest('.card').querySelector('.toggle-btn').textContent='\u25b6 Show';});}
+const psbInput=document.getElementById('psb-input'),psbCount=document.getElementById('psb-count');
+let marks=[],currentIdx=-1;
+function clearMarks(){document.querySelectorAll('mark.sh,mark.sh-current').forEach(m=>m.parentNode.replaceChild(document.createTextNode(m.textContent),m));document.querySelectorAll('.card-body code').forEach(c=>c.normalize());marks=[];currentIdx=-1;}
+function findAll(term){clearMarks();if(!term.trim()){updateCount();return;}const lower=term.toLowerCase();document.querySelectorAll('.card-body code').forEach(code=>{const walker=document.createTreeWalker(code,NodeFilter.SHOW_TEXT);const nodes=[];let n;while((n=walker.nextNode()))nodes.push(n);nodes.forEach(node=>{const text=node.textContent,ltxt=text.toLowerCase();let pos=0,start;const frags=[];while((start=ltxt.indexOf(lower,pos))!==-1){if(start>pos)frags.push(document.createTextNode(text.slice(pos,start)));const m=document.createElement('mark');m.className='sh';m.textContent=text.slice(start,start+term.length);frags.push(m);marks.push(m);pos=start+term.length;}if(frags.length){if(pos<text.length)frags.push(document.createTextNode(text.slice(pos)));node.replaceWith(...frags);}});});updateCount();}
+function goTo(idx){if(!marks.length)return;if(currentIdx>=0)marks[currentIdx].className='sh';currentIdx=((idx%marks.length)+marks.length)%marks.length;marks[currentIdx].className='sh-current';const body=marks[currentIdx].closest('.card-body');if(body&&body.classList.contains('collapsed')){body.classList.remove('collapsed');body.closest('.card').querySelector('.toggle-btn').textContent='\u25bc Hide';}marks[currentIdx].scrollIntoView({behavior:'smooth',block:'center'});updateCount();}
+function nextMatch(){if(marks.length)goTo(currentIdx+1);}
+function prevMatch(){if(marks.length)goTo(currentIdx-1);}
+function updateCount(){const v=psbInput.value.trim();if(!v){psbCount.textContent='';return;}psbCount.textContent=marks.length===0?'0 matches':(currentIdx+1)+' / '+marks.length;document.getElementById('psb-prev').disabled=marks.length===0;document.getElementById('psb-next').disabled=marks.length===0;}
+function applyCardFilter(term){const lower=term.trim().toLowerCase();let shown=0;document.querySelectorAll('.card').forEach(card=>{const has=!lower||card.querySelector('code').textContent.toLowerCase().includes(lower);card.classList.toggle('hidden-by-search',!has);if(has)shown++;});document.getElementById('match-info').textContent=lower?(shown===0?'No match':shown+' card'+(shown>1?'s':'')+' match'):'';}
+function runPageSearch(){const term=psbInput.value;applyCardFilter(term);findAll(term);if(marks.length)goTo(0);}
+function clearPageSearch(){psbInput.value='';clearMarks();applyCardFilter('');psbCount.textContent='';document.getElementById('psb-prev').disabled=true;document.getElementById('psb-next').disabled=true;document.getElementById('match-info').textContent='';}
+function copySearch(){if(psbInput.value)navigator.clipboard.writeText(psbInput.value);}
+psbInput.addEventListener('input',runPageSearch);
+psbInput.addEventListener('keydown',function(e){if(e.key==='Enter'){e.shiftKey?prevMatch():nextMatch();}if(e.key==='Escape')clearPageSearch();});
+window.addEventListener('message',function(e){if(!e.data||e.data.type!=='page-search')return;psbInput.value=e.data.term||'';runPageSearch();});
+</script>
+</body>
+</html>

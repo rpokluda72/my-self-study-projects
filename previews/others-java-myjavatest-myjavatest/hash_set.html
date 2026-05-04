@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hash Set - Java Preview</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── sticky header panel ── */
+    #page-header {
+      flex-shrink: 0;
+      background: #f0f2f5;
+      padding: 16px 20px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    h1 { color: #2d3748; margin-bottom: 10px; font-size: 1.3rem; }
+
+    /* ── toolbar (show/collapse all) ── */
+    .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .toolbar button {
+      padding: 5px 13px; border: none; border-radius: 5px; cursor: pointer;
+      font-size: 0.82rem; font-weight: 600; transition: background 0.15s;
+    }
+    .btn-show { background: #3182ce; color: #fff; }
+    .btn-show:hover { background: #2b6cb0; }
+    .btn-hide { background: #718096; color: #fff; }
+    .btn-hide:hover { background: #4a5568; }
+    .match-info { font-size: 0.82rem; color: #718096; margin-left: 4px; }
+
+    /* ── page search bar ── */
+    .page-search-bar {
+      display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+      background: #fff; border: 1px solid #cbd5e0; border-radius: 7px;
+      padding: 6px 12px;
+    }
+    .page-search-bar input {
+      flex: 1; min-width: 160px; padding: 5px 8px;
+      border: 1px solid #cbd5e0; border-radius: 5px;
+      font-size: 0.85rem; outline: none; color: #2d3748;
+    }
+    .page-search-bar input:focus { border-color: #63b3ed; }
+    .psb-btn {
+      padding: 5px 11px; border: 1px solid #cbd5e0; border-radius: 5px;
+      background: #f7fafc; cursor: pointer; font-size: 0.8rem;
+      color: #4a5568; transition: background 0.12s;
+    }
+    .psb-btn:hover { background: #e2e8f0; }
+    .psb-btn:disabled { opacity: 0.4; cursor: default; }
+    .psb-clear {
+      padding: 5px 9px; border: 1px solid #cbd5e0; border-radius: 5px;
+      background: #f7fafc; cursor: pointer; font-size: 0.85rem;
+      color: #718096; transition: background 0.12s;
+    }
+    .psb-clear:hover { background: #fed7d7; color: #c53030; border-color: #fc8181; }
+    .psb-count { font-size: 0.8rem; color: #718096; white-space: nowrap; min-width: 60px; }
+
+    /* ── highlight marks ── */
+    mark.sh { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 1px; }
+    mark.sh-current { background: #f97316; color: #fff; border-radius: 2px; padding: 0 1px; }
+
+    /* ── scrollable cards area ── */
+    #cards-container {
+      flex: 1; overflow-y: auto;
+      padding: 20px;
+    }
+
+    .card { background: #fff; border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: hidden; }
+    .card.hidden-by-search { display: none; }
+
+    .card-header {
+      background: #2d3748; color: #e2e8f0;
+      padding: 9px 14px;
+      display: flex; align-items: center; gap: 10px; cursor: pointer;
+      user-select: none;
+    }
+    .card-header:hover { background: #3a4a5c; }
+    .card-header .filename { font-size: 0.9rem; font-weight: 700; flex: 1; }
+    .card-header .path { color: #a0aec0; font-size: 0.78rem; }
+    .card-header .toggle-btn {
+      background: none; border: 1px solid #4a5568; border-radius: 4px;
+      color: #a0aec0; font-size: 0.75rem; padding: 2px 8px; cursor: pointer;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .card-header .toggle-btn:hover { border-color: #63b3ed; color: #63b3ed; }
+
+    .card-body { display: block; }
+    .card-body.collapsed { display: none; }
+
+    pre { margin: 0; overflow-x: auto; }
+    pre code.hljs { font-size: 13px; line-height: 1.5; padding: 16px !important; }
+  </style>
+</head>
+<body>
+  <div id="page-header">
+    <h1>Hash Set</h1>
+    <div class="toolbar">
+      <button class="btn-show" onclick="showAll()">&#9660; Show all</button>
+      <button class="btn-hide" onclick="collapseAll()">&#9654; Collapse all</button>
+      <span class="match-info" id="match-info"></span>
+    </div>
+    <div class="page-search-bar">
+      <input id="psb-input" type="text" placeholder="&#128269; Search in code&hellip;" autocomplete="off">
+      <button class="psb-btn" id="psb-prev" onclick="prevMatch()" disabled title="Previous (Shift+Enter)">&#9650; Prev</button>
+      <button class="psb-btn" id="psb-next" onclick="nextMatch()" disabled title="Next (Enter)">&#9660; Next</button>
+      <button class="psb-clear" onclick="clearPageSearch()" title="Clear (Esc)">&#x2715;</button>
+      <span class="psb-count" id="psb-count"></span>
+    </div>
+  </div>
+  <div id="cards-container">
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Game.java</span>
+        <span class="path">Game.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.hash_set;
+
+public class Game {
+    String name;
+    int ranking;
+
+    public Game(String name, int ranking) {
+        this.name = name;
+        this.ranking = ranking;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getRanking() {
+        return ranking;
+    }
+
+    public void setRanking(int ranking) {
+        this.ranking = ranking;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;Game{&quot; +
+                &quot;name=&#x27;&quot; + name + &#x27;\&#x27;&#x27; +
+                &quot;, ranking=&quot; + ranking +
+                &#x27;}&#x27;;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Game2.java</span>
+        <span class="path">Game2.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.hash_set;
+
+public class Game2 implements Comparable&lt;Game2&gt;{
+    String name;
+    int ranking;
+
+    public Game2(String name, int ranking) {
+        this.name = name;
+        this.ranking = ranking;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getRanking() {
+        return ranking;
+    }
+
+    public void setRanking(int ranking) {
+        this.ranking = ranking;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;Game{&quot; +
+                &quot;name=&#x27;&quot; + name + &#x27;\&#x27;&#x27; +
+                &quot;, ranking=&quot; + ranking +
+                &#x27;}&#x27;;
+    }
+
+    @Override
+    public int compareTo(Game2 o) {
+        return this.ranking - o.ranking;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">TestHashTable.java</span>
+        <span class="path">TestHashTable.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.hash_set;
+
+import java.util.*;
+
+public class TestHashTable {
+    public static void main(String[] args) {
+//----------Hashtable -------------------------
+        Hashtable&lt;Integer,String&gt; ht=new Hashtable&lt;Integer,String&gt;();
+        ht.put(101,&quot; ajay&quot;);
+        ht.put(101,&quot;Vijay&quot;);
+        ht.put(102,&quot;Ravi&quot;);
+        ht.put(103,&quot;Rahul&quot;);
+        System.out.println(&quot;-------------Hash table--------------&quot;);
+        for (Map.Entry m:ht.entrySet()) {
+            System.out.println(m.getKey()+&quot; &quot;+m.getValue());
+        }
+        // -------------Hash table--------------
+        // 103 Rahul
+        // 102 Ravi
+        // 101 Vijay
+
+        //----------------HashMap--------------------------------
+        HashMap&lt;Integer,String&gt; hm=new HashMap&lt;&gt;();
+        hm.put(100,&quot;Amit&quot;);
+        hm.put(104,&quot;Amit&quot;);
+        hm.put(100,&quot;Vijay&quot;);
+        hm.put(102,&quot;Rahul&quot;);
+        System.out.println(&quot;-----------Hash map-----------&quot;);
+        for (Map.Entry m:hm.entrySet()) {
+            System.out.println(m.getKey()+&quot; &quot;+m.getValue());
+        }
+        // -----------Hash map-----------
+        // 100 Vijay
+        // 102 Rahul
+        // 104 Amit
+
+        //----------------HashSet--------------------------------
+        System.out.println(&quot;\n -----------HashSet-----------&quot;);
+        String[] names = { &quot;Gabriel&quot;, &quot;John&quot;, &quot;Gabriel&quot;, &quot;Bob&quot; };
+        ArrayList&lt;String&gt; namesArray = new ArrayList&lt;&gt;(List.of(names));
+        HashSet&lt;String&gt; hs =new HashSet&lt;&gt;(List.of(names));
+        hs.add(&quot;Gabriel&quot;); // Duplicate element, will not be added
+        HashSet&lt;String&gt; hs2 =new HashSet&lt;&gt;(namesArray);
+        System.out.println(&quot;hs=&quot;+ hs); // hs=[Bob, John, Gabriel]
+        System.out.println(&quot;hs2=&quot;+ hs2); // hs2=[Bob, John, Gabriel]
+
+        System.out.println(&quot;- hs.iterator() - iter.hasNext() -&quot;);
+        for (String h : hs) {
+            System.out.println(h);
+        }
+        // Bob
+        // John
+        // Gabriel
+
+        System.out.println(&quot;- hs.forEach -&quot;);
+        hs.forEach(System.out::println);
+        // Bob
+        // John
+        // Gabriel
+
+        List&lt;String&gt; sortedList = new ArrayList&lt;&gt;(hs);
+        Collections.sort(sortedList);
+        System.out.println(&quot;sortedList=&quot;+ sortedList); // sortedList=[Bob, Gabriel, John]
+
+        HashSet&lt;Game&gt; hsGame =new HashSet&lt;&gt;();
+        hsGame.add(new Game(&quot;Game A&quot;, 2));
+        hsGame.add(new Game(&quot;Game B&quot;, 3));
+        hsGame.add(new Game(&quot;Game C&quot;, 1));
+        System.out.println(&quot;hsGame=&quot;+ hsGame);
+        // hsGame=[Game{name=&#x27;Game B&#x27;, ranking=3}, Game{name=&#x27;Game A&#x27;, ranking=2}, Game{name=&#x27;Game C&#x27;, ranking=1}]
+
+        List&lt;Game&gt; sortedGames = new ArrayList&lt;&gt;(hsGame);
+        Collections.sort(sortedGames, new Comparator&lt;Game&gt;() {
+            @Override
+            public int compare(Game g1, Game g2) {
+                return Integer.compare(g1.getRanking(), g2.getRanking());
+            }
+        });
+        System.out.println(&quot;sortedGames=&quot;+ sortedGames);
+        // sortedGames=[Game{name=&#x27;Game C&#x27;, ranking=1}, Game{name=&#x27;Game A&#x27;, ranking=2}, Game{name=&#x27;Game B&#x27;, ranking=3}]
+
+        hsGame.add(new Game(&quot;Game C&quot;, 3));
+        System.out.println(&quot;after dupl.add : hsGame.size()=&quot;+ hsGame.size());
+        // after dupl.add : hsGame.size()=4
+        System.out.println(&quot;hsGame=&quot;+ hsGame);
+        // hsGame=[Game{name=&#x27;Game C&#x27;, ranking=1}, Game{name=&#x27;Game B&#x27;, ranking=3}, Game{name=&#x27;Game A&#x27;, ranking=2}, Game{name=&#x27;Game C&#x27;, ranking=3}]
+
+        HashSet&lt;Game2&gt; hsGame2 =new HashSet&lt;&gt;();
+        hsGame2.add(new Game2(&quot;Game A&quot;, 2));
+        hsGame2.add(new Game2(&quot;Game B&quot;, 3));
+        hsGame2.add(new Game2(&quot;Game C&quot;, 1));
+        System.out.println(&quot;hsGame2=&quot;+ hsGame2);
+        // hsGame2=[Game{name=&#x27;Game B&#x27;, ranking=3}, Game{name=&#x27;Game C&#x27;, ranking=1}, Game{name=&#x27;Game A&#x27;, ranking=2}]
+
+        // Sorting HashSet using List
+        List&lt;Game2&gt; list = new ArrayList&lt;Game2&gt;(hsGame2);
+        Collections.sort(list);
+        System.out.println(&quot;HashSet sorted using List=&quot;+ list);
+        // HashSet sorted using List=[Game{name=&#x27;Game C&#x27;, ranking=1}, Game{name=&#x27;Game A&#x27;, ranking=2}, Game{name=&#x27;Game B&#x27;, ranking=3}]
+
+        // Sorting HashSet using TreeSet
+        TreeSet&lt;Game2&gt; treeSet2 = new TreeSet&lt;Game2&gt;(hsGame2);
+        System.out.println(&quot;HashSet sorted using TreeSet=&quot;+ treeSet2);
+        // HashSet sorted using TreeSet=[Game{name=&#x27;Game C&#x27;, ranking=1}, Game{name=&#x27;Game A&#x27;, ranking=2}, Game{name=&#x27;Game B&#x27;, ranking=3}]
+
+
+        //----------------TreeSet--------------------------------
+        System.out.println(&quot;\n -----------TreeSet-----------&quot;);
+        TreeSet&lt;String&gt; treeSet = new TreeSet&lt;&gt;();
+        treeSet.add(&quot;banana&quot;);
+        treeSet.add(&quot;apple&quot;);
+        treeSet.add(&quot;cherry&quot;);
+        // treeSet.add(null); // Will throw NullPointerException
+        System.out.println(&quot;TreeSet: &quot; + treeSet);
+        // TreeSet: [apple, banana, cherry]
+
+        TreeSet&lt;Game2&gt; treeSetGame = new TreeSet&lt;&gt;();
+        // public class Game2 implements Comparable&lt;Game2&gt;{
+        // @Override public int compareTo(Game2 o) { return this.ranking - o.ranking; }
+        treeSetGame.add(new Game2(&quot;Game A&quot;, 2));
+        treeSetGame.add(new Game2(&quot;Game B&quot;, 3));
+        treeSetGame.add(new Game2(&quot;Game C&quot;, 1));
+        System.out.println(&quot;treeSetGame: &quot; + treeSetGame);
+        // treeSetGame: [Game{name=&#x27;Game C&#x27;, ranking=1}, Game{name=&#x27;Game A&#x27;, ranking=2}, Game{name=&#x27;Game B&#x27;, ranking=3}]
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">TestStringJoiner.java</span>
+        <span class="path">TestStringJoiner.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.hash_set;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.StringJoiner;
+import java.util.stream.Collectors;
+
+public class TestStringJoiner {
+    public static void main(String[] args) {
+// https://www.geeksforgeeks.org/java/stringjoiner-class-in-java/
+        //https://neesri.medium.com/understanding-java-8-stringjoiner-string-join-and-collectors-joining-5d3b8cdd1551
+        //https://mkyong.com/java8/java-8-stringjoiner-example/
+
+        // Create a StringJoiner with a delimiter
+        StringJoiner sj = new StringJoiner(&quot;, &quot;);
+
+        // Add strings which you need to join
+        sj.add(&quot;geeks&quot;).add(&quot;for&quot;).add(&quot;geeks&quot;);
+        System.out.println(&quot;Joined String: &quot; + sj);
+        // Joined String: geeks, for, geeks
+
+        String[] s1 = {&quot;Geeks&quot;, &quot;for&quot;, &quot;Geeks&quot;};
+
+        // Create StringJoiner with a delimiter
+        StringJoiner sjb = new StringJoiner(&quot;, &quot;);
+
+        // Adding array elements to StringJoiner
+        for (String s2 : s1) {
+            sjb.add(s2);
+        }
+        System.out.println(&quot;sjb=&quot; + sjb);
+        // sjb=Geeks, for, Geeks
+
+        // add() method
+        StringJoiner sj1 = new StringJoiner(&quot;, &quot;);
+        sj1.add(&quot;geeks&quot;).add(&quot;for&quot;).add(&quot;geeks&quot;);
+        System.out.println(&quot;StringJoiner with elements: &quot; + sj1);
+        // StringJoiner with elements: geeks, for, geeks
+
+        // setEmptyValue() method
+        StringJoiner sj2 = new StringJoiner(&quot;, &quot;);
+        sj2.setEmptyValue(&quot;No elements to join&quot;);
+        System.out.println(&quot;Empty StringJoiner: &quot; + sj2);
+        // Empty StringJoiner: No elements to join
+
+        // toString() method
+        StringJoiner sj3 = new StringJoiner(&quot; | &quot;, &quot;[&quot;, &quot;]&quot;);
+        sj3.add(&quot;geeks&quot;).add(&quot;for&quot;).add(&quot;geeks&quot;);
+        System.out.println(&quot;StringJoiner with prefix and suffix: &quot; + sj3);
+        // StringJoiner with prefix and suffix: [geeks | for | geeks]
+
+        // Checking the length of the joined string
+        StringJoiner sj4 = new StringJoiner(&quot;, &quot;);
+        sj4.add(&quot;geeks&quot;).add(&quot;for&quot;).add(&quot;geeks&quot;);
+        System.out.println(&quot;Length of joined string: &quot; + sj4.length());
+        // Length of joined string: 17
+
+        /** String.join */
+        // Using varargs
+        String result = String.join(&quot;, &quot;, &quot;Java&quot;, &quot;Python&quot;, &quot;C++&quot;);
+        System.out.println(&quot;result=&quot; + result);
+        // result=Java, Python, C++
+
+        // Using a collection
+        var languages = Arrays.asList(&quot;HTML&quot;, &quot;CSS&quot;, &quot;JavaScript&quot;);
+        String result2 = String.join(&quot; | &quot;, languages);
+        System.out.println(&quot;result2=&quot; + result2);
+        // result2=HTML | CSS | JavaScript
+
+        /** Collectors.joining */
+        List&lt;String&gt; fruits = Arrays.asList(&quot;Mango&quot;, &quot;Orange&quot;, &quot;Grapes&quot;);
+
+        // Join with a delimiter
+        String result3 = fruits.stream().collect(Collectors.joining(&quot;, &quot;));
+        System.out.println(&quot;result3=&quot; + result3);
+        // result3=Mango, Orange, Grapes
+
+        // Join with delimiter, prefix, and suffix
+        String resultWithPrefixSuffix = fruits.stream()
+                .collect(Collectors.joining(&quot;, &quot;, &quot;{&quot;, &quot;}&quot;));
+        System.out.println(&quot;resultWithPrefixSuffix=&quot; + resultWithPrefixSuffix);
+        // resultWithPrefixSuffix={Mango, Orange, Grapes}
+
+        // Join String by a delimiter
+        StringJoiner sjc1 = new StringJoiner(&quot;,&quot;);
+        sjc1.add(&quot;aaa&quot;);
+        sjc1.add(&quot;bbb&quot;);
+        sjc1.add(&quot;ccc&quot;);
+        String resultc1 = sjc1.toString(); //aaa,bbb,ccc
+        System.out.println(&quot;resultc1=&quot; + resultc1);
+        // resultc1=aaa,bbb,ccc
+
+        // Join String by a delimiter and starting with a supplied prefix and ending with a supplied suffix
+        StringJoiner sjc2 = new StringJoiner(&quot;/&quot;, &quot;prefix-&quot;, &quot;-suffix&quot;);
+        sj.add(&quot;2016&quot;);
+        sj.add(&quot;02&quot;);
+        sj.add(&quot;26&quot;);
+        String resultc2 = sjc2.toString();
+        System.out.println(&quot;resultc2=&quot; + resultc2);
+        // resultc2=prefix--suffix
+
+        // Join String by a delimiter.
+        String resultc3 = String.join(&quot;-&quot;, &quot;2015&quot;, &quot;10&quot;, &quot;31&quot; );
+        System.out.println(&quot;resultc3=&quot; + resultc3);
+        // resultc3=2015-10-31
+
+        // Join a List by a delimiter
+        List&lt;String&gt; list = Arrays.asList(&quot;java&quot;, &quot;python&quot;, &quot;nodejs&quot;, &quot;ruby&quot;);
+        String resultc4 = String.join(&quot;, &quot;, list);
+        System.out.println(&quot;resultc4=&quot; + resultc4);
+        // resultc4=java, python, nodejs, ruby
+
+        // Join List&lt;String&gt; example.
+        List&lt;String&gt; listc5 = Arrays.asList(&quot;java&quot;, &quot;python&quot;, &quot;nodejs&quot;, &quot;ruby&quot;);
+        String resultc5 = listc5.stream().map(x -&gt; x).collect(Collectors.joining(&quot; | &quot;));
+        System.out.println(&quot;resultc5=&quot; + resultc5);
+        // resultc5=java | python | nodejs | ruby
+
+        List&lt;Game&gt; listGame = Arrays.asList(
+                new Game(&quot;Dragon Blaze&quot;, 5),
+                new Game(&quot;Angry Bird&quot;, 5),
+                new Game(&quot;Candy Crush&quot;, 5)
+        );
+
+        String resultGame = listGame.stream().map(x -&gt; x.getName())
+                .collect(Collectors.joining(&quot;, &quot;, &quot;{&quot;, &quot;}&quot;));
+        System.out.println(&quot;resultGame=&quot; + resultGame);
+        // resultGame={Dragon Blaze, Angry Bird, Candy Crush}
+    }
+
+}
+</code></pre>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      hljs.highlightAll();
+    });
+
+    // ── per-card toggle ──────────────────────────────────────────────
+    function toggleCard(header) {
+      const body = header.nextElementSibling;
+      const btn  = header.querySelector('.toggle-btn');
+      const collapsed = body.classList.toggle('collapsed');
+      btn.textContent = collapsed ? '\u25b6 Show' : '\u25bc Hide';
+    }
+
+    // ── show / collapse all ──────────────────────────────────────────
+    function showAll() {
+      document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+        b.classList.remove('collapsed');
+        b.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+      });
+    }
+    function collapseAll() {
+      document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+        b.classList.add('collapsed');
+        b.closest('.card').querySelector('.toggle-btn').textContent = '\u25b6 Show';
+      });
+    }
+
+    // ── card-level filter (show/hide cards by match) ─────────────────
+    function applyCardFilter(term) {
+      const lower = term.trim().toLowerCase();
+      let shown = 0;
+      document.querySelectorAll('.card').forEach(card => {
+        const has = !lower || card.querySelector('code').textContent.toLowerCase().includes(lower);
+        card.classList.toggle('hidden-by-search', !has);
+        if (has) shown++;
+      });
+      const info = document.getElementById('match-info');
+      info.textContent = lower
+        ? (shown === 0 ? 'No files match' : shown + ' file' + (shown > 1 ? 's' : '') + ' match')
+        : '';
+    }
+
+    // ── in-page text search ──────────────────────────────────────────
+    let marks = [];
+    let currentIdx = -1;
+    const psbInput = document.getElementById('psb-input');
+    const psbCount = document.getElementById('psb-count');
+
+    function clearMarks() {
+      document.querySelectorAll('mark.sh, mark.sh-current').forEach(m => {
+        m.outerHTML = m.textContent
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      });
+      // normalize() re-merges adjacent text nodes
+      document.querySelectorAll('.card-body code').forEach(c => c.normalize());
+      marks = [];
+      currentIdx = -1;
+    }
+
+    function findAll(term) {
+      clearMarks();
+      if (!term) { updateCount(); return; }
+      const lower = term.toLowerCase();
+
+      document.querySelectorAll('.card-body code').forEach(code => {
+        const walker = document.createTreeWalker(code, NodeFilter.SHOW_TEXT);
+        const nodes = [];
+        let n;
+        while ((n = walker.nextNode())) nodes.push(n);
+
+        nodes.forEach(node => {
+          const text = node.textContent;
+          const ltxt = text.toLowerCase();
+          let pos = 0, start;
+          const frags = [];
+          while ((start = ltxt.indexOf(lower, pos)) !== -1) {
+            if (start > pos) frags.push(document.createTextNode(text.slice(pos, start)));
+            const m = document.createElement('mark');
+            m.className = 'sh';
+            m.textContent = text.slice(start, start + term.length);
+            frags.push(m);
+            marks.push(m);
+            pos = start + term.length;
+          }
+          if (frags.length) {
+            if (pos < text.length) frags.push(document.createTextNode(text.slice(pos)));
+            node.replaceWith(...frags);
+          }
+        });
+      });
+      updateCount();
+    }
+
+    function goTo(idx) {
+      if (!marks.length) return;
+      if (currentIdx >= 0) {
+        marks[currentIdx].className = 'sh';
+      }
+      currentIdx = ((idx % marks.length) + marks.length) % marks.length;
+      const m = marks[currentIdx];
+      m.className = 'sh-current';
+      // expand card if collapsed
+      const body = m.closest('.card-body');
+      if (body && body.classList.contains('collapsed')) {
+        body.classList.remove('collapsed');
+        body.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+      }
+      m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      updateCount();
+    }
+
+    function updateCount() {
+      if (!psbInput.value.trim()) { psbCount.textContent = ''; return; }
+      psbCount.textContent = marks.length === 0
+        ? '0 matches'
+        : (currentIdx + 1) + ' / ' + marks.length;
+      document.getElementById('psb-prev').disabled = marks.length === 0;
+      document.getElementById('psb-next').disabled = marks.length === 0;
+    }
+
+    function runPageSearch() {
+      const term = psbInput.value;
+      applyCardFilter(term);
+      findAll(term);
+      if (marks.length) goTo(0);
+    }
+
+    function prevMatch() { if (marks.length) goTo(currentIdx - 1); }
+    function nextMatch() { if (marks.length) goTo(currentIdx + 1); }
+
+    function clearPageSearch() {
+      psbInput.value = '';
+      clearMarks();
+      applyCardFilter('');
+      updateCount();
+    }
+
+    psbInput.addEventListener('input', runPageSearch);
+    psbInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.shiftKey ? prevMatch() : nextMatch(); }
+      if (e.key === 'Escape') clearPageSearch();
+    });
+
+    // ── messages from sidebar ────────────────────────────────────────
+    window.addEventListener('message', function (e) {
+      if (!e.data) return;
+      if (e.data.type === 'page-search') {
+        psbInput.value = e.data.term || '';
+        runPageSearch();
+      }
+    });
+  </script>
+</body>
+</html>

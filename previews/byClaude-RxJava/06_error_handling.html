@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>06 — Error Handling</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#1e1e2e;--surface:#24273a;--text:#cdd6f4;--subtext:#a6adc8;
+  --accent:#89b4fa;--accent2:#cba6f7;--border:#313244;--hover:#45475a;
+  --mark-y:#f9e2af;--mark-o:#fab387;--red:#f38ba8;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+#header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:10px 16px 8px}
+.header-top{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+h1{font-size:16px;font-weight:600;color:var(--accent2);white-space:nowrap}
+h1 .num{color:var(--accent);margin-right:6px}
+.toolbar{display:flex;align-items:center;gap:6px}
+.toolbar button{background:var(--hover);border:1px solid var(--border);color:var(--text);
+                border-radius:5px;padding:3px 10px;font-size:12px;cursor:pointer}
+.toolbar button:hover{background:var(--accent);color:#1e1e2e}
+.match-info{font-size:12px;color:var(--subtext);margin-left:4px}
+.search-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.search-input-wrap{position:relative;display:flex;align-items:center}
+#psb-input{background:#313244;border:1px solid var(--border);color:var(--text);
+           border-radius:6px;padding:4px 28px 4px 10px;font-size:13px;width:220px;outline:none}
+#psb-input:focus{border-color:var(--accent)}
+.search-clear{position:absolute;right:6px;background:none;border:none;
+              color:var(--subtext);cursor:pointer;font-size:14px}
+.search-clear:hover{color:var(--red)}
+.search-bar button{background:var(--hover);border:1px solid var(--border);color:var(--text);
+                   border-radius:5px;padding:3px 9px;font-size:12px;cursor:pointer}
+.search-bar button:hover:not(:disabled){background:var(--accent);color:#1e1e2e}
+.search-bar button:disabled{opacity:.4;cursor:default}
+#psb-count{font-size:12px;color:var(--accent);min-width:70px}
+#cards{padding:16px}
+/* scroll-margin-top keeps the card below the sticky header when jumped to via hash */
+.card{background:var(--surface);border:1px solid var(--border);
+      border-radius:8px;margin-bottom:14px;overflow:hidden;scroll-margin-top:115px}
+.card.hidden-by-search{display:none}
+.card-header{display:flex;align-items:center;justify-content:space-between;
+             padding:10px 14px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border)}
+.card-header:hover{background:var(--hover)}
+.card-filename{font-family:'JetBrains Mono','Fira Code',Consolas,monospace;
+               font-size:13px;color:var(--accent);font-weight:600}
+.toggle-btn{background:none;border:1px solid var(--border);color:var(--subtext);
+            border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer}
+.toggle-btn:hover{background:var(--accent);color:#1e1e2e;border-color:var(--accent)}
+.card-body{overflow:hidden}
+.card-body.collapsed{display:none}
+.card-body pre{margin:0;border-radius:0}
+.card-body code{font-family:'JetBrains Mono','Fira Code',Consolas,monospace!important;
+                font-size:13px!important;line-height:1.6!important}
+mark.sh{background:var(--mark-y);color:#1e1e2e;border-radius:2px}
+mark.sh-current{background:var(--mark-o);color:#1e1e2e;border-radius:2px;outline:2px solid var(--red)}
+</style>
+</head>
+<body>
+<div id="header">
+  <div class="header-top">
+    <h1><span class="num">06</span>Error Handling</h1>
+    <div class="toolbar">
+      <button onclick="showAll()">&#9660; Show all</button>
+      <button onclick="collapseAll()">&#9654; Collapse all</button>
+      <span id="match-info" class="match-info"></span>
+    </div>
+  </div>
+  <div class="search-bar">
+    <div class="search-input-wrap">
+      <input id="psb-input" type="text" placeholder="Search in code..." autocomplete="off" spellcheck="false">
+      <button class="search-clear" onclick="clearPageSearch()" title="Clear">&#x2715;</button>
+    </div>
+    <button id="psb-prev" onclick="prevMatch()" disabled>&#9664; Prev</button>
+    <button id="psb-next" onclick="nextMatch()" disabled>Next &#9654;</button>
+    <span id="psb-count"></span>
+    <button onclick="copySearch()" title="Copy search text">&#x2398; Copy</button>
+  </div>
+</div>
+<div id="cards">
+  <div class="card" id="card-header">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">_06_ErrorHandling.java</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package tutorial;
+
+import io.reactivex.rxjava3.core.Observable;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * TUTORIAL 06 — Error Handling
+ *
+ * &lt;p&gt;In RxJava, errors are first-class citizens — they travel down the stream as an
+ * {@code onError} signal. Proper error handling keeps your pipeline alive and predictable
+ * instead of crashing with an unhandled exception.
+ *
+ * &lt;p&gt;Operators covered:
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code onErrorReturn}        — replace an error with a fallback item&lt;/li&gt;
+ *   &lt;li&gt;{@code onErrorReturnItem}    — replace an error with a fixed fallback item&lt;/li&gt;
+ *   &lt;li&gt;{@code onErrorResumeNext}    — replace an error with a fallback Observable&lt;/li&gt;
+ *   &lt;li&gt;{@code doOnError}            — side-effect on error without intercepting it&lt;/li&gt;
+ *   &lt;li&gt;{@code retry}                — re-subscribe on error, up to N times&lt;/li&gt;
+ *   &lt;li&gt;{@code retryWhen}            — conditional/delayed retry with custom logic&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;Run: right-click → Run &#x27;_06_ErrorHandling.main()&#x27;
+ */
+public class _06_ErrorHandling {
+
+    public static void main(String[] args) throws InterruptedException {
+        demoOnErrorReturn();
+        demoOnErrorReturnItem();
+        demoOnErrorResumeNext();
+        demoDoOnError();
+        demoRetry();
+        demoRetryWhen();
+    }
+
+    // -------------------------------------------------------------------------
+    // onErrorReturn
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code onErrorReturn(Function&lt;Throwable, T&gt;)} intercepts an error signal, maps it
+     * to a fallback item using the provided function, emits that item, then completes normally.
+     *
+     * &lt;p&gt;The stream terminates after the fallback item — you get the fallback and {@code onComplete},
+     * NOT further items from the original source.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoonerrorreturn">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoOnErrorReturn()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoOnErrorReturn() {
+        System.out.println(&quot;=== onErrorReturn ===&quot;);
+
+        Observable.just(1, 2, 3)
+                .map(n -&gt; {
+                    if (n == 2) throw new RuntimeException(&quot;Bad value: &quot; + n);
+                    return n;
+                })
+                .onErrorReturn(err -&gt; {
+                    System.out.println(&quot;  Handling error: &quot; + err.getMessage()); // → Handling error: Bad value: 2
+                    return -1; // fallback value
+                })
+                .subscribe(
+                        item -&gt; System.out.println(&quot;Item: &quot; + item),
+                        err  -&gt; System.out.println(&quot;Error reached subscriber: &quot; + err),
+                        ()   -&gt; System.out.println(&quot;Completed normally&quot;) // → Completed normally
+                );
+        // === onErrorReturn ===
+        //Item: 1
+        //  Handling error: Bad value: 2
+        //Item: -1
+        //Completed normally
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // onErrorReturnItem
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code onErrorReturnItem(T item)} is a simpler variant of {@code onErrorReturn}
+     * that always returns the same fixed value, regardless of which error occurred.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoonerrorreturnitem">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoOnErrorReturnItem()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoOnErrorReturnItem() {
+        System.out.println(&quot;=== onErrorReturnItem ===&quot;);
+
+        Observable.&lt;String&gt;error(new RuntimeException(&quot;Connection failed&quot;))
+                .onErrorReturnItem(&quot;DEFAULT&quot;)
+                .subscribe(
+                        item -&gt; System.out.println(&quot;Received: &quot; + item), // → Received: DEFAULT
+                        err  -&gt; System.out.println(&quot;Error: &quot; + err)
+                );
+        // === onErrorReturnItem ===
+        //Received: DEFAULT
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // onErrorResumeNext
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code onErrorResumeNext(Function&lt;Throwable, Observable&lt;T&gt;&gt;)} intercepts an error
+     * and switches to a fallback Observable. The fallback can emit multiple items,
+     * giving you a whole backup stream rather than just one item.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoonerrorresumenext">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoOnErrorResumeNext()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoOnErrorResumeNext() {
+        System.out.println(&quot;=== onErrorResumeNext ===&quot;);
+
+        Observable&lt;String&gt; primary  = Observable.error(new RuntimeException(&quot;Primary failed&quot;));
+        Observable&lt;String&gt; fallback = Observable.just(&quot;Fallback-1&quot;, &quot;Fallback-2&quot;);
+
+        primary.onErrorResumeNext(err -&gt; {
+                    System.out.println(&quot;  Switching to fallback because: &quot; + err.getMessage());
+                    // → Switching to fallback because: Primary failed
+                    return fallback;
+                })
+                .subscribe(
+                        item -&gt; System.out.println(&quot;Received: &quot; + item),
+                        err  -&gt; System.out.println(&quot;Error: &quot; + err),
+                        ()   -&gt; System.out.println(&quot;Done&quot;) // → Done
+                );
+        // === onErrorResumeNext ===
+        //  Switching to fallback because: Primary failed
+        //Received: Fallback-1
+        //Received: Fallback-2
+        //Done
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // doOnError
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code doOnError(Consumer&lt;Throwable&gt;)} is a *side-effect* operator — it lets you
+     * observe (log, alert, etc.) an error without actually handling or intercepting it.
+     * The error continues to propagate downstream after the side-effect runs.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demodoonerror">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoDoOnError()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoDoOnError() {
+        System.out.println(&quot;=== doOnError ===&quot;);
+
+        Observable.&lt;Integer&gt;error(new IllegalStateException(&quot;Bad state&quot;))
+                .doOnError(err -&gt; System.out.println(&quot;  [LOG] Error intercepted: &quot; + err.getMessage()))
+                .subscribe(
+                        item -&gt; System.out.println(&quot;Item: &quot; + item),
+                        err  -&gt; System.out.println(&quot;Subscriber caught: &quot; + err.getMessage())
+                );
+        // === doOnError ===
+        //  [LOG] Error intercepted: Bad state
+        //Subscriber caught: Bad state
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // retry
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code retry(times)} re-subscribes to the source Observable when it errors,
+     * up to {@code times} attempts. If it still errors after all retries, the error
+     * is forwarded to the subscriber.
+     *
+     * &lt;p&gt;Each retry re-subscribes from scratch — for cold Observables this means
+     * restarting the whole sequence.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoretry">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoRetry()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoRetry() {
+        System.out.println(&quot;=== retry(2) ===&quot;);
+
+        AtomicInteger attemptCount = new AtomicInteger(0);
+
+        Observable.create(emitter -&gt; {
+                    int attempt = attemptCount.incrementAndGet();
+                    System.out.println(&quot;  Attempt #&quot; + attempt);
+                    if (attempt &lt; 3) {
+                        emitter.onError(new RuntimeException(&quot;Fail on attempt &quot; + attempt));
+                    } else {
+                        emitter.onNext(&quot;Success on attempt &quot; + attempt);
+                        emitter.onComplete();
+                    }
+                })
+                .retry(3)  // retry up to 3 times
+                .subscribe(
+                        item -&gt; System.out.println(&quot;Result: &quot; + item),
+                        err  -&gt; System.out.println(&quot;Final error: &quot; + err.getMessage())
+                );
+        // === retry(2) ===
+        //  Attempt #1
+        //  Attempt #2
+        //  Attempt #3
+        //Result: Success on attempt 3
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // retryWhen
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code retryWhen(Function&lt;Observable&lt;Throwable&gt;, Observable&lt;?&gt;&gt;)} gives you full
+     * control over the retry logic. The function receives an Observable of errors and
+     * must return an Observable — when that Observable emits, a retry happens;
+     * when it completes or errors, the retry chain ends.
+     *
+     * &lt;p&gt;This lets you implement strategies like exponential back-off or retry-only-on-specific-errors.
+     * Below we do a simple &quot;retry up to 2 times, but only for RuntimeException&quot;.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoretrywhen">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoRetryWhen()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoRetryWhen() throws InterruptedException {
+        System.out.println(&quot;=== retryWhen ===&quot;);
+
+        AtomicInteger counter = new AtomicInteger(0);
+
+        Observable.create(emitter -&gt; {
+                    int n = counter.incrementAndGet();
+                    System.out.println(&quot;  Try #&quot; + n);
+                    if (n &lt;= 2) {
+                        emitter.onError(new RuntimeException(&quot;Transient error #&quot; + n));
+                    } else {
+                        emitter.onNext(&quot;OK after &quot; + n + &quot; tries&quot;);
+                        emitter.onComplete();
+                    }
+                })
+                .retryWhen(errors -&gt; errors
+                        .zipWith(Observable.range(1, 2), (err, retryNumber) -&gt; retryNumber)
+                        // zip with range(1,2) → allows exactly 2 retries; when range ends, retryWhen stops
+                )
+                .subscribe(
+                        item -&gt; System.out.println(&quot;Result: &quot; + item),
+                        // → Try #1
+                        // → Try #2
+                        // → Try #3
+                        // → Result: OK after 3 tries
+                        err  -&gt; System.out.println(&quot;Final error: &quot; + err.getMessage())
+                );
+        // .zipWith(Observable.range(1, 2)
+        // === retryWhen ===
+        //  Try #1
+        //  Try #2
+
+        // .zipWith(Observable.range(1, 4)
+        // === retryWhen ===
+        //  Try #1
+        //  Try #2
+        //  Try #3
+        //Result: OK after 3 tries
+        System.out.println();
+    }
+}
+
+/*
+&quot;C:\Program Files\Java\jdk-25\bin\java.exe&quot; -Dvaadin.copilot.pluginDotFilePath=C:\Users\roman\Work\claude\projects\RxJava\.idea\.copilot-plugin &quot;-javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.3.1\lib\idea_rt.jar=55750&quot; -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -classpath C:\Users\roman\Work\claude\projects\RxJava\target\classes;C:\Users\roman\.m2\repository\io\reactivex\rxjava3\rxjava\3.1.9\rxjava-3.1.9.jar;C:\Users\roman\.m2\repository\org\reactivestreams\reactive-streams\1.0.4\reactive-streams-1.0.4.jar tutorial._06_ErrorHandling
+=== onErrorReturn ===
+Item: 1
+  Handling error: Bad value: 2
+Item: -1
+Completed normally
+
+=== onErrorReturnItem ===
+Received: DEFAULT
+
+=== onErrorResumeNext ===
+  Switching to fallback because: Primary failed
+Received: Fallback-1
+Received: Fallback-2
+Done
+
+=== doOnError ===
+  [LOG] Error intercepted: Bad state
+Subscriber caught: Bad state
+
+=== retry(2) ===
+  Attempt #1
+  Attempt #2
+  Attempt #3
+Result: Success on attempt 3
+
+=== retryWhen ===
+  Try #1
+  Try #2
+
+
+Process finished with exit code 0
+
+ */</code></pre>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<script>
+hljs.highlightAll();
+function toggleCard(h){const b=h.nextElementSibling,btn=h.querySelector('.toggle-btn'),c=b.classList.toggle('collapsed');btn.textContent=c?'\u25b6 Show':'\u25bc Hide';}
+function showAll(){document.querySelectorAll('.card-body').forEach(b=>{b.classList.remove('collapsed');b.closest('.card').querySelector('.toggle-btn').textContent='\u25bc Hide';});}
+function collapseAll(){document.querySelectorAll('.card-body').forEach(b=>{b.classList.add('collapsed');b.closest('.card').querySelector('.toggle-btn').textContent='\u25b6 Show';});}
+const psbInput=document.getElementById('psb-input'),psbCount=document.getElementById('psb-count');
+let marks=[],currentIdx=-1;
+function clearMarks(){document.querySelectorAll('mark.sh,mark.sh-current').forEach(m=>m.parentNode.replaceChild(document.createTextNode(m.textContent),m));document.querySelectorAll('.card-body code').forEach(c=>c.normalize());marks=[];currentIdx=-1;}
+function findAll(term){clearMarks();if(!term.trim()){updateCount();return;}const lower=term.toLowerCase();document.querySelectorAll('.card-body code').forEach(code=>{const walker=document.createTreeWalker(code,NodeFilter.SHOW_TEXT);const nodes=[];let n;while((n=walker.nextNode()))nodes.push(n);nodes.forEach(node=>{const text=node.textContent,ltxt=text.toLowerCase();let pos=0,start;const frags=[];while((start=ltxt.indexOf(lower,pos))!==-1){if(start>pos)frags.push(document.createTextNode(text.slice(pos,start)));const m=document.createElement('mark');m.className='sh';m.textContent=text.slice(start,start+term.length);frags.push(m);marks.push(m);pos=start+term.length;}if(frags.length){if(pos<text.length)frags.push(document.createTextNode(text.slice(pos)));node.replaceWith(...frags);}});});updateCount();}
+function goTo(idx){if(!marks.length)return;if(currentIdx>=0)marks[currentIdx].className='sh';currentIdx=((idx%marks.length)+marks.length)%marks.length;marks[currentIdx].className='sh-current';const body=marks[currentIdx].closest('.card-body');if(body&&body.classList.contains('collapsed')){body.classList.remove('collapsed');body.closest('.card').querySelector('.toggle-btn').textContent='\u25bc Hide';}marks[currentIdx].scrollIntoView({behavior:'smooth',block:'center'});updateCount();}
+function nextMatch(){if(marks.length)goTo(currentIdx+1);}
+function prevMatch(){if(marks.length)goTo(currentIdx-1);}
+function updateCount(){const v=psbInput.value.trim();if(!v){psbCount.textContent='';return;}psbCount.textContent=marks.length===0?'0 matches':(currentIdx+1)+' / '+marks.length;document.getElementById('psb-prev').disabled=marks.length===0;document.getElementById('psb-next').disabled=marks.length===0;}
+function applyCardFilter(term){const lower=term.trim().toLowerCase();let shown=0;document.querySelectorAll('.card').forEach(card=>{const has=!lower||card.querySelector('code').textContent.toLowerCase().includes(lower);card.classList.toggle('hidden-by-search',!has);if(has)shown++;});document.getElementById('match-info').textContent=lower?(shown===0?'No match':shown+' card'+(shown>1?'s':'')+' match'):'';}
+function runPageSearch(){const term=psbInput.value;applyCardFilter(term);findAll(term);if(marks.length)goTo(0);}
+function clearPageSearch(){psbInput.value='';clearMarks();applyCardFilter('');psbCount.textContent='';document.getElementById('psb-prev').disabled=true;document.getElementById('psb-next').disabled=true;document.getElementById('match-info').textContent='';}
+function copySearch(){if(psbInput.value)navigator.clipboard.writeText(psbInput.value);}
+psbInput.addEventListener('input',runPageSearch);
+psbInput.addEventListener('keydown',function(e){if(e.key==='Enter'){e.shiftKey?prevMatch():nextMatch();}if(e.key==='Escape')clearPageSearch();});
+window.addEventListener('message',function(e){if(!e.data||e.data.type!=='page-search')return;psbInput.value=e.data.term||'';runPageSearch();});
+</script>
+</body>
+</html>

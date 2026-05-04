@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>05 — Combining Operators</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#1e1e2e;--surface:#24273a;--text:#cdd6f4;--subtext:#a6adc8;
+  --accent:#89b4fa;--accent2:#cba6f7;--border:#313244;--hover:#45475a;
+  --mark-y:#f9e2af;--mark-o:#fab387;--red:#f38ba8;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+#header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:10px 16px 8px}
+.header-top{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+h1{font-size:16px;font-weight:600;color:var(--accent2);white-space:nowrap}
+h1 .num{color:var(--accent);margin-right:6px}
+.toolbar{display:flex;align-items:center;gap:6px}
+.toolbar button{background:var(--hover);border:1px solid var(--border);color:var(--text);
+                border-radius:5px;padding:3px 10px;font-size:12px;cursor:pointer}
+.toolbar button:hover{background:var(--accent);color:#1e1e2e}
+.match-info{font-size:12px;color:var(--subtext);margin-left:4px}
+.search-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.search-input-wrap{position:relative;display:flex;align-items:center}
+#psb-input{background:#313244;border:1px solid var(--border);color:var(--text);
+           border-radius:6px;padding:4px 28px 4px 10px;font-size:13px;width:220px;outline:none}
+#psb-input:focus{border-color:var(--accent)}
+.search-clear{position:absolute;right:6px;background:none;border:none;
+              color:var(--subtext);cursor:pointer;font-size:14px}
+.search-clear:hover{color:var(--red)}
+.search-bar button{background:var(--hover);border:1px solid var(--border);color:var(--text);
+                   border-radius:5px;padding:3px 9px;font-size:12px;cursor:pointer}
+.search-bar button:hover:not(:disabled){background:var(--accent);color:#1e1e2e}
+.search-bar button:disabled{opacity:.4;cursor:default}
+#psb-count{font-size:12px;color:var(--accent);min-width:70px}
+#cards{padding:16px}
+/* scroll-margin-top keeps the card below the sticky header when jumped to via hash */
+.card{background:var(--surface);border:1px solid var(--border);
+      border-radius:8px;margin-bottom:14px;overflow:hidden;scroll-margin-top:115px}
+.card.hidden-by-search{display:none}
+.card-header{display:flex;align-items:center;justify-content:space-between;
+             padding:10px 14px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border)}
+.card-header:hover{background:var(--hover)}
+.card-filename{font-family:'JetBrains Mono','Fira Code',Consolas,monospace;
+               font-size:13px;color:var(--accent);font-weight:600}
+.toggle-btn{background:none;border:1px solid var(--border);color:var(--subtext);
+            border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer}
+.toggle-btn:hover{background:var(--accent);color:#1e1e2e;border-color:var(--accent)}
+.card-body{overflow:hidden}
+.card-body.collapsed{display:none}
+.card-body pre{margin:0;border-radius:0}
+.card-body code{font-family:'JetBrains Mono','Fira Code',Consolas,monospace!important;
+                font-size:13px!important;line-height:1.6!important}
+mark.sh{background:var(--mark-y);color:#1e1e2e;border-radius:2px}
+mark.sh-current{background:var(--mark-o);color:#1e1e2e;border-radius:2px;outline:2px solid var(--red)}
+</style>
+</head>
+<body>
+<div id="header">
+  <div class="header-top">
+    <h1><span class="num">05</span>Combining Operators</h1>
+    <div class="toolbar">
+      <button onclick="showAll()">&#9660; Show all</button>
+      <button onclick="collapseAll()">&#9654; Collapse all</button>
+      <span id="match-info" class="match-info"></span>
+    </div>
+  </div>
+  <div class="search-bar">
+    <div class="search-input-wrap">
+      <input id="psb-input" type="text" placeholder="Search in code..." autocomplete="off" spellcheck="false">
+      <button class="search-clear" onclick="clearPageSearch()" title="Clear">&#x2715;</button>
+    </div>
+    <button id="psb-prev" onclick="prevMatch()" disabled>&#9664; Prev</button>
+    <button id="psb-next" onclick="nextMatch()" disabled>Next &#9654;</button>
+    <span id="psb-count"></span>
+    <button onclick="copySearch()" title="Copy search text">&#x2398; Copy</button>
+  </div>
+</div>
+<div id="cards">
+  <div class="card" id="card-header">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">_05_CombiningOperators.java</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package tutorial;
+
+import io.reactivex.rxjava3.core.Observable;
+
+import java.util.concurrent.TimeUnit;
+
+/**
+ * TUTORIAL 05 — Combining Operators
+ *
+ * &lt;p&gt;Combining operators merge multiple Observables into one. The key difference between them
+ * is *when* they emit and *how* they coordinate items from different sources.
+ *
+ * &lt;p&gt;Operators covered:
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code merge}         — subscribe to all sources simultaneously, emit as items arrive&lt;/li&gt;
+ *   &lt;li&gt;{@code concat}        — subscribe sources one-by-one, strictly in order&lt;/li&gt;
+ *   &lt;li&gt;{@code zip}           — pair items by position across multiple sources&lt;/li&gt;
+ *   &lt;li&gt;{@code combineLatest} — emit whenever any source emits, using the latest from each&lt;/li&gt;
+ *   &lt;li&gt;{@code startWithItem} — prepend a fixed item before the source stream&lt;/li&gt;
+ *   &lt;li&gt;{@code amb}           — emit from whichever source emits first, ignore the rest&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;Run: right-click → Run &#x27;_05_CombiningOperators.main()&#x27;
+ */
+public class _05_CombiningOperators {
+
+    public static void main(String[] args) throws InterruptedException {
+        demoMerge();
+        demoConcat();
+        demoZip();
+        demoCombineLatest();
+        demoStartWith();
+        demoAmb();
+    }
+
+    // -------------------------------------------------------------------------
+    // merge
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.merge(source1, source2, ...)} subscribes to all sources at once
+     * and emits items as they arrive — there is no guaranteed ordering between sources.
+     *
+     * &lt;p&gt;If any source errors, the merged stream errors immediately.
+     * The merged stream completes when ALL sources have completed.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demomerge">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoMerge()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoMerge() {
+        System.out.println(&quot;=== merge ===&quot;);
+
+        Observable&lt;String&gt; source1 = Observable.just(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;);
+        Observable&lt;String&gt; source2 = Observable.just(&quot;1&quot;, &quot;2&quot;, &quot;3&quot;);
+
+        // Both sources are synchronous here, so source1 completes before source2 starts
+        Observable.merge(source1, source2)
+                .subscribe(item -&gt; System.out.println(&quot;Merged: &quot; + item));
+        // === merge ===
+        //Merged: A
+        //Merged: B
+        //Merged: C
+        //Merged: 1
+        //Merged: 2
+        //Merged: 3
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // concat
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.concat(source1, source2, ...)} subscribes to sources *sequentially*:
+     * it only subscribes to source2 after source1 has completed, and so on.
+     *
+     * &lt;p&gt;The output order is always: all items from source1, then all from source2, etc.
+     * Use this when strict ordering is required.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-democoncat">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoConcat()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoConcat() {
+        System.out.println(&quot;=== concat ===&quot;);
+
+        Observable&lt;String&gt; first  = Observable.just(&quot;First-1&quot;,  &quot;First-2&quot;);
+        Observable&lt;String&gt; second = Observable.just(&quot;Second-1&quot;, &quot;Second-2&quot;);
+
+        Observable.concat(first, second)
+                .subscribe(item -&gt; System.out.println(&quot;Concat: &quot; + item));
+        // === concat ===
+        //Concat: First-1
+        //Concat: First-2
+        //Concat: Second-1
+        //Concat: Second-2
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // zip
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.zip(source1, source2, zipper)} pairs up items by *position*:
+     * the zipper function receives the 1st item of source1 with the 1st item of source2,
+     * the 2nd with the 2nd, etc. It emits a result for each pair.
+     *
+     * &lt;p&gt;The output length equals the length of the *shortest* source.
+     * Use zip to combine logically related items from parallel streams.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demozip">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoZip()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoZip() {
+        System.out.println(&quot;=== zip ===&quot;);
+
+        Observable&lt;String&gt; names  = Observable.just(&quot;Alice&quot;, &quot;Bob&quot;, &quot;Carol&quot;);
+        Observable&lt;Integer&gt; scores = Observable.just(95, 87, 92);
+
+        Observable.zip(names, scores,
+                (name, score) -&gt; name + &quot; → &quot; + score)
+                .subscribe(result -&gt; System.out.println(&quot;Zipped: &quot; + result));
+        // === zip ===
+        //Zipped: Alice → 95
+        //Zipped: Bob → 87
+        //Zipped: Carol → 92
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // combineLatest
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.combineLatest(source1, source2, combiner)} emits a combined item
+     * *whenever any source emits*, using the most recently emitted value from each source.
+     *
+     * &lt;p&gt;It does NOT wait for all sources to emit at the same position — it just reacts
+     * to any new emission using the &quot;latest&quot; snapshot of all sources.
+     *
+     * &lt;p&gt;Common use case: combining multiple UI input fields — update the result whenever
+     * any field changes.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-democombinelatest">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoCombineLatest()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoCombineLatest() throws InterruptedException {
+        System.out.println(&quot;=== combineLatest ===&quot;);
+
+        // Ticks every 100ms, takes 3 values; other ticks every 250ms, takes 2 values
+        Observable&lt;Long&gt; fast = Observable.interval(100, TimeUnit.MILLISECONDS).take(3);
+        Observable&lt;Long&gt; slow = Observable.interval(250, TimeUnit.MILLISECONDS).take(2);
+
+        Observable.combineLatest(fast, slow,
+                (f, s) -&gt; &quot;fast=&quot; + f + &quot; slow=&quot; + s)
+                .subscribe(combo -&gt; System.out.println(&quot;CombineLatest: &quot; + combo));
+        // Output depends on timing — something like:
+        // === combineLatest ===
+        //CombineLatest: fast=1 slow=0
+        //CombineLatest: fast=2 slow=0
+        //CombineLatest: fast=2 slow=1
+
+        Thread.sleep(800); // wait for async sources
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // startWithItem
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code startWithItem(item)} prepends a single item to the beginning of the stream
+     * before the source starts emitting. Useful for providing an initial/default value.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demostartwith">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoStartWith()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoStartWith() {
+        System.out.println(&quot;=== startWithItem ===&quot;);
+
+        Observable.just(&quot;B&quot;, &quot;C&quot;, &quot;D&quot;)
+                .startWithItem(&quot;A&quot;)          // prepend &quot;A&quot;
+                .subscribe(s -&gt; System.out.println(&quot;Item: &quot; + s));
+        // === startWithItem ===
+        //Item: A
+        //Item: B
+        //Item: C
+        //Item: D
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // amb (ambiguous)
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.amb(sources)} subscribes to all provided sources simultaneously
+     * and emits from whichever one emits its *first item first*, then disposes all others.
+     *
+     * &lt;p&gt;&quot;amb&quot; stands for &quot;ambiguous&quot; — you don&#x27;t know in advance which will be first.
+     * Useful for racing multiple data sources (e.g., cache vs. network) and using
+     * whichever responds first.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoamb">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoAmb()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoAmb() throws InterruptedException {
+        System.out.println(&quot;=== amb ===&quot;);
+
+        // source1 emits after 100ms; source2 emits after 200ms — source1 wins
+        Observable&lt;String&gt; source1 = Observable.just(&quot;Fast source&quot;)
+                .delay(100, TimeUnit.MILLISECONDS);
+        Observable&lt;String&gt; source2 = Observable.just(&quot;Slow source&quot;)
+                .delay(200, TimeUnit.MILLISECONDS);
+
+        Observable.amb(java.util.Arrays.asList(source1, source2))
+                .subscribe(winner -&gt; System.out.println(&quot;Winner: &quot; + winner));
+        // === amb ===
+        //Winner: Fast source
+
+        Thread.sleep(500);
+        System.out.println();
+    }
+}
+
+/*
+&quot;C:\Program Files\Java\jdk-25\bin\java.exe&quot; -Dvaadin.copilot.pluginDotFilePath=C:\Users\roman\Work\claude\projects\RxJava\.idea\.copilot-plugin &quot;-javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.3.1\lib\idea_rt.jar=55754&quot; -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -classpath C:\Users\roman\Work\claude\projects\RxJava\target\classes;C:\Users\roman\.m2\repository\io\reactivex\rxjava3\rxjava\3.1.9\rxjava-3.1.9.jar;C:\Users\roman\.m2\repository\org\reactivestreams\reactive-streams\1.0.4\reactive-streams-1.0.4.jar tutorial._05_CombiningOperators
+=== merge ===
+Merged: A
+Merged: B
+Merged: C
+Merged: 1
+Merged: 2
+Merged: 3
+
+=== concat ===
+Concat: First-1
+Concat: First-2
+Concat: Second-1
+Concat: Second-2
+
+=== zip ===
+Zipped: Alice → 95
+Zipped: Bob → 87
+Zipped: Carol → 92
+
+=== combineLatest ===
+CombineLatest: fast=1 slow=0
+CombineLatest: fast=2 slow=0
+CombineLatest: fast=2 slow=1
+
+=== startWithItem ===
+Item: A
+Item: B
+Item: C
+Item: D
+
+=== amb ===
+Winner: Fast source
+
+
+Process finished with exit code 0
+
+ */</code></pre>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<script>
+hljs.highlightAll();
+function toggleCard(h){const b=h.nextElementSibling,btn=h.querySelector('.toggle-btn'),c=b.classList.toggle('collapsed');btn.textContent=c?'\u25b6 Show':'\u25bc Hide';}
+function showAll(){document.querySelectorAll('.card-body').forEach(b=>{b.classList.remove('collapsed');b.closest('.card').querySelector('.toggle-btn').textContent='\u25bc Hide';});}
+function collapseAll(){document.querySelectorAll('.card-body').forEach(b=>{b.classList.add('collapsed');b.closest('.card').querySelector('.toggle-btn').textContent='\u25b6 Show';});}
+const psbInput=document.getElementById('psb-input'),psbCount=document.getElementById('psb-count');
+let marks=[],currentIdx=-1;
+function clearMarks(){document.querySelectorAll('mark.sh,mark.sh-current').forEach(m=>m.parentNode.replaceChild(document.createTextNode(m.textContent),m));document.querySelectorAll('.card-body code').forEach(c=>c.normalize());marks=[];currentIdx=-1;}
+function findAll(term){clearMarks();if(!term.trim()){updateCount();return;}const lower=term.toLowerCase();document.querySelectorAll('.card-body code').forEach(code=>{const walker=document.createTreeWalker(code,NodeFilter.SHOW_TEXT);const nodes=[];let n;while((n=walker.nextNode()))nodes.push(n);nodes.forEach(node=>{const text=node.textContent,ltxt=text.toLowerCase();let pos=0,start;const frags=[];while((start=ltxt.indexOf(lower,pos))!==-1){if(start>pos)frags.push(document.createTextNode(text.slice(pos,start)));const m=document.createElement('mark');m.className='sh';m.textContent=text.slice(start,start+term.length);frags.push(m);marks.push(m);pos=start+term.length;}if(frags.length){if(pos<text.length)frags.push(document.createTextNode(text.slice(pos)));node.replaceWith(...frags);}});});updateCount();}
+function goTo(idx){if(!marks.length)return;if(currentIdx>=0)marks[currentIdx].className='sh';currentIdx=((idx%marks.length)+marks.length)%marks.length;marks[currentIdx].className='sh-current';const body=marks[currentIdx].closest('.card-body');if(body&&body.classList.contains('collapsed')){body.classList.remove('collapsed');body.closest('.card').querySelector('.toggle-btn').textContent='\u25bc Hide';}marks[currentIdx].scrollIntoView({behavior:'smooth',block:'center'});updateCount();}
+function nextMatch(){if(marks.length)goTo(currentIdx+1);}
+function prevMatch(){if(marks.length)goTo(currentIdx-1);}
+function updateCount(){const v=psbInput.value.trim();if(!v){psbCount.textContent='';return;}psbCount.textContent=marks.length===0?'0 matches':(currentIdx+1)+' / '+marks.length;document.getElementById('psb-prev').disabled=marks.length===0;document.getElementById('psb-next').disabled=marks.length===0;}
+function applyCardFilter(term){const lower=term.trim().toLowerCase();let shown=0;document.querySelectorAll('.card').forEach(card=>{const has=!lower||card.querySelector('code').textContent.toLowerCase().includes(lower);card.classList.toggle('hidden-by-search',!has);if(has)shown++;});document.getElementById('match-info').textContent=lower?(shown===0?'No match':shown+' card'+(shown>1?'s':'')+' match'):'';}
+function runPageSearch(){const term=psbInput.value;applyCardFilter(term);findAll(term);if(marks.length)goTo(0);}
+function clearPageSearch(){psbInput.value='';clearMarks();applyCardFilter('');psbCount.textContent='';document.getElementById('psb-prev').disabled=true;document.getElementById('psb-next').disabled=true;document.getElementById('match-info').textContent='';}
+function copySearch(){if(psbInput.value)navigator.clipboard.writeText(psbInput.value);}
+psbInput.addEventListener('input',runPageSearch);
+psbInput.addEventListener('keydown',function(e){if(e.key==='Enter'){e.shiftKey?prevMatch():nextMatch();}if(e.key==='Escape')clearPageSearch();});
+window.addEventListener('message',function(e){if(!e.data||e.data.type!=='page-search')return;psbInput.value=e.data.term||'';runPageSearch();});
+</script>
+</body>
+</html>

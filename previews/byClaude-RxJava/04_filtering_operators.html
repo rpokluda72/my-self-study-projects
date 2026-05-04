@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>04 — Filtering Operators</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#1e1e2e;--surface:#24273a;--text:#cdd6f4;--subtext:#a6adc8;
+  --accent:#89b4fa;--accent2:#cba6f7;--border:#313244;--hover:#45475a;
+  --mark-y:#f9e2af;--mark-o:#fab387;--red:#f38ba8;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+#header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:10px 16px 8px}
+.header-top{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+h1{font-size:16px;font-weight:600;color:var(--accent2);white-space:nowrap}
+h1 .num{color:var(--accent);margin-right:6px}
+.toolbar{display:flex;align-items:center;gap:6px}
+.toolbar button{background:var(--hover);border:1px solid var(--border);color:var(--text);
+                border-radius:5px;padding:3px 10px;font-size:12px;cursor:pointer}
+.toolbar button:hover{background:var(--accent);color:#1e1e2e}
+.match-info{font-size:12px;color:var(--subtext);margin-left:4px}
+.search-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.search-input-wrap{position:relative;display:flex;align-items:center}
+#psb-input{background:#313244;border:1px solid var(--border);color:var(--text);
+           border-radius:6px;padding:4px 28px 4px 10px;font-size:13px;width:220px;outline:none}
+#psb-input:focus{border-color:var(--accent)}
+.search-clear{position:absolute;right:6px;background:none;border:none;
+              color:var(--subtext);cursor:pointer;font-size:14px}
+.search-clear:hover{color:var(--red)}
+.search-bar button{background:var(--hover);border:1px solid var(--border);color:var(--text);
+                   border-radius:5px;padding:3px 9px;font-size:12px;cursor:pointer}
+.search-bar button:hover:not(:disabled){background:var(--accent);color:#1e1e2e}
+.search-bar button:disabled{opacity:.4;cursor:default}
+#psb-count{font-size:12px;color:var(--accent);min-width:70px}
+#cards{padding:16px}
+/* scroll-margin-top keeps the card below the sticky header when jumped to via hash */
+.card{background:var(--surface);border:1px solid var(--border);
+      border-radius:8px;margin-bottom:14px;overflow:hidden;scroll-margin-top:115px}
+.card.hidden-by-search{display:none}
+.card-header{display:flex;align-items:center;justify-content:space-between;
+             padding:10px 14px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border)}
+.card-header:hover{background:var(--hover)}
+.card-filename{font-family:'JetBrains Mono','Fira Code',Consolas,monospace;
+               font-size:13px;color:var(--accent);font-weight:600}
+.toggle-btn{background:none;border:1px solid var(--border);color:var(--subtext);
+            border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer}
+.toggle-btn:hover{background:var(--accent);color:#1e1e2e;border-color:var(--accent)}
+.card-body{overflow:hidden}
+.card-body.collapsed{display:none}
+.card-body pre{margin:0;border-radius:0}
+.card-body code{font-family:'JetBrains Mono','Fira Code',Consolas,monospace!important;
+                font-size:13px!important;line-height:1.6!important}
+mark.sh{background:var(--mark-y);color:#1e1e2e;border-radius:2px}
+mark.sh-current{background:var(--mark-o);color:#1e1e2e;border-radius:2px;outline:2px solid var(--red)}
+</style>
+</head>
+<body>
+<div id="header">
+  <div class="header-top">
+    <h1><span class="num">04</span>Filtering Operators</h1>
+    <div class="toolbar">
+      <button onclick="showAll()">&#9660; Show all</button>
+      <button onclick="collapseAll()">&#9654; Collapse all</button>
+      <span id="match-info" class="match-info"></span>
+    </div>
+  </div>
+  <div class="search-bar">
+    <div class="search-input-wrap">
+      <input id="psb-input" type="text" placeholder="Search in code..." autocomplete="off" spellcheck="false">
+      <button class="search-clear" onclick="clearPageSearch()" title="Clear">&#x2715;</button>
+    </div>
+    <button id="psb-prev" onclick="prevMatch()" disabled>&#9664; Prev</button>
+    <button id="psb-next" onclick="nextMatch()" disabled>Next &#9654;</button>
+    <span id="psb-count"></span>
+    <button onclick="copySearch()" title="Copy search text">&#x2398; Copy</button>
+  </div>
+</div>
+<div id="cards">
+  <div class="card" id="card-header">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">_04_FilteringOperators.java</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package tutorial;
+
+import io.reactivex.rxjava3.core.Observable;
+
+/**
+ * TUTORIAL 04 — Filtering Operators
+ *
+ * &lt;p&gt;Filtering operators selectively pass items downstream based on a predicate or position,
+ * or they limit the number of items that flow through. No items are transformed — only
+ * selected or dropped.
+ *
+ * &lt;p&gt;Operators covered:
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code filter}               — keep items matching a predicate&lt;/li&gt;
+ *   &lt;li&gt;{@code take} / {@code skip}  — take or skip the first N items&lt;/li&gt;
+ *   &lt;li&gt;{@code takeLast}             — keep only the last N items&lt;/li&gt;
+ *   &lt;li&gt;{@code distinct}             — suppress duplicates (globally)&lt;/li&gt;
+ *   &lt;li&gt;{@code distinctUntilChanged} — suppress consecutive duplicates only&lt;/li&gt;
+ *   &lt;li&gt;{@code first} / {@code last} — emit only the first or last item&lt;/li&gt;
+ *   &lt;li&gt;{@code elementAt}            — emit the item at a specific index&lt;/li&gt;
+ *   &lt;li&gt;{@code ignoreElements}       — discard all items, pass only terminal events&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;Run: right-click → Run &#x27;_04_FilteringOperators.main()&#x27;
+ */
+public class _04_FilteringOperators {
+
+    public static void main(String[] args) {
+        demoFilter();
+        demoTake();
+        demoSkip();
+        demoTakeLast();
+        demoDistinct();
+        demoDistinctUntilChanged();
+        demoFirst();
+        demoLast();
+        demoElementAt();
+        demoIgnoreElements();
+    }
+
+    // -------------------------------------------------------------------------
+    // filter
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code filter(Predicate&lt;T&gt;)} emits only those items for which the predicate returns
+     * {@code true}. Items that do not match are silently dropped.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demofilter">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoFilter()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoFilter() {
+        System.out.println(&quot;=== filter ===&quot;);
+
+        Observable.range(1, 10)
+                .filter(n -&gt; n % 2 == 0) // keep only even numbers
+                .subscribe(n -&gt; System.out.println(&quot;Even: &quot; + n));
+        // === filter ===
+        // Even: 2
+        // Even: 4
+        // Even: 6
+        // Even: 8
+        // Even: 10
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // take
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code take(n)} emits at most the first {@code n} items, then completes.
+     * Items after position {@code n} are never emitted (and the upstream may be disposed).
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demotake">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoTake()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoTake() {
+        System.out.println(&quot;=== take(3) ===&quot;);
+
+        Observable.range(1, 100)
+                .take(3)
+                .subscribe(n -&gt; System.out.println(&quot;Taken: &quot; + n));
+        // === take(3) ===
+        // Taken: 1
+        // Taken: 2
+        // Taken: 3
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // skip
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code skip(n)} drops the first {@code n} items and emits everything after them.
+     * It is the complement of {@code take}.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoskip">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoSkip()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoSkip() {
+        System.out.println(&quot;=== skip(3) from range(1,6) ===&quot;);
+
+        Observable.range(1, 6)
+                .skip(3) // drop 1, 2, 3
+                .subscribe(n -&gt; System.out.println(&quot;After skip: &quot; + n));
+        // === skip(3) from range(1,6) ===
+        //After skip: 4
+        //After skip: 5
+        //After skip: 6
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // takeLast
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code takeLast(n)} waits for the source to complete, then emits only the
+     * last {@code n} items. It must buffer the last N items internally.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demotakelast">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoTakeLast()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoTakeLast() {
+        System.out.println(&quot;=== takeLast(3) ===&quot;);
+
+        Observable.just(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;, &quot;e&quot;)
+                .takeLast(3)
+                .subscribe(s -&gt; System.out.println(&quot;Last: &quot; + s));
+        // === takeLast(3) ===
+        //Last: c
+        //Last: d
+        //Last: e
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // distinct
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code distinct()} filters out items that have already been seen anywhere
+     * in the stream. It keeps an internal {@code Set} of all emitted items.
+     *
+     * &lt;p&gt;Use only on finite streams — an infinite stream would grow the set forever.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demodistinct">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoDistinct()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoDistinct() {
+        System.out.println(&quot;=== distinct ===&quot;);
+
+        Observable.just(1, 2, 2, 3, 1, 4, 3)
+                .distinct()
+                .subscribe(n -&gt; System.out.println(&quot;Distinct: &quot; + n));
+        // === distinct ===
+        //Distinct: 1
+        //Distinct: 2
+        //Distinct: 3
+        //Distinct: 4
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // distinctUntilChanged
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code distinctUntilChanged()} suppresses an item only if it is equal to the
+     * *immediately preceding* item. Non-consecutive duplicates are allowed through.
+     *
+     * &lt;p&gt;This is cheaper than {@code distinct()} because it only needs to remember
+     * the last emitted value, not the entire history.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demodistinctuntilchanged">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoDistinctUntilChanged()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoDistinctUntilChanged() {
+        System.out.println(&quot;=== distinctUntilChanged ===&quot;);
+
+        Observable.just(1, 1, 2, 3, 3, 3, 2)
+                .distinctUntilChanged()
+                .subscribe(n -&gt; System.out.println(&quot;DUC: &quot; + n));
+        // === distinctUntilChanged ===
+        //DUC: 1
+        //DUC: 2
+        //DUC: 3
+        //DUC: 2
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // first
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code first(defaultValue)} emits the very first item from the stream as a
+     * {@code Single&lt;T&gt;}, or the {@code defaultValue} if the source is empty.
+     *
+     * &lt;p&gt;Use {@code firstOrError()} if you want an error when the source is empty.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demofirst">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoFirst()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoFirst() {
+        System.out.println(&quot;=== first ===&quot;);
+
+        Observable.just(10, 20, 30)
+                .first(-1)  // -1 is the default if source is empty
+                .subscribe(
+                        val -&gt; System.out.println(&quot;First: &quot; + val), // → First: 10
+                        err -&gt; System.out.println(&quot;Error: &quot; + err)
+                );
+
+        // Empty source uses the default
+        Observable.&lt;Integer&gt;empty()
+                .first(-1)
+                .subscribe(val -&gt; System.out.println(&quot;First (empty): &quot; + val)); // → First (empty): -1
+        // === first ===
+        //First: 10
+        //First (empty): -1
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // last
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code last(defaultValue)} waits for the source to complete, then emits
+     * only the last item as a {@code Single&lt;T&gt;}, or {@code defaultValue} if empty.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demolast">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoLast()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoLast() {
+        System.out.println(&quot;=== last ===&quot;);
+
+        Observable.just(&quot;x&quot;, &quot;y&quot;, &quot;z&quot;)
+                .last(&quot;none&quot;)
+                .subscribe(
+                        val -&gt; System.out.println(&quot;Last: &quot; + val), // → Last: z
+                        err -&gt; System.out.println(&quot;Error: &quot; + err)
+                );
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // elementAt
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code elementAt(index)} emits the item at the specified zero-based index
+     * as a {@code Maybe&lt;T&gt;}. If the source has fewer items, the Maybe completes empty.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoelementat">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoElementAt()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoElementAt() {
+        System.out.println(&quot;=== elementAt ===&quot;);
+
+        Observable.just(&quot;zero&quot;, &quot;one&quot;, &quot;two&quot;, &quot;three&quot;)
+                .elementAt(2) // zero-based index → &quot;two&quot;
+                .subscribe(
+                        val -&gt; System.out.println(&quot;Element at 2: &quot; + val), // → Element at 2: two
+                        err -&gt; System.out.println(&quot;Error: &quot; + err)
+                );
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // ignoreElements
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code ignoreElements()} discards all {@code onNext} items and converts the
+     * Observable to a {@code Completable} that only signals {@code onComplete} or
+     * {@code onError}. Useful when you only care whether a stream finished, not its values.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoignoreelements">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoIgnoreElements()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoIgnoreElements() {
+        System.out.println(&quot;=== ignoreElements ===&quot;);
+
+        Observable.just(1, 2, 3)
+                .ignoreElements()           // returns Completable
+                .subscribe(
+                        () -&gt; System.out.println(&quot;Stream completed (items ignored)&quot;), // → Stream completed (items ignored)
+                        err -&gt; System.out.println(&quot;Error: &quot; + err)
+                );
+
+        System.out.println();
+    }
+}
+
+/*
+&quot;C:\Program Files\Java\jdk-25\bin\java.exe&quot; -Dvaadin.copilot.pluginDotFilePath=C:\Users\roman\Work\claude\projects\RxJava\.idea\.copilot-plugin &quot;-javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.3.1\lib\idea_rt.jar=55757&quot; -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -classpath C:\Users\roman\Work\claude\projects\RxJava\target\classes;C:\Users\roman\.m2\repository\io\reactivex\rxjava3\rxjava\3.1.9\rxjava-3.1.9.jar;C:\Users\roman\.m2\repository\org\reactivestreams\reactive-streams\1.0.4\reactive-streams-1.0.4.jar tutorial._04_FilteringOperators
+=== filter ===
+Even: 2
+Even: 4
+Even: 6
+Even: 8
+Even: 10
+
+=== take(3) ===
+Taken: 1
+Taken: 2
+Taken: 3
+
+=== skip(3) from range(1,6) ===
+After skip: 4
+After skip: 5
+After skip: 6
+
+=== takeLast(3) ===
+Last: c
+Last: d
+Last: e
+
+=== distinct ===
+Distinct: 1
+Distinct: 2
+Distinct: 3
+Distinct: 4
+
+=== distinctUntilChanged ===
+DUC: 1
+DUC: 2
+DUC: 3
+DUC: 2
+
+=== first ===
+First: 10
+First (empty): -1
+
+=== last ===
+Last: z
+
+=== elementAt ===
+Element at 2: two
+
+=== ignoreElements ===
+Stream completed (items ignored)
+
+
+Process finished with exit code 0
+
+ */</code></pre>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<script>
+hljs.highlightAll();
+function toggleCard(h){const b=h.nextElementSibling,btn=h.querySelector('.toggle-btn'),c=b.classList.toggle('collapsed');btn.textContent=c?'\u25b6 Show':'\u25bc Hide';}
+function showAll(){document.querySelectorAll('.card-body').forEach(b=>{b.classList.remove('collapsed');b.closest('.card').querySelector('.toggle-btn').textContent='\u25bc Hide';});}
+function collapseAll(){document.querySelectorAll('.card-body').forEach(b=>{b.classList.add('collapsed');b.closest('.card').querySelector('.toggle-btn').textContent='\u25b6 Show';});}
+const psbInput=document.getElementById('psb-input'),psbCount=document.getElementById('psb-count');
+let marks=[],currentIdx=-1;
+function clearMarks(){document.querySelectorAll('mark.sh,mark.sh-current').forEach(m=>m.parentNode.replaceChild(document.createTextNode(m.textContent),m));document.querySelectorAll('.card-body code').forEach(c=>c.normalize());marks=[];currentIdx=-1;}
+function findAll(term){clearMarks();if(!term.trim()){updateCount();return;}const lower=term.toLowerCase();document.querySelectorAll('.card-body code').forEach(code=>{const walker=document.createTreeWalker(code,NodeFilter.SHOW_TEXT);const nodes=[];let n;while((n=walker.nextNode()))nodes.push(n);nodes.forEach(node=>{const text=node.textContent,ltxt=text.toLowerCase();let pos=0,start;const frags=[];while((start=ltxt.indexOf(lower,pos))!==-1){if(start>pos)frags.push(document.createTextNode(text.slice(pos,start)));const m=document.createElement('mark');m.className='sh';m.textContent=text.slice(start,start+term.length);frags.push(m);marks.push(m);pos=start+term.length;}if(frags.length){if(pos<text.length)frags.push(document.createTextNode(text.slice(pos)));node.replaceWith(...frags);}});});updateCount();}
+function goTo(idx){if(!marks.length)return;if(currentIdx>=0)marks[currentIdx].className='sh';currentIdx=((idx%marks.length)+marks.length)%marks.length;marks[currentIdx].className='sh-current';const body=marks[currentIdx].closest('.card-body');if(body&&body.classList.contains('collapsed')){body.classList.remove('collapsed');body.closest('.card').querySelector('.toggle-btn').textContent='\u25bc Hide';}marks[currentIdx].scrollIntoView({behavior:'smooth',block:'center'});updateCount();}
+function nextMatch(){if(marks.length)goTo(currentIdx+1);}
+function prevMatch(){if(marks.length)goTo(currentIdx-1);}
+function updateCount(){const v=psbInput.value.trim();if(!v){psbCount.textContent='';return;}psbCount.textContent=marks.length===0?'0 matches':(currentIdx+1)+' / '+marks.length;document.getElementById('psb-prev').disabled=marks.length===0;document.getElementById('psb-next').disabled=marks.length===0;}
+function applyCardFilter(term){const lower=term.trim().toLowerCase();let shown=0;document.querySelectorAll('.card').forEach(card=>{const has=!lower||card.querySelector('code').textContent.toLowerCase().includes(lower);card.classList.toggle('hidden-by-search',!has);if(has)shown++;});document.getElementById('match-info').textContent=lower?(shown===0?'No match':shown+' card'+(shown>1?'s':'')+' match'):'';}
+function runPageSearch(){const term=psbInput.value;applyCardFilter(term);findAll(term);if(marks.length)goTo(0);}
+function clearPageSearch(){psbInput.value='';clearMarks();applyCardFilter('');psbCount.textContent='';document.getElementById('psb-prev').disabled=true;document.getElementById('psb-next').disabled=true;document.getElementById('match-info').textContent='';}
+function copySearch(){if(psbInput.value)navigator.clipboard.writeText(psbInput.value);}
+psbInput.addEventListener('input',runPageSearch);
+psbInput.addEventListener('keydown',function(e){if(e.key==='Enter'){e.shiftKey?prevMatch():nextMatch();}if(e.key==='Escape')clearPageSearch();});
+window.addEventListener('message',function(e){if(!e.data||e.data.type!=='page-search')return;psbInput.value=e.data.term||'';runPageSearch();});
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/roman/Work/claude/projects/WebSockets/**)",
+      "Read(//c/Users/roman/Work/pohovor/projects/WebSockets/**)",
+      "Bash(node sync-to-web.js)",
+      "Bash(node generate-data.js)",
+      "Bash(sed 's/\"\"\"\"language\"\"\"\": \\\\[//')",
+      "Bash(sed 's/\\\\]//')",
+      "Bash(sed 's/^[[:space:]]*\"\"\"\"//')",
+      "Bash(sed 's/\"\"\"\"[[:space:]]*$//')",
+      "Bash(grep -v '^$')",
+      "Bash(sed 's/.*\"\"\"\"language\"\"\"\": \\\\[//')",
+      "Bash(sed 's/\\\\].*//')",
+      "Bash(sed 's/\"\"\"\"ui\"\"\"\": \\\\[//')",
+      "Bash(sed 's/\"\"\"\"//g')",
+      "Bash(grep -E '^\\\\s+\"\"\"\"[A-Za-z0-9\\\\-\\\\.]+\"\"\"\"\\\\s*$' /c/Users/roman/Work/claude/projects/MyStudyProjectsWeb/projects-data.js)",
+      "Bash(sed 's/[^\"\"\"\"]*\"\"\"\"//')",
+      "Bash(sed 's/\"\"\"\".*//')",
+      "Bash(grep -E '^\\\\s+\"\"\"\"[A-Za-z0-9\\\\.]+[\"\"\"\"\\\\s]*$' /c/Users/roman/Work/claude/projects/MyStudyProjectsWeb/projects-data.js)",
+      "Bash(sed 's/[\"\"\"\",]*$//')",
+      "Bash(sed 's/\"\"\"\".*$//')"
+    ]
+  }
+}

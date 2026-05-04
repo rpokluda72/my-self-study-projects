@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>01 — Observable Basics</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#1e1e2e;--surface:#24273a;--text:#cdd6f4;--subtext:#a6adc8;
+  --accent:#89b4fa;--accent2:#cba6f7;--border:#313244;--hover:#45475a;
+  --mark-y:#f9e2af;--mark-o:#fab387;--red:#f38ba8;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+#header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:10px 16px 8px}
+.header-top{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+h1{font-size:16px;font-weight:600;color:var(--accent2);white-space:nowrap}
+h1 .num{color:var(--accent);margin-right:6px}
+.toolbar{display:flex;align-items:center;gap:6px}
+.toolbar button{background:var(--hover);border:1px solid var(--border);color:var(--text);
+                border-radius:5px;padding:3px 10px;font-size:12px;cursor:pointer}
+.toolbar button:hover{background:var(--accent);color:#1e1e2e}
+.match-info{font-size:12px;color:var(--subtext);margin-left:4px}
+.search-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.search-input-wrap{position:relative;display:flex;align-items:center}
+#psb-input{background:#313244;border:1px solid var(--border);color:var(--text);
+           border-radius:6px;padding:4px 28px 4px 10px;font-size:13px;width:220px;outline:none}
+#psb-input:focus{border-color:var(--accent)}
+.search-clear{position:absolute;right:6px;background:none;border:none;
+              color:var(--subtext);cursor:pointer;font-size:14px}
+.search-clear:hover{color:var(--red)}
+.search-bar button{background:var(--hover);border:1px solid var(--border);color:var(--text);
+                   border-radius:5px;padding:3px 9px;font-size:12px;cursor:pointer}
+.search-bar button:hover:not(:disabled){background:var(--accent);color:#1e1e2e}
+.search-bar button:disabled{opacity:.4;cursor:default}
+#psb-count{font-size:12px;color:var(--accent);min-width:70px}
+#cards{padding:16px}
+/* scroll-margin-top keeps the card below the sticky header when jumped to via hash */
+.card{background:var(--surface);border:1px solid var(--border);
+      border-radius:8px;margin-bottom:14px;overflow:hidden;scroll-margin-top:115px}
+.card.hidden-by-search{display:none}
+.card-header{display:flex;align-items:center;justify-content:space-between;
+             padding:10px 14px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border)}
+.card-header:hover{background:var(--hover)}
+.card-filename{font-family:'JetBrains Mono','Fira Code',Consolas,monospace;
+               font-size:13px;color:var(--accent);font-weight:600}
+.toggle-btn{background:none;border:1px solid var(--border);color:var(--subtext);
+            border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer}
+.toggle-btn:hover{background:var(--accent);color:#1e1e2e;border-color:var(--accent)}
+.card-body{overflow:hidden}
+.card-body.collapsed{display:none}
+.card-body pre{margin:0;border-radius:0}
+.card-body code{font-family:'JetBrains Mono','Fira Code',Consolas,monospace!important;
+                font-size:13px!important;line-height:1.6!important}
+mark.sh{background:var(--mark-y);color:#1e1e2e;border-radius:2px}
+mark.sh-current{background:var(--mark-o);color:#1e1e2e;border-radius:2px;outline:2px solid var(--red)}
+</style>
+</head>
+<body>
+<div id="header">
+  <div class="header-top">
+    <h1><span class="num">01</span>Observable Basics</h1>
+    <div class="toolbar">
+      <button onclick="showAll()">&#9660; Show all</button>
+      <button onclick="collapseAll()">&#9654; Collapse all</button>
+      <span id="match-info" class="match-info"></span>
+    </div>
+  </div>
+  <div class="search-bar">
+    <div class="search-input-wrap">
+      <input id="psb-input" type="text" placeholder="Search in code..." autocomplete="off" spellcheck="false">
+      <button class="search-clear" onclick="clearPageSearch()" title="Clear">&#x2715;</button>
+    </div>
+    <button id="psb-prev" onclick="prevMatch()" disabled>&#9664; Prev</button>
+    <button id="psb-next" onclick="nextMatch()" disabled>Next &#9654;</button>
+    <span id="psb-count"></span>
+    <button onclick="copySearch()" title="Copy search text">&#x2398; Copy</button>
+  </div>
+</div>
+<div id="cards">
+  <div class="card" id="card-header">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">_01_ObservableBasics.java</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package tutorial;
+
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Observer;
+import io.reactivex.rxjava3.disposables.Disposable;
+
+/**
+ * TUTORIAL 01 — Observable Basics
+ *
+ * &lt;p&gt;An {@link Observable} is the core type in RxJava. It represents a stream of data or events
+ * that can be observed over time. An {@link Observer} subscribes to an Observable and reacts to
+ * each emitted item, an error, or the completion signal.
+ *
+ * &lt;p&gt;The three signals an Observable can emit:
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code onNext(T item)}  — a new item in the stream&lt;/li&gt;
+ *   &lt;li&gt;{@code onError(Throwable e)} — a terminal error; no more items will follow&lt;/li&gt;
+ *   &lt;li&gt;{@code onComplete()} — the stream ended successfully; no more items will follow&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;Run this class with IntelliJ: right-click → Run &#x27;_01_ObservableBasics.main()&#x27;
+ */
+public class _01_ObservableBasics {
+
+    public static void main(String[] args) {
+        demoJust();
+        demoFromArray();
+        demoFromIterable();
+        demoRange();
+        demoEmpty();
+        demoNever();
+        demoError();
+        demoFullObserver();
+    }
+
+    // -------------------------------------------------------------------------
+    // Observable.just
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.just(...)} creates an Observable that emits each supplied value in order,
+     * then completes. It accepts 1–10 arguments (varargs overloads).
+     *
+     * &lt;p&gt;Use it when you already have a fixed set of known values.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demojust">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoJust()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoJust() {
+        System.out.println(&quot;=== Observable.just ===&quot;);
+
+        Observable&lt;String&gt; observable = Observable.just(&quot;Alpha&quot;, &quot;Beta&quot;, &quot;Gamma&quot;);
+
+        // subscribe(onNext) — the simplest form; errors are thrown if they occur
+        observable.subscribe(item -&gt; System.out.println(&quot;Received: &quot; + item));
+        // → Received: Alpha
+        // → Received: Beta
+        // → Received: Gamma
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Observable.fromArray
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.fromArray(T[])} emits each element of an existing array.
+     * Equivalent to {@code Observable.just(...)} but works with a pre-existing array variable.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demofromarray">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoFromArray()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoFromArray() {
+        System.out.println(&quot;=== Observable.fromArray ===&quot;);
+
+        Integer[] numbers = {10, 20, 30, 40, 50};
+        Integer[] numbers2 = new Integer[5];
+//        numbers2[0] = 10;
+        for (int i = 0; i &lt; numbers2.length; i++) {
+            numbers2[i] = (i + 1) * 10;
+        }
+
+        Observable.fromArray(numbers)
+                .subscribe(n -&gt; System.out.println(&quot;Number: &quot; + n));
+        // → Number: 10
+        // → Number: 20
+        // → Number: 30
+        // → Number: 40
+        // → Number: 50
+
+        Observable.fromArray(numbers2)
+                .subscribe(n -&gt; System.out.println(&quot;Number 2 : &quot; + n));
+        // → Number 2: 10
+        // → Number 2: 20
+        // → Number 2: 30
+        // → Number 2: 40
+        // → Number 2: 50
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Observable.fromIterable
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.fromIterable(Iterable&lt;T&gt;)} emits each element of any {@link Iterable}
+     * (List, Set, etc.). The elements are emitted in the iteration order of the collection.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demofromiterable">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoFromIterable()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoFromIterable() {
+        System.out.println(&quot;=== Observable.fromIterable ===&quot;);
+
+        java.util.List&lt;String&gt; colors = java.util.Arrays.asList(&quot;Red&quot;, &quot;Green&quot;, &quot;Blue&quot;);
+
+        Observable.fromIterable(colors)
+                .subscribe(color -&gt; System.out.println(&quot;Color: &quot; + color));
+        // → Color: Red
+        // → Color: Green
+        // → Color: Blue
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Observable.range
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.range(start, count)} emits {@code count} consecutive integers starting
+     * from {@code start}. Useful for generating sequences without creating a collection.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demorange">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoRange()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoRange() {
+        System.out.println(&quot;=== Observable.range ===&quot;);
+
+        // Emits 1, 2, 3, 4, 5
+        Observable.range(1, 5)
+                .subscribe(i -&gt; System.out.println(&quot;Value: &quot; + i));
+        // → Value: 1
+        // → Value: 2
+        // → Value: 3
+        // → Value: 4
+        // → Value: 5
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Observable.empty
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.empty()} emits nothing and immediately calls {@code onComplete()}.
+     * Useful as a no-op placeholder or base case in composition.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoempty">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoEmpty()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoEmpty() {
+        System.out.println(&quot;=== Observable.empty ===&quot;);
+
+        Observable.empty()
+                .subscribe(
+                        item    -&gt; System.out.println(&quot;Item: &quot; + item),   // never called
+                        error   -&gt; System.out.println(&quot;Error: &quot; + error), // never called
+                        ()      -&gt; System.out.println(&quot;Completed!&quot;)        // called immediately
+                );
+        // → Completed!
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Observable.never
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.never()} emits nothing and never completes or errors.
+     * It represents an infinite, empty stream. Useful in testing or as a sentinel.
+     *
+     * &lt;p&gt;Because it never terminates, {@code onComplete} and {@code onError} are never called.
+     * Here we just confirm subscription happened.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demonever">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoNever()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoNever() {
+        System.out.println(&quot;=== Observable.never ===&quot;);
+
+        Disposable d = Observable.never()
+                .subscribe(
+                        item -&gt; System.out.println(&quot;Item: &quot; + item),
+                        err  -&gt; System.out.println(&quot;Error: &quot; + err),
+                        ()   -&gt; System.out.println(&quot;Completed!&quot;)  // never reached
+                );
+        // Disposed / Zlikvidováno
+        System.out.println(&quot;Subscribed, nothing emitted: isDisposed=&quot; + d.isDisposed()); // → Subscribed, nothing emitted: isDisposed=false
+        d.dispose(); // clean up
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Observable.error
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.error(Throwable)} immediately signals an error to the subscriber
+     * without emitting any items. Useful for propagating known errors in a pipeline.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoerror">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoError()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoError() {
+        System.out.println(&quot;=== Observable.error ===&quot;);
+
+        Observable.error(new RuntimeException(&quot;Something went wrong&quot;))
+                .subscribe(
+                        item  -&gt; System.out.println(&quot;Item: &quot; + item),        // never called
+                        error -&gt; System.out.println(&quot;Caught error: &quot; + error.getMessage()), // called
+                        ()    -&gt; System.out.println(&quot;Completed!&quot;)             // never called
+                );
+        // → Caught error: Something went wrong
+
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Full Observer interface
+    // -------------------------------------------------------------------------
+
+    /**
+     * Instead of lambda shortcuts, you can implement the full {@link Observer} interface.
+     * This also gives you access to the {@link Disposable}, allowing you to cancel
+     * the subscription from within {@code onSubscribe}.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demofullobserver">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoFullObserver()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoFullObserver() {
+        System.out.println(&quot;=== Full Observer interface ===&quot;);
+
+        Observable&lt;Integer&gt; source = Observable.range(1, 3);
+
+        source.subscribe(new Observer&lt;Integer&gt;() {
+
+            private Disposable upstream;
+
+            @Override
+            public void onSubscribe(Disposable d) {
+                this.upstream = d;
+                System.out.println(&quot;onSubscribe called&quot;); // → onSubscribe called
+            }
+
+            @Override
+            public void onNext(Integer value) {
+                System.out.println(&quot;onNext: &quot; + value);
+                // → onNext: 1
+                // → onNext: 2
+                // → onNext: 3
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                System.out.println(&quot;onError: &quot; + e.getMessage()); // not called here
+            }
+
+            @Override
+            public void onComplete() {
+                System.out.println(&quot;onComplete&quot;); // → onComplete
+            }
+        });
+
+        System.out.println();
+    }
+}
+/*
+&quot;C:\Program Files\Java\jdk-25\bin\java.exe&quot; -Dvaadin.copilot.pluginDotFilePath=C:\Users\roman\Work\claude\projects\RxJava\.idea\.copilot-plugin &quot;-javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.3.1\lib\idea_rt.jar=55727&quot; -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -classpath C:\Users\roman\Work\claude\projects\RxJava\target\classes;C:\Users\roman\.m2\repository\io\reactivex\rxjava3\rxjava\3.1.9\rxjava-3.1.9.jar;C:\Users\roman\.m2\repository\org\reactivestreams\reactive-streams\1.0.4\reactive-streams-1.0.4.jar tutorial._01_ObservableBasics
+=== Observable.just ===
+Received: Alpha
+Received: Beta
+Received: Gamma
+
+=== Observable.fromArray ===
+Number: 10
+Number: 20
+Number: 30
+Number: 40
+Number: 50
+Number 2 : 10
+Number 2 : 20
+Number 2 : 30
+Number 2 : 40
+Number 2 : 50
+
+=== Observable.fromIterable ===
+Color: Red
+Color: Green
+Color: Blue
+
+=== Observable.range ===
+Value: 1
+Value: 2
+Value: 3
+Value: 4
+Value: 5
+
+=== Observable.empty ===
+Completed!
+
+=== Observable.never ===
+Subscribed, nothing emitted: isDisposed=false
+
+=== Observable.error ===
+Caught error: Something went wrong
+
+=== Full Observer interface ===
+onSubscribe called
+onNext: 1
+onNext: 2
+onNext: 3
+onComplete
+
+
+Process finished with exit code 0
+*/</code></pre>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<script>
+hljs.highlightAll();
+function toggleCard(h){const b=h.nextElementSibling,btn=h.querySelector('.toggle-btn'),c=b.classList.toggle('collapsed');btn.textContent=c?'\u25b6 Show':'\u25bc Hide';}
+function showAll(){document.querySelectorAll('.card-body').forEach(b=>{b.classList.remove('collapsed');b.closest('.card').querySelector('.toggle-btn').textContent='\u25bc Hide';});}
+function collapseAll(){document.querySelectorAll('.card-body').forEach(b=>{b.classList.add('collapsed');b.closest('.card').querySelector('.toggle-btn').textContent='\u25b6 Show';});}
+const psbInput=document.getElementById('psb-input'),psbCount=document.getElementById('psb-count');
+let marks=[],currentIdx=-1;
+function clearMarks(){document.querySelectorAll('mark.sh,mark.sh-current').forEach(m=>m.parentNode.replaceChild(document.createTextNode(m.textContent),m));document.querySelectorAll('.card-body code').forEach(c=>c.normalize());marks=[];currentIdx=-1;}
+function findAll(term){clearMarks();if(!term.trim()){updateCount();return;}const lower=term.toLowerCase();document.querySelectorAll('.card-body code').forEach(code=>{const walker=document.createTreeWalker(code,NodeFilter.SHOW_TEXT);const nodes=[];let n;while((n=walker.nextNode()))nodes.push(n);nodes.forEach(node=>{const text=node.textContent,ltxt=text.toLowerCase();let pos=0,start;const frags=[];while((start=ltxt.indexOf(lower,pos))!==-1){if(start>pos)frags.push(document.createTextNode(text.slice(pos,start)));const m=document.createElement('mark');m.className='sh';m.textContent=text.slice(start,start+term.length);frags.push(m);marks.push(m);pos=start+term.length;}if(frags.length){if(pos<text.length)frags.push(document.createTextNode(text.slice(pos)));node.replaceWith(...frags);}});});updateCount();}
+function goTo(idx){if(!marks.length)return;if(currentIdx>=0)marks[currentIdx].className='sh';currentIdx=((idx%marks.length)+marks.length)%marks.length;marks[currentIdx].className='sh-current';const body=marks[currentIdx].closest('.card-body');if(body&&body.classList.contains('collapsed')){body.classList.remove('collapsed');body.closest('.card').querySelector('.toggle-btn').textContent='\u25bc Hide';}marks[currentIdx].scrollIntoView({behavior:'smooth',block:'center'});updateCount();}
+function nextMatch(){if(marks.length)goTo(currentIdx+1);}
+function prevMatch(){if(marks.length)goTo(currentIdx-1);}
+function updateCount(){const v=psbInput.value.trim();if(!v){psbCount.textContent='';return;}psbCount.textContent=marks.length===0?'0 matches':(currentIdx+1)+' / '+marks.length;document.getElementById('psb-prev').disabled=marks.length===0;document.getElementById('psb-next').disabled=marks.length===0;}
+function applyCardFilter(term){const lower=term.trim().toLowerCase();let shown=0;document.querySelectorAll('.card').forEach(card=>{const has=!lower||card.querySelector('code').textContent.toLowerCase().includes(lower);card.classList.toggle('hidden-by-search',!has);if(has)shown++;});document.getElementById('match-info').textContent=lower?(shown===0?'No match':shown+' card'+(shown>1?'s':'')+' match'):'';}
+function runPageSearch(){const term=psbInput.value;applyCardFilter(term);findAll(term);if(marks.length)goTo(0);}
+function clearPageSearch(){psbInput.value='';clearMarks();applyCardFilter('');psbCount.textContent='';document.getElementById('psb-prev').disabled=true;document.getElementById('psb-next').disabled=true;document.getElementById('match-info').textContent='';}
+function copySearch(){if(psbInput.value)navigator.clipboard.writeText(psbInput.value);}
+psbInput.addEventListener('input',runPageSearch);
+psbInput.addEventListener('keydown',function(e){if(e.key==='Enter'){e.shiftKey?prevMatch():nextMatch();}if(e.key==='Escape')clearPageSearch();});
+window.addEventListener('message',function(e){if(!e.data||e.data.type!=='page-search')return;psbInput.value=e.data.term||'';runPageSearch();});
+</script>
+</body>
+</html>

@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java 21</title>
+<link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #1e1e2e; color: #cdd6f4; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Page header ── */
+  #page-header {
+    flex-shrink: 0;
+    background: #181825;
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid #313244;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    z-index: 10;
+  }
+  #page-header h1 {
+    font-size: 18px; font-weight: 700; color: #cba6f7; margin-bottom: 8px;
+    letter-spacing: 0.03em;
+  }
+  .toolbar {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
+  }
+  .btn { padding: 4px 12px; border: none; border-radius: 4px; cursor: pointer;
+          font-size: 12px; font-weight: 600; transition: background .15s; }
+  .btn-show  { background: #89b4fa; color: #1e1e2e; }
+  .btn-show:hover  { background: #74c7ec; }
+  .btn-hide  { background: #585b70; color: #cdd6f4; }
+  .btn-hide:hover  { background: #6c7086; }
+  #match-info { font-size: 12px; color: #a6adc8; margin-left: 4px; }
+
+  /* ── Page search bar ── */
+  .page-search-bar {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  #psb-input {
+    flex: 1; min-width: 180px; max-width: 320px;
+    background: #313244; border: 1px solid #45475a; color: #cdd6f4;
+    border-radius: 4px; padding: 5px 10px; font-size: 13px; outline: none;
+  }
+  #psb-input:focus { border-color: #89b4fa; box-shadow: 0 0 0 2px rgba(137,180,250,.2); }
+  #psb-input::placeholder { color: #6c7086; }
+  .psb-btn {
+    padding: 4px 10px; border: 1px solid #45475a; border-radius: 4px;
+    background: #313244; color: #cdd6f4; cursor: pointer; font-size: 12px;
+    transition: background .15s;
+  }
+  .psb-btn:hover { background: #45475a; }
+  .psb-btn:disabled { opacity: .4; cursor: default; }
+  .psb-clear {
+    padding: 4px 10px; border: none; border-radius: 4px;
+    background: #f38ba8; color: #1e1e2e; cursor: pointer; font-size: 12px;
+    font-weight: 600; transition: background .15s;
+  }
+  .psb-clear:hover { background: #eba0ac; }
+  #psb-count { font-size: 12px; color: #a6adc8; min-width: 60px; }
+
+  /* ── Cards container ── */
+  #cards-container {
+    flex: 1; overflow-y: auto; padding: 12px 16px 20px;
+  }
+  .card {
+    margin-bottom: 12px; border-radius: 8px; overflow: hidden;
+    border: 1px solid #313244; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .card.hidden-by-search { display: none; }
+
+  /* ── Card header ── */
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #2a2a3d; padding: 8px 14px; cursor: pointer;
+    user-select: none; transition: background .15s;
+    border-bottom: 1px solid #313244;
+  }
+  .card-header:hover { background: #313244; }
+  .filename { font-size: 14px; font-weight: 600; color: #89dceb; font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+  .toggle-btn {
+    background: none; border: 1px solid #45475a; color: #a6adc8;
+    border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 11px;
+    transition: all .15s; white-space: nowrap;
+  }
+  .toggle-btn:hover { background: #45475a; color: #cdd6f4; }
+
+  /* ── Card body ── */
+  .card-body { overflow: hidden; }
+  .card-body.collapsed { display: none; }
+  .card-body pre { margin: 0; }
+  .card-body pre code.hljs {
+    font-size: 13px; line-height: 1.55; padding: 14px 16px !important;
+    background: #282c34 !important;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  }
+
+  /* ── Search highlights ── */
+  mark.sh         { background: #f9e2af; color: #1e1e2e; border-radius: 2px; }
+  mark.sh-current { background: #fab387; color: #1e1e2e; border-radius: 2px; outline: 2px solid #f38ba8; }
+</style>
+</head>
+<body>
+<div id="page-header">
+  <h1>Java 21</h1>
+  <div class="toolbar">
+    <button class="btn btn-show" onclick="showAll()">&#9660; Show all</button>
+    <button class="btn btn-hide" onclick="collapseAll()">&#9654; Collapse all</button>
+    <span id="match-info"></span>
+  </div>
+  <div class="page-search-bar">
+    <input id="psb-input" placeholder="Search in code…" autocomplete="off" spellcheck="false" />
+    <button class="psb-btn" id="psb-prev" onclick="prevMatch()">&#8593; Prev</button>
+    <button class="psb-btn" id="psb-next" onclick="nextMatch()">&#8595; Next</button>
+    <button class="psb-clear" onclick="clearPageSearch()">&#10005; Clear</button>
+    <span id="psb-count"></span>
+  </div>
+</div>
+<div id="cards-container">
+  <div class="card" id="VirtualThreads">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="filename">VirtualThreads.java</span>
+      <button class="toggle-btn">&#x25bc; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package java21;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * &lt;b&gt;Virtual Threads&lt;/b&gt;
+ * &lt;p&gt;
+ * Virtual threads are lightweight threads managed by the JVM rather than the OS.
+ * A platform thread consumes ~1 MB of stack memory; a virtual thread uses only the heap
+ * memory needed for its current stack frame, allowing millions of concurrent threads.
+ * They use the same {@code java.lang.Thread} API and are ideal for &lt;em&gt;blocking I/O&lt;/em&gt;
+ * tasks in high-throughput servers. Anti-pattern: do not pool virtual threads —
+ * create one per task and let the JVM schedule them. Previewed in Java 19 (JEP 425)
+ * and Java 20 (JEP 436); finalized in Java 21 (JEP 444).
+ *
+ * @see &lt;a href=&quot;https://openjdk.org/jeps/444&quot;&gt;JEP 444 – Virtual Threads&lt;/a&gt;
+ */
+public class VirtualThreads {
+
+    public static void main(String[] args) throws InterruptedException {
+        System.out.println(&quot;=== Before Java 21: platform threads ===&quot;);
+        demonstrateBefore();
+        System.out.println();
+        System.out.println(&quot;=== Java 21: virtual threads ===&quot;);
+        demonstrateAfter();
+    }
+
+    /** Before Java 21: platform threads — expensive, limited concurrency */
+    static void demonstrateBefore() throws InterruptedException {
+        int taskCount = 10;
+        CountDownLatch latch = new CountDownLatch(taskCount);
+
+        // Fixed thread pool — OS threads, limited by memory (~1MB stack each)
+        try (ExecutorService pool = Executors.newFixedThreadPool(4)) {
+            Instant start = Instant.now();
+            for (int i = 0; i &lt; taskCount; i++) {
+                final int id = i;
+                pool.submit(() -&gt; {
+                    try {
+                        Thread.sleep(100); // simulated blocking I/O
+                        System.out.println(&quot;  platform task &quot; + id + &quot; on &quot; + Thread.currentThread().getName());
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+            }
+            latch.await(5, TimeUnit.SECONDS);
+            System.out.println(&quot;Platform threads done in ~&quot; + Duration.between(start, Instant.now()).toMillis() + &quot; ms&quot;);
+            // 10 tasks, 4 threads, 100ms each → ~300ms (tasks queued, not parallel)
+        }
+    }
+
+    /** Java 21: virtual threads — one thread per task, scheduled by the JVM */
+    static void demonstrateAfter() throws InterruptedException {
+        // 1. Single virtual thread
+        Thread vThread = Thread.ofVirtual()
+                .name(&quot;my-vthread&quot;)
+                .start(() -&gt; {
+                    System.out.println(&quot;  Running on: &quot; + Thread.currentThread());
+                    System.out.println(&quot;  isVirtual: &quot; + Thread.currentThread().isVirtual()); // Output: true
+                });
+        vThread.join();
+
+        // 2. Named virtual thread with a counter
+        AtomicInteger counter = new AtomicInteger();
+        Thread named = Thread.ofVirtual()
+                .name(&quot;counter-thread&quot;)
+                .start(() -&gt; counter.incrementAndGet());
+        named.join();
+        System.out.println(&quot;  Counter: &quot; + counter.get()); // Output: 1
+
+        // 3. One virtual thread per task — scale to 1000 tasks easily
+        int taskCount = 1000;
+        CountDownLatch latch = new CountDownLatch(taskCount);
+        AtomicInteger completed = new AtomicInteger();
+
+        Instant start = Instant.now();
+        try (ExecutorService exec = Executors.newVirtualThreadPerTaskExecutor()) {
+            for (int i = 0; i &lt; taskCount; i++) {
+                exec.submit(() -&gt; {
+                    try {
+                        Thread.sleep(100); // simulated blocking I/O
+                        completed.incrementAndGet();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+            }
+        } // ExecutorService.close() waits for all tasks (Java 19+ AutoCloseable)
+
+        latch.await(10, TimeUnit.SECONDS);
+        long ms = Duration.between(start, Instant.now()).toMillis();
+        System.out.println(&quot;  1000 virtual-thread tasks done in ~&quot; + ms + &quot; ms&quot;);
+        // All 1000 tasks run concurrently → ~100 ms total (not 100000 ms)
+        System.out.println(&quot;  Completed: &quot; + completed.get()); // Output: 1000
+
+        // 4. ThreadFactory for frameworks / executors
+        var factory = Thread.ofVirtual().name(&quot;vt-&quot;, 0).factory();
+        Thread t = factory.newThread(() -&gt; System.out.println(&quot;  Factory thread: &quot; + Thread.currentThread().getName()));
+        t.start();
+        t.join();
+        // Output: vt-0
+
+        // Anti-pattern note:
+        System.out.println(&quot;  Anti-pattern: do NOT pool virtual threads (Executors.newFixedThreadPool with virtual threads).&quot;);
+        System.out.println(&quot;  Use newVirtualThreadPerTaskExecutor() instead.&quot;);
+    }
+}
+
+// Console output (thread names/IDs vary per run):
+// === Before Java 21: platform threads ===
+//   platform task 2 on pool-1-thread-3
+//   platform task 3 on pool-1-thread-4
+//   platform task 1 on pool-1-thread-2
+//   platform task 0 on pool-1-thread-1
+//   platform task 5 on pool-1-thread-4
+//   platform task 4 on pool-1-thread-3
+//   platform task 6 on pool-1-thread-2
+//   platform task 7 on pool-1-thread-1
+//   platform task 8 on pool-1-thread-4
+//   platform task 9 on pool-1-thread-3
+// Platform threads done in ~307 ms
+//
+// === Java 21: virtual threads ===
+//   Running on: VirtualThread[#55,my-vthread]/runnable@ForkJoinPool-1-worker-1
+//   isVirtual: true
+//   Counter: 1
+//   1000 virtual-thread tasks done in ~118 ms
+//   Completed: 1000
+//   Factory thread: vt-0
+//   Anti-pattern: do NOT pool virtual threads (Executors.newFixedThreadPool with virtual threads).
+//   Use newVirtualThreadPerTaskExecutor() instead.
+</code></pre>
+    </div>
+  </div>
+  <div class="card" id="RecordPatterns">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="filename">RecordPatterns.java</span>
+      <button class="toggle-btn">&#x25bc; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package java21;
+
+/**
+ * &lt;b&gt;Record Patterns&lt;/b&gt;
+ * &lt;p&gt;
+ * Record patterns extend {@code instanceof} and {@code switch} pattern matching to
+ * destructure record values inline. Instead of extracting components via accessor calls
+ * after an {@code instanceof} check, the components are bound directly in the pattern:
+ * {@code instanceof Point(int x, int y)}. Nested records can be destructured recursively.
+ * {@code var} can be used in place of explicit types for inferred component binding.
+ * Previewed in Java 19 (JEP 405) and Java 20 (JEP 432); finalized in Java 21 (JEP 440).
+ *
+ * @see &lt;a href=&quot;https://openjdk.org/jeps/440&quot;&gt;JEP 440 – Record Patterns&lt;/a&gt;
+ */
+public class RecordPatterns {
+
+    // Supporting records
+    record Point(int x, int y) {}
+    record Line(Point start, Point end) {}
+    record Box&lt;T&gt;(T value) {}
+    record ColoredPoint(Point point, String color) {}
+
+    public static void main(String[] args) {
+        System.out.println(&quot;=== Before Java 21: accessor calls after instanceof ===&quot;);
+        demonstrateBefore();
+        System.out.println();
+        System.out.println(&quot;=== Java 21: record patterns ===&quot;);
+        demonstrateAfter();
+    }
+
+    /** Before Java 21: must use accessor methods after the instanceof check */
+    static void demonstrateBefore() {
+        Object obj = new Point(3, 4);
+
+        // Test type, then call accessors manually
+        if (obj instanceof Point p) {
+            int x = p.x();
+            int y = p.y();
+            System.out.println(&quot;Point x=&quot; + x + &quot;, y=&quot; + y); // Output: Point x=3, y=4
+        }
+
+        // Nested record — deeply verbose accessor chain
+        Object line = new Line(new Point(0, 0), new Point(5, 5));
+        if (line instanceof Line l) {
+            int x1 = l.start().x();
+            int y1 = l.start().y();
+            int x2 = l.end().x();
+            int y2 = l.end().y();
+            System.out.println(&quot;Line from (&quot; + x1 + &quot;,&quot; + y1 + &quot;) to (&quot; + x2 + &quot;,&quot; + y2 + &quot;)&quot;);
+            // Output: Line from (0,0) to (5,5)
+        }
+    }
+
+    /** Java 21: record patterns — destructure components directly in the pattern */
+    static void demonstrateAfter() {
+        Object obj = new Point(3, 4);
+
+        // Record pattern: binds x and y directly — no accessor calls
+        if (obj instanceof Point(int x, int y)) {
+            System.out.println(&quot;Point x=&quot; + x + &quot;, y=&quot; + y); // Output: Point x=3, y=4
+        }
+
+        // var in record patterns — type is inferred
+        if (obj instanceof Point(var x, var y)) {
+            System.out.println(&quot;Via var: x=&quot; + x + &quot;, y=&quot; + y); // Output: Via var: x=3, y=4
+        }
+
+        // Nested record pattern — destructures recursively in one expression
+        Object line = new Line(new Point(0, 0), new Point(5, 5));
+        if (line instanceof Line(Point(int x1, int y1), Point(int x2, int y2))) {
+            System.out.println(&quot;Line from (&quot; + x1 + &quot;,&quot; + y1 + &quot;) to (&quot; + x2 + &quot;,&quot; + y2 + &quot;)&quot;);
+            // Output: Line from (0,0) to (5,5)
+        }
+
+        // Record pattern in switch (Java 21 pattern matching switch)
+        Object[] objects = {
+                new Point(1, 1),
+                new Line(new Point(0, 0), new Point(3, 4)),
+                new Box&lt;&gt;(&quot;Hello&quot;),
+                new ColoredPoint(new Point(2, 3), &quot;red&quot;)
+        };
+
+        for (Object o : objects) {
+            String description = switch (o) {
+                case Point(int x, int y)                         -&gt; &quot;Point at (&quot; + x + &quot;,&quot; + y + &quot;)&quot;;
+                case Line(Point(int x1, int y1), Point(int x2, int y2))
+                                                                 -&gt; &quot;Line (&quot; + x1 + &quot;,&quot; + y1 + &quot;)→(&quot; + x2 + &quot;,&quot; + y2 + &quot;)&quot;;
+                case Box&lt;?&gt;  (var v)                             -&gt; &quot;Box containing: &quot; + v;
+                case ColoredPoint(Point(int x, int y), var color)-&gt; color + &quot; point at (&quot; + x + &quot;,&quot; + y + &quot;)&quot;;
+                default                                          -&gt; &quot;Unknown: &quot; + o;
+            };
+            System.out.println(description);
+        }
+        // Output:
+        // Point at (1,1)
+        // Line (0,0)→(3,4)
+        // Box containing: Hello
+        // red point at (2,3)
+
+        // Guarded record pattern — extra condition on destructured components
+        Object p = new Point(5, 5);
+        if (p instanceof Point(int x, int y) &amp;&amp; x == y) {
+            System.out.println(&quot;Diagonal point: (&quot; + x + &quot;,&quot; + y + &quot;)&quot;); // Output: Diagonal point: (5,5)
+        }
+    }
+}
+
+// Console output:
+// === Before Java 21: accessor calls after instanceof ===
+// Point x=3, y=4
+// Line from (0,0) to (5,5)
+//
+// === Java 21: record patterns ===
+// Point x=3, y=4
+// Via var: x=3, y=4
+// Line from (0,0) to (5,5)
+// Point at (1,1)
+// Line (0,0)→(3,4)
+// Box containing: Hello
+// red point at (2,3)
+// Diagonal point: (5,5)
+</code></pre>
+    </div>
+  </div>
+  <div class="card" id="PatternMatchingSwitch">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="filename">PatternMatchingSwitch.java</span>
+      <button class="toggle-btn">&#x25bc; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package java21;
+
+/**
+ * &lt;b&gt;Pattern Matching for Switch&lt;/b&gt;
+ * &lt;p&gt;
+ * Pattern matching in {@code switch} allows switching on the &lt;em&gt;type&lt;/em&gt; of the selector,
+ * with each case arm specifying a type pattern. Key capabilities:
+ * &lt;ul&gt;
+ *   &lt;li&gt;Type patterns: {@code case String s -&gt;}&lt;/li&gt;
+ *   &lt;li&gt;Guarded patterns: {@code case String s when s.length() &gt; 5 -&gt;}&lt;/li&gt;
+ *   &lt;li&gt;Null handling: {@code case null -&gt;} (avoids {@code NullPointerException})&lt;/li&gt;
+ *   &lt;li&gt;Exhaustive switch over sealed hierarchies — no {@code default} needed&lt;/li&gt;
+ *   &lt;li&gt;Record patterns inside switch: {@code case Point(int x, int y) -&gt;}&lt;/li&gt;
+ * &lt;/ul&gt;
+ * Previewed in Java 17–20; finalized in Java 21 (JEP 441).
+ *
+ * @see &lt;a href=&quot;https://openjdk.org/jeps/441&quot;&gt;JEP 441 – Pattern Matching for switch&lt;/a&gt;
+ */
+public class PatternMatchingSwitch {
+
+    // Sealed hierarchy for exhaustiveness demonstration
+    sealed interface Shape permits PatternMatchingSwitch.Circle,
+            PatternMatchingSwitch.Rectangle, PatternMatchingSwitch.Triangle {}
+    record Circle(double radius) implements Shape {}
+    record Rectangle(double width, double height) implements Shape {}
+    record Point(int x, int y) {}
+
+    // non-sealed to keep the example self-contained
+    static non-sealed class Triangle implements Shape {
+        final double base, height;
+        Triangle(double base, double height) { this.base = base; this.height = height; }
+    }
+
+    public static void main(String[] args) {
+        System.out.println(&quot;=== Before Java 21: if/else instanceof chain ===&quot;);
+        demonstrateBefore();
+        System.out.println();
+        System.out.println(&quot;=== Java 21: pattern matching switch ===&quot;);
+        demonstrateAfter();
+    }
+
+    /** Before Java 21: multi-branch if/else for type dispatch */
+    static void demonstrateBefore() {
+        Object obj = &quot;HelloWorld&quot;;
+
+        String result;
+        if (obj instanceof Integer i) {
+            result = &quot;int: &quot; + i;
+        } else if (obj instanceof Long l) {
+            result = &quot;long: &quot; + l;
+        } else if (obj instanceof Double d) {
+            result = &quot;double: &quot; + d;
+        } else if (obj instanceof String s &amp;&amp; s.length() &gt; 5) {
+            result = &quot;long string: &quot; + s;
+        } else if (obj instanceof String s) {
+            result = &quot;short string: &quot; + s;
+        } else {
+            result = &quot;other: &quot; + obj;
+        }
+        System.out.println(result); // Output: long string: HelloWorld
+    }
+
+    /** Java 21: switch with type patterns, guards, null, and record patterns */
+    static void demonstrateAfter() {
+        // Type pattern switch
+        for (Object obj : new Object[]{42, 3.14, &quot;Hi&quot;, &quot;HelloWorld&quot;, true}) {
+            String result = switch (obj) {
+                case Integer i              -&gt; &quot;int: &quot; + i;
+                case Double  d              -&gt; &quot;double: &quot; + d;
+                case String  s when s.length() &gt; 5 -&gt; &quot;long string: &quot; + s;
+                case String  s              -&gt; &quot;short string: &quot; + s;
+                default                     -&gt; &quot;other: &quot; + obj;
+            };
+            System.out.println(result);
+        }
+        // Output:
+        // int: 42
+        // double: 3.14
+        // short string: Hi
+        // long string: HelloWorld
+        // other: true
+
+        // Null handling in switch — avoids NullPointerException
+        System.out.println(&quot;--- null handling ---&quot;);
+        for (String s : new String[]{&quot;hello&quot;, null, &quot;&quot;}) {
+            String desc = switch (s) {
+                case null    -&gt; &quot;null value!&quot;;
+                case &quot;&quot;      -&gt; &quot;empty string&quot;;
+                default      -&gt; &quot;string: &quot; + s;
+            };
+            System.out.println(desc);
+        }
+        // Output:
+        // string: hello
+        // null value!
+        // empty string
+
+        // Exhaustive switch over sealed hierarchy — no default needed
+        System.out.println(&quot;--- sealed shape areas ---&quot;);
+        Shape[] shapes = {new Circle(5), new Rectangle(4, 6), new Triangle(3, 8)};
+        for (Shape shape : shapes) {
+            double area = switch (shape) {
+                case Circle(double r)         -&gt; Math.PI * r * r;
+                case Rectangle(double w, double h) -&gt; w * h;
+                case Triangle t               -&gt; 0.5 * t.base * t.height;
+                // No default needed — compiler knows all sealed subtypes
+            };
+            System.out.printf(&quot;%s area = %.2f%n&quot;, shape.getClass().getSimpleName(), area);
+        }
+        // Output:
+        // Circle area = 78.54
+        // Rectangle area = 24.00
+        // Triangle area = 12.00
+
+        // Record pattern in switch with guard
+        System.out.println(&quot;--- record pattern with guard ---&quot;);
+        Object[] points = {new Point(0, 0), new Point(3, 3), new Point(1, 5)};
+        for (Object obj : points) {
+            String desc = switch (obj) {
+                case Point(int x, int y) when x == 0 &amp;&amp; y == 0 -&gt; &quot;origin&quot;;
+                case Point(int x, int y) when x == y            -&gt; &quot;diagonal (&quot; + x + &quot;,&quot; + y + &quot;)&quot;;
+                case Point(int x, int y)                        -&gt; &quot;point (&quot; + x + &quot;,&quot; + y + &quot;)&quot;;
+                default                                         -&gt; &quot;not a point&quot;;
+            };
+            System.out.println(desc);
+        }
+        // Output:
+        // origin
+        // diagonal (3,3)
+        // point (1,5)
+    }
+}
+
+// Console output:
+// === Before Java 21: if/else instanceof chain ===
+// long string: HelloWorld
+//
+// === Java 21: pattern matching switch ===
+// int: 42
+// double: 3.14
+// short string: Hi
+// long string: HelloWorld
+// other: true
+// --- null handling ---
+// string: hello
+// null value!
+// empty string
+// --- sealed shape areas ---
+// Circle area = 78,54
+// Rectangle area = 24,00
+// Triangle area = 12,00
+// --- record pattern with guard ---
+// origin
+// diagonal (3,3)
+// point (1,5)
+</code></pre>
+    </div>
+  </div>
+  <div class="card" id="SequencedCollections">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="filename">SequencedCollections.java</span>
+      <button class="toggle-btn">&#x25bc; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package java21;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.SequencedCollection;
+
+/**
+ * &lt;b&gt;Sequenced Collections&lt;/b&gt;
+ * &lt;p&gt;
+ * Java 21 introduced three new interfaces — {@code SequencedCollection}, {@code SequencedSet},
+ * and {@code SequencedMap} — that give all ordered collections a &lt;em&gt;uniform API&lt;/em&gt; for
+ * accessing first/last elements, adding at head or tail, and obtaining a reversed view.
+ * Before Java 21, every collection type used different method names for the same concept
+ * ({@code get(0)} vs {@code peekFirst()} vs {@code first()}). Introduced in Java 21 (JEP 431).
+ *
+ * @see &lt;a href=&quot;https://openjdk.org/jeps/431&quot;&gt;JEP 431 – Sequenced Collections&lt;/a&gt;
+ */
+public class SequencedCollections {
+
+    public static void main(String[] args) {
+        System.out.println(&quot;=== Before Java 21: inconsistent first/last APIs ===&quot;);
+        demonstrateBefore();
+        System.out.println();
+        System.out.println(&quot;=== Java 21: SequencedCollection uniform API ===&quot;);
+        demonstrateAfter();
+    }
+
+    /** Before Java 21: every collection type had its own way to access first/last */
+    static void demonstrateBefore() {
+        // List — index-based, verbose and error-prone
+        List&lt;String&gt; list = new ArrayList&lt;&gt;(List.of(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;));
+        System.out.println(&quot;First (List):   &quot; + list.get(0));                    // Output: A
+        System.out.println(&quot;Last  (List):   &quot; + list.get(list.size() - 1));      // Output: D
+
+        // LinkedList (Deque) — different method names
+        var deque = new LinkedList&lt;&gt;(List.of(&quot;X&quot;, &quot;Y&quot;, &quot;Z&quot;));
+        System.out.println(&quot;First (Deque):  &quot; + deque.peekFirst());              // Output: X
+        System.out.println(&quot;Last  (Deque):  &quot; + deque.peekLast());               // Output: Z
+
+        // SortedSet — yet another naming convention
+        var sorted = new java.util.TreeSet&lt;&gt;(List.of(3, 1, 2));
+        System.out.println(&quot;First (SortedSet): &quot; + sorted.first());              // Output: 1
+        System.out.println(&quot;Last  (SortedSet): &quot; + sorted.last());               // Output: 3
+
+        // No reversed() — had to create a copy or iterate manually
+        List&lt;String&gt; reversed = new ArrayList&lt;&gt;(list);
+        java.util.Collections.reverse(reversed);
+        System.out.println(&quot;Reversed (copy): &quot; + reversed);                      // Output: [D, C, B, A]
+    }
+
+    /** Java 21: uniform SequencedCollection API across all ordered collections */
+    static void demonstrateAfter() {
+        // ArrayList implements SequencedCollection
+        List&lt;String&gt; list = new ArrayList&lt;&gt;(List.of(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;));
+
+        System.out.println(&quot;getFirst(): &quot; + list.getFirst()); // Output: A
+        System.out.println(&quot;getLast():  &quot; + list.getLast());  // Output: D
+
+        // addFirst / addLast
+        list.addFirst(&quot;Z&quot;);
+        list.addLast(&quot;X&quot;);
+        System.out.println(&quot;After addFirst(Z) + addLast(X): &quot; + list); // Output: [Z, A, B, C, D, X]
+
+        // removeFirst / removeLast
+        String removedFirst = list.removeFirst();
+        String removedLast  = list.removeLast();
+        System.out.println(&quot;Removed first: &quot; + removedFirst + &quot;, last: &quot; + removedLast); // Output: Z, X
+        System.out.println(&quot;After removes: &quot; + list); // Output: [A, B, C, D]
+
+        // reversed() — returns a live reversed VIEW (not a copy)
+        SequencedCollection&lt;String&gt; rev = list.reversed();
+        System.out.println(&quot;Reversed view: &quot; + rev); // Output: [D, C, B, A]
+
+        // Mutations on the reversed view affect the original
+        rev.addFirst(&quot;LAST&quot;); // addFirst on reversed view = addLast on original
+        System.out.println(&quot;Original after rev.addFirst(LAST): &quot; + list); // Output: [A, B, C, D, LAST]
+        list.removeLast(); // cleanup
+
+        // LinkedList — same uniform API
+        LinkedList&lt;Integer&gt; linked = new LinkedList&lt;&gt;(List.of(10, 20, 30));
+        System.out.println(&quot;\nLinkedList getFirst(): &quot; + linked.getFirst()); // Output: 10
+        System.out.println(&quot;LinkedList getLast():  &quot; + linked.getLast());   // Output: 30
+        linked.addFirst(5);
+        System.out.println(&quot;LinkedList after addFirst(5): &quot; + linked); // Output: [5, 10, 20, 30]
+        System.out.println(&quot;LinkedList reversed: &quot; + linked.reversed()); // Output: [30, 20, 10, 5]
+
+        // LinkedHashMap — SequencedMap
+        var map = new LinkedHashMap&lt;String, Integer&gt;();
+        map.put(&quot;one&quot;, 1);
+        map.put(&quot;two&quot;, 2);
+        map.put(&quot;three&quot;, 3);
+
+        System.out.println(&quot;\nLinkedHashMap firstEntry(): &quot; + map.firstEntry()); // Output: one=1
+        System.out.println(&quot;LinkedHashMap lastEntry():  &quot; + map.lastEntry());   // Output: three=3
+        System.out.println(&quot;Sequenced keys: &quot; + map.sequencedKeySet());         // Output: [one, two, three]
+        System.out.println(&quot;Reversed keys:  &quot; + map.reversed().sequencedKeySet()); // Output: [three, two, one]
+    }
+}
+
+// Console output:
+// === Before Java 21: inconsistent first/last APIs ===
+// First (List):   A
+// Last  (List):   D
+// First (Deque):  X
+// Last  (Deque):  Z
+// First (SortedSet): 1
+// Last  (SortedSet): 3
+// Reversed (copy): [D, C, B, A]
+//
+// === Java 21: SequencedCollection uniform API ===
+// getFirst(): A
+// getLast():  D
+// After addFirst(Z) + addLast(X): [Z, A, B, C, D, X]
+// Removed first: Z, last: X
+// After removes: [A, B, C, D]
+// Reversed view: [D, C, B, A]
+// Original after rev.addFirst(LAST): [A, B, C, D, LAST]
+//
+// LinkedList getFirst(): 10
+// LinkedList getLast():  30
+// LinkedList after addFirst(5): [5, 10, 20, 30]
+// LinkedList reversed: [30, 20, 10, 5]
+//
+// LinkedHashMap firstEntry(): one=1
+// LinkedHashMap lastEntry():  three=3
+// Sequenced keys: [one, two, three]
+// Reversed keys:  [three, two, one]
+</code></pre>
+    </div>
+  </div>
+</div>
+<script>
+// ── Card toggle ──────────────────────────────────────────────────────────────
+function toggleCard(header) {
+  const body = header.nextElementSibling;
+  const btn  = header.querySelector('.toggle-btn');
+  const c    = body.classList.toggle('collapsed');
+  btn.textContent = c ? '\u25b6 Show' : '\u25bc Hide';
+}
+function showAll() {
+  document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+    b.classList.remove('collapsed');
+    b.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+  });
+}
+function collapseAll() {
+  document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+    b.classList.add('collapsed');
+    b.closest('.card').querySelector('.toggle-btn').textContent = '\u25b6 Show';
+  });
+}
+
+// ── Card filter ──────────────────────────────────────────────────────────────
+function applyCardFilter(term) {
+  const lower = term.trim().toLowerCase();
+  let shown = 0;
+  document.querySelectorAll('.card').forEach(card => {
+    const has = !lower || card.querySelector('code').textContent.toLowerCase().includes(lower);
+    card.classList.toggle('hidden-by-search', !has);
+    if (has) shown++;
+  });
+  document.getElementById('match-info').textContent = lower
+    ? (shown === 0 ? 'No files match' : shown + ' file' + (shown > 1 ? 's' : '') + ' match')
+    : '';
+}
+
+// ── In-page text search ──────────────────────────────────────────────────────
+const psbInput = document.getElementById('psb-input');
+const psbCount = document.getElementById('psb-count');
+let marks = [], currentIdx = -1;
+
+function clearMarks() {
+  document.querySelectorAll('mark.sh, mark.sh-current').forEach(m => {
+    const t = document.createTextNode(
+      m.textContent.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    );
+    // actually just replace with text node directly:
+    m.parentNode.replaceChild(document.createTextNode(m.textContent), m);
+  });
+  document.querySelectorAll('.card-body code').forEach(c => c.normalize());
+  marks = []; currentIdx = -1;
+}
+
+function findAll(term) {
+  clearMarks();
+  if (!term.trim()) { updateCount(); return; }
+  const lower = term.toLowerCase();
+  document.querySelectorAll('.card-body code').forEach(code => {
+    const walker = document.createTreeWalker(code, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.textContent, ltxt = text.toLowerCase();
+      let pos = 0, start;
+      const frags = [];
+      while ((start = ltxt.indexOf(lower, pos)) !== -1) {
+        if (start > pos) frags.push(document.createTextNode(text.slice(pos, start)));
+        const m = document.createElement('mark');
+        m.className = 'sh';
+        m.textContent = text.slice(start, start + term.length);
+        frags.push(m); marks.push(m);
+        pos = start + term.length;
+      }
+      if (frags.length) {
+        if (pos < text.length) frags.push(document.createTextNode(text.slice(pos)));
+        node.replaceWith(...frags);
+      }
+    });
+  });
+  updateCount();
+}
+
+function goTo(idx) {
+  if (!marks.length) return;
+  if (currentIdx >= 0) marks[currentIdx].className = 'sh';
+  currentIdx = ((idx % marks.length) + marks.length) % marks.length;
+  const m = marks[currentIdx];
+  m.className = 'sh-current';
+  // auto-expand card if collapsed
+  const body = m.closest('.card-body');
+  if (body && body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    body.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+  }
+  m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  updateCount();
+}
+
+function updateCount() {
+  const v = psbInput.value.trim();
+  if (!v) { psbCount.textContent = ''; return; }
+  psbCount.textContent = marks.length === 0
+    ? '0 matches'
+    : (currentIdx + 1) + ' / ' + marks.length;
+  document.getElementById('psb-prev').disabled = marks.length === 0;
+  document.getElementById('psb-next').disabled = marks.length === 0;
+}
+
+function runPageSearch() {
+  const term = psbInput.value;
+  applyCardFilter(term);
+  findAll(term);
+  if (marks.length) goTo(0);
+}
+function prevMatch() { if (marks.length) goTo(currentIdx - 1); }
+function nextMatch() { if (marks.length) goTo(currentIdx + 1); }
+function clearPageSearch() {
+  psbInput.value = ''; clearMarks(); applyCardFilter(''); updateCount();
+}
+
+psbInput.addEventListener('input', runPageSearch);
+psbInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.shiftKey ? prevMatch() : nextMatch(); }
+  if (e.key === 'Escape') clearPageSearch();
+});
+
+window.addEventListener('message', function(e) {
+  if (!e.data || e.data.type !== 'page-search') return;
+  psbInput.value = e.data.term || '';
+  runPageSearch();
+});
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  hljs.highlightAll();
+  // Hash-based scroll: navigate to specific card when loaded via #CardName
+  if (location.hash) {
+    const target = document.querySelector(location.hash);
+    if (target) {
+      const body = target.querySelector('.card-body');
+      if (body) body.classList.remove('collapsed');
+      setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+    }
+  }
+});
+</script>
+</body>
+</html>

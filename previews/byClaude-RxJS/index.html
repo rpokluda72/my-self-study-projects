@@ -1,0 +1,2466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RxJS Learning Examples</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: #1e1e2e;
+                font-family: 'Segoe UI', system-ui, sans-serif; color: #cdd6f4; }
+
+  /* ── Layout ── */
+  #layout { display: flex; height: 100vh; }
+  #sidebar {
+    width: 270px; min-width: 270px;
+    background: #181825;
+    border-right: 1px solid #313244;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  #content-area { flex: 1; display: flex; overflow: hidden; }
+  #frame { flex: 1; border: none; width: 100%; height: 100%; }
+
+  /* ── Sidebar header ── */
+  #sidebar h2 {
+    padding: 16px 14px 10px;
+    font-size: 15px; font-weight: 700; color: #cba6f7;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    border-bottom: 1px solid #313244; flex-shrink: 0;
+  }
+
+  /* ── Search ── */
+  .search-wrap {
+    padding: 10px 10px 6px; flex-shrink: 0; position: relative;
+  }
+  #search {
+    width: 100%; background: #313244; border: 1px solid #45475a;
+    color: #cdd6f4; border-radius: 5px; padding: 6px 28px 6px 10px;
+    font-size: 13px; outline: none;
+  }
+  #search:focus { border-color: #89b4fa; box-shadow: 0 0 0 2px rgba(137,180,250,.2); }
+  #search::placeholder { color: #6c7086; }
+  .search-clear {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: #6c7086; cursor: pointer;
+    font-size: 14px; line-height: 1; display: none; padding: 2px 4px;
+  }
+  .search-clear:hover { color: #f38ba8; }
+  #search:not(:placeholder-shown) + .search-clear { display: block; }
+
+  /* ── Nav list ── */
+  #nav-list {
+    flex: 1; overflow-y: auto; list-style: none;
+    padding: 4px 0 12px; margin: 0;
+    scrollbar-width: thin; scrollbar-color: #45475a #181825;
+  }
+  #nav-list::-webkit-scrollbar { width: 6px; }
+  #nav-list::-webkit-scrollbar-track { background: #181825; }
+  #nav-list::-webkit-scrollbar-thumb { background: #45475a; border-radius: 3px; }
+
+  /* ── Flat items ── */
+  #nav-list > li { border-bottom: 1px solid #232336; }
+  #nav-list > li.no-match { display: none; }
+  #nav-list > li.has-match > a { color: #cdd6f4 !important; }
+  #nav-list > li > a {
+    display: block; padding: 9px 12px 9px 16px;
+    color: #9399b2; text-decoration: none; font-size: 13px;
+    transition: background .1s, color .1s; border-left: 3px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #nav-list > li > a:hover {
+    background: #232336; color: #cdd6f4; border-left-color: #585b70;
+  }
+  #nav-list > li > a.active {
+    background: #2a2a40; color: #89b4fa; border-left-color: #89b4fa;
+    font-weight: 600;
+  }
+
+  /* ── Operator group ── */
+  .nav-group { border-bottom: 1px solid #232336; }
+  .nav-group.no-match { display: none; }
+  .nav-group.collapsed .sub-list { display: none; }
+
+  .group-header {
+    display: flex; align-items: center; gap: 7px;
+    padding: 9px 12px; cursor: pointer; user-select: none;
+    font-size: 13px; font-weight: 600; color: #cdd6f4;
+    transition: background .15s; border-left: 3px solid transparent;
+  }
+  .group-header:hover { background: #232336; border-left-color: #585b70; }
+  .chevron { font-size: 9px; color: #585b70; flex-shrink: 0; transition: color .15s; }
+  .group-header:hover .chevron { color: #89b4fa; }
+
+  /* ── Sub-list ── */
+  .sub-list { list-style: none; padding: 0 0 4px 0; margin: 0; }
+  .sub-list li { border-top: 1px solid #1e1e2e; }
+  .sub-list li.no-match { display: none; }
+  .sub-list li.has-match > a { color: #cdd6f4 !important; }
+  .sub-list a {
+    display: block; padding: 7px 12px 7px 32px;
+    color: #9399b2; text-decoration: none; font-size: 13px;
+    transition: background .1s, color .1s; border-left: 3px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sub-list a:hover {
+    background: #232336; color: #cdd6f4; border-left-color: #585b70;
+  }
+  .sub-list a.active {
+    background: #2a2a40; color: #89b4fa; border-left-color: #89b4fa;
+    font-weight: 600;
+  }
+
+  /* ── No-match message ── */
+  #no-match-msg {
+    padding: 10px 14px; font-size: 12px; color: #6c7086;
+    display: none; flex-shrink: 0;
+  }
+  #no-match-msg.visible { display: block; }
+
+  /* ── Footer ── */
+  #sidebar-footer {
+    padding: 8px 14px; font-size: 11px; color: #45475a;
+    border-top: 1px solid #313244; flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+<div id="layout">
+  <nav id="sidebar">
+    <h2>&#9889; RxJS</h2>
+    <div class="search-wrap">
+      <input id="search" type="search" placeholder="Search in code&#x2026;" autocomplete="off" spellcheck="false" />
+      <button class="search-clear" title="Clear search">&#10005;</button>
+    </div>
+    <ul id="nav-list">
+    <li data-pkg="01-observables">
+      <a href="01-observables.html" target="content" onclick="setActive(this)">Observables</a>
+    </li>
+    <li data-pkg="02-observer">
+      <a href="02-observer.html" target="content" onclick="setActive(this)">Observer</a>
+    </li>
+    <li data-pkg="03-subscription">
+      <a href="03-subscription.html" target="content" onclick="setActive(this)">Subscription</a>
+    </li>
+    <li data-pkg="04-subject">
+      <a href="04-subject.html" target="content" onclick="setActive(this)">Subject</a>
+    </li>
+    <li data-pkg="05-scheduler">
+      <a href="05-scheduler.html" target="content" onclick="setActive(this)">Scheduler</a>
+    </li>
+    <li class="nav-group" id="group-operators">
+      <div class="group-header" onclick="toggleGroup('operators')">
+        <span class="chevron">&#x25bc;</span> Operators
+      </div>
+      <ul class="sub-list">
+        <li data-pkg="06-operators-creation">
+          <a href="06-operators-creation.html" target="content" onclick="setActive(this)">Creation</a>
+        </li>
+        <li data-pkg="07-operators-transformation">
+          <a href="07-operators-transformation.html" target="content" onclick="setActive(this)">Transformation</a>
+        </li>
+        <li data-pkg="08-operators-filtering">
+          <a href="08-operators-filtering.html" target="content" onclick="setActive(this)">Filtering</a>
+        </li>
+        <li data-pkg="09-operators-combination">
+          <a href="09-operators-combination.html" target="content" onclick="setActive(this)">Combination</a>
+        </li>
+        <li data-pkg="10-operators-utility">
+          <a href="10-operators-utility.html" target="content" onclick="setActive(this)">Utility</a>
+        </li>
+        <li data-pkg="11-operators-error-handling">
+          <a href="11-operators-error-handling.html" target="content" onclick="setActive(this)">Error Handling</a>
+        </li>
+      </ul>
+    </li>
+    </ul>
+    <p id="no-match-msg">No results match</p>
+    <div id="sidebar-footer">src/ &mdash; RxJS 7</div>
+  </nav>
+  <div id="content-area">
+    <iframe id="frame" name="content" src="01-observables.html"></iframe>
+  </div>
+</div>
+<script>
+const PKG_CODE = {
+  "01-observables": `/**
+ * observables
+ *
+ * an observable is a lazy push-based collection that can emit zero or more values
+ * over time, then optionally complete or error. unlike promises, observables are
+ * lazy (nothing happens until you subscribe) and can emit multiple values.
+ *
+ * @see https://rxjs.dev/guide/observable
+ */
+
+import { observable } from 'rxjs';
+
+/**
+ * the most basic observable: constructed manually with new observable().
+ * the subscriber function runs each time someone subscribes.
+ */
+function createobservable(): void {
+  const obs$ = new observable<number>(subscriber => {
+    subscriber.next(1);
+    subscriber.next(2);
+    subscriber.next(3);
+    subscriber.complete();
+  });
+
+  obs$.subscribe({
+    next: val => console.log('next:', val),
+    complete: () => console.log('complete'),
+  });
+
+  // expected output:
+  // next: 1
+  // next: 2
+  // next: 3
+  // complete
+}
+
+/**
+ * lazy execution: the observable body does not run until subscribe() is called.
+ * each call to subscribe() triggers a fresh independent execution.
+ */
+function lazyexecution(): void {
+  console.log('creating observable...');
+
+  const obs$ = new observable<string>(subscriber => {
+    console.log('  observable executing!');
+    subscriber.next('hello');
+    subscriber.complete();
+  });
+
+  console.log('before subscribe');
+  obs$.subscribe(val => console.log('  value:', val));
+  console.log('after subscribe');
+
+  // expected output:
+  // creating observable...
+  // before subscribe
+  //   observable executing!
+  //   value: hello
+  // after subscribe
+}
+
+/**
+ * synchronous delivery: values are delivered synchronously by default —
+ * the subscribe() call blocks until the observable completes.
+ */
+function synchronousobservable(): void {
+  let result = 0;
+
+  new observable<number>(subscriber => {
+    subscriber.next(10);
+    subscriber.next(20);
+    subscriber.complete();
+  }).subscribe(val => { result += val; });
+
+  console.log('result after subscribe:', result); // 30 — already computed synchronously
+
+  // expected output:
+  // result after subscribe: 30
+}
+
+/**
+ * asynchronous delivery: values can be emitted later using settimeout or other async apis.
+ * the subscriber function can schedule future emissions.
+ */
+function asyncobservable(): void {
+  const obs$ = new observable<string>(subscriber => {
+    console.log('  subscribed');
+    settimeout(() => { subscriber.next('async value 1'); }, 100);
+    settimeout(() => { subscriber.next('async value 2'); subscriber.complete(); }, 200);
+  });
+
+  obs$.subscribe({
+    next: val => console.log('  next:', val),
+    complete: () => console.log('  complete'),
+  });
+
+  console.log('  (subscribe returned — values arrive later)');
+
+  // expected output:
+  //   subscribed
+  //   (subscribe returned — values arrive later)
+  //   next: async value 1       ← after ~100 ms
+  //   next: async value 2       ← after ~200 ms
+  //   complete
+}
+
+/**
+ * complete() and error(): an observable terminal states.
+ * after complete() or error(), no more values are delivered.
+ */
+function completeanderror(): void {
+  // --- complete ---
+  const good$ = new observable<number>(subscriber => {
+    subscriber.next(1);
+    subscriber.complete();
+    subscriber.next(99); // ignored — already completed
+  });
+
+  good$.subscribe({
+    next: val => console.log('good next:', val),
+    complete: () => console.log('good complete'),
+  });
+
+  // --- error ---
+  const bad$ = new observable<number>(subscriber => {
+    subscriber.next(42);
+    subscriber.error(new error('something went wrong'));
+    subscriber.next(99); // ignored — already errored
+  });
+
+  bad$.subscribe({
+    next: val => console.log('bad next:', val),
+    error: err => console.log('bad error:', (err as error).message),
+  });
+
+  // expected output:
+  // good next: 1
+  // good complete
+  // bad next: 42
+  // bad error: something went wrong
+}
+
+/**
+ * cold observable: each subscriber gets its own independent execution.
+ * the sequence restarts from the beginning for every new subscriber.
+ */
+function coldobservable(): void {
+  const cold$ = new observable<number>(subscriber => {
+    const value = math.floor(math.random() * 100);
+    subscriber.next(value);
+    subscriber.complete();
+  });
+
+  cold$.subscribe(val => console.log('subscriber a:', val));
+  cold$.subscribe(val => console.log('subscriber b:', val));
+  cold$.subscribe(val => console.log('subscriber c:', val));
+
+  // expected output (values differ per run — each subscriber gets its own random value):
+  // subscriber a: 42
+  // subscriber b: 17
+  // subscriber c: 83
+}
+
+function main(): void {
+  console.log('\\n=== createobservable ===');
+  createobservable();
+
+  console.log('\\n=== lazyexecution ===');
+  lazyexecution();
+
+  console.log('\\n=== synchronousobservable ===');
+  synchronousobservable();
+
+  console.log('\\n=== asyncobservable ===');
+  asyncobservable();
+
+  console.log('\\n=== completeanderror ===');
+  completeanderror();
+
+  console.log('\\n=== coldobservable ===');
+  coldobservable();
+}
+
+main();
+`,
+  "02-observer": `/**
+ * observer
+ *
+ * an observer is the consumer of values delivered by an observable. it is an
+ * object with up to three callback methods: next (receives each value), error
+ * (receives the error and stops execution), and complete (called when the
+ * stream ends normally). all three callbacks are optional.
+ *
+ * @see https://rxjs.dev/guide/observer
+ */
+
+import { observable, observer } from 'rxjs';
+
+/**
+ * a full observer object with all three handlers: next, error, complete.
+ * this is the most explicit form of subscribing.
+ */
+function fullobserver(): void {
+  const source$ = new observable<number>(subscriber => {
+    subscriber.next(1);
+    subscriber.next(2);
+    subscriber.complete();
+  });
+
+  const observer: observer<number> = {
+    next:     val  => console.log('next:', val),
+    error:    err  => console.error('error:', err),
+    complete: ()   => console.log('complete'),
+  };
+
+  source$.subscribe(observer);
+
+  // expected output:
+  // next: 1
+  // next: 2
+  // complete
+}
+
+/**
+ * partial observer: only the next callback is required.
+ * omitting error or complete is perfectly valid — unhandled errors will
+ * propagate as uncaught exceptions.
+ */
+function partialobserver(): void {
+  const source$ = new observable<string>(subscriber => {
+    subscriber.next('hello');
+    subscriber.next('world');
+    subscriber.complete();
+  });
+
+  source$.subscribe({ next: val => console.log('value:', val) });
+
+  // expected output:
+  // value: hello
+  // value: world
+}
+
+/**
+ * callback-style subscribe: pass next, error, and complete as positional arguments.
+ * this is a shorthand — internally rxjs wraps them into an observer object.
+ *
+ * note: the positional overload (subscribe(nextfn, errorfn, completefn)) is
+ * deprecated in favour of the object observer form. prefer { next, error, complete }.
+ */
+function callbackobserver(): void {
+  const source$ = new observable<number>(subscriber => {
+    subscriber.next(10);
+    subscriber.next(20);
+    subscriber.complete();
+  });
+
+  // modern preferred form (object observer):
+  source$.subscribe({
+    next:     val => console.log('next:', val),
+    complete: ()  => console.log('done'),
+  });
+
+  // expected output:
+  // next: 10
+  // next: 20
+  // done
+}
+
+/**
+ * error handling in an observer: when error() fires, no further next() or
+ * complete() calls are made. the stream is terminated.
+ */
+function observererrorhandling(): void {
+  const source$ = new observable<number>(subscriber => {
+    subscriber.next(1);
+    subscriber.next(2);
+    subscriber.error(new error('oops'));
+    subscriber.next(3);    // never reached
+    subscriber.complete(); // never reached
+  });
+
+  source$.subscribe({
+    next:     val => console.log('next:', val),
+    error:    err => console.log('error caught:', (err as error).message),
+    complete: ()  => console.log('complete'),  // never called
+  });
+
+  // expected output:
+  // next: 1
+  // next: 2
+  // error caught: oops
+}
+
+/**
+ * values emitted after complete() are silently ignored by the observer.
+ * complete() signals the end of the stream — the subscriber is automatically
+ * unsubscribed and will receive nothing further.
+ */
+function observeraftercomplete(): void {
+  const source$ = new observable<number>(subscriber => {
+    subscriber.next(1);
+    subscriber.complete();
+    subscriber.next(2);  // silently ignored
+    subscriber.next(3);  // silently ignored
+  });
+
+  source$.subscribe({
+    next:     val => console.log('next:', val),
+    complete: ()  => console.log('complete'),
+  });
+
+  // expected output:
+  // next: 1
+  // complete
+}
+
+function main(): void {
+  console.log('\\n=== fullobserver ===');
+  fullobserver();
+
+  console.log('\\n=== partialobserver ===');
+  partialobserver();
+
+  console.log('\\n=== callbackobserver ===');
+  callbackobserver();
+
+  console.log('\\n=== observererrorhandling ===');
+  observererrorhandling();
+
+  console.log('\\n=== observeraftercomplete ===');
+  observeraftercomplete();
+}
+
+main();
+`,
+  "03-subscription": `/**
+ * subscription
+ *
+ * a subscription represents the execution of an observable. calling subscribe()
+ * returns a subscription object that has an unsubscribe() method to cancel the
+ * execution and release resources. subscriptions can also be composed: adding
+ * a child subscription to a parent means one unsubscribe() call cleans up both.
+ *
+ * @see https://rxjs.dev/guide/subscription
+ */
+
+import { observable, subscription, interval } from 'rxjs';
+import { take } from 'rxjs';
+
+/**
+ * subscribe() returns a subscription. inspecting its closed property tells
+ * you whether the subscription is still active.
+ */
+function basicsubscription(): void {
+  const source$ = new observable<number>(subscriber => {
+    subscriber.next(1);
+    subscriber.next(2);
+    subscriber.complete();
+  });
+
+  const sub: subscription = source$.subscribe({
+    next:     val => console.log('next:', val),
+    complete: ()  => console.log('complete'),
+  });
+
+  console.log('sub.closed after complete:', sub.closed); // true — auto-closed on complete
+
+  // expected output:
+  // next: 1
+  // next: 2
+  // complete
+  // sub.closed after complete: true
+}
+
+/**
+ * calling unsubscribe() stops value delivery immediately.
+ * useful for cancelling long-running or infinite streams.
+ */
+function unsubscribeexample(): void {
+  let count = 0;
+
+  const source$ = new observable<number>(subscriber => {
+    const id = setinterval(() => {
+      count++;
+      subscriber.next(count);
+    }, 50);
+
+    // teardown: runs when unsubscribe() is called
+    return () => {
+      clearinterval(id);
+      console.log('teardown called, count was:', count);
+    };
+  });
+
+  const sub = source$.subscribe(val => console.log('value:', val));
+
+  settimeout(() => {
+    sub.unsubscribe();
+    // expected output:
+    // value: 1
+    // value: 2
+    // value: 3
+    // teardown called, count was: 3
+  }, 175); // ~3 ticks at 50 ms each
+}
+
+/**
+ * using take(n) is a cleaner alternative to manual unsubscribe for finite streams.
+ * the subscription auto-closes after n values are received.
+ */
+function intervalwithtake(): void {
+  interval(100).pipe(take(4)).subscribe({
+    next:     val => console.log('tick:', val),
+    complete: ()  => console.log('done after 4 ticks'),
+  });
+
+  // expected output:
+  // tick: 0
+  // tick: 1
+  // tick: 2
+  // tick: 3
+  // done after 4 ticks
+}
+
+/**
+ * composite subscription: sub.add(childsub) makes the child a dependent.
+ * calling sub.unsubscribe() also unsubscribes all added children.
+ */
+function compositesubscription(): void {
+  const parent = new subscription();
+
+  const child1 = interval(80).pipe(take(3)).subscribe(
+    val => console.log('child1:', val)
+  );
+  const child2 = interval(120).pipe(take(3)).subscribe(
+    val => console.log('child2:', val)
+  );
+
+  parent.add(child1);
+  parent.add(child2);
+
+  // unsubscribing the parent automatically unsubscribes child1 and child2
+  settimeout(() => {
+    parent.unsubscribe();
+    console.log('parent unsubscribed');
+    console.log('child1.closed:', child1.closed); // true
+    console.log('child2.closed:', child2.closed); // true
+  }, 350);
+
+  // expected output (approximate — async timing):
+  // child1: 0
+  // child2: 0
+  // child1: 1
+  // child1: 2
+  // child2: 1
+  // parent unsubscribed
+  // child1.closed: true
+  // child2.closed: true
+}
+
+/**
+ * teardown function: the function returned from the subscriber body is called
+ * when the subscription ends (via unsubscribe, complete, or error).
+ * use it to release any resources acquired during execution.
+ */
+function subscriptionteardown(): void {
+  const source$ = new observable<number>(subscriber => {
+    console.log('  execution started');
+    let n = 0;
+    const id = setinterval(() => subscriber.next(++n), 100);
+
+    return () => {
+      clearinterval(id);
+      console.log('  teardown: interval cleared');
+    };
+  });
+
+  const sub = source$.subscribe(val => console.log('  value:', val));
+
+  settimeout(() => sub.unsubscribe(), 250);
+
+  // expected output:
+  //   execution started
+  //   value: 1
+  //   value: 2
+  //   teardown: interval cleared
+}
+
+function main(): void {
+  console.log('\\n=== basicsubscription ===');
+  basicsubscription();
+
+  console.log('\\n=== unsubscribeexample ===');
+  unsubscribeexample();
+
+  console.log('\\n=== intervalwithtake ===');
+  intervalwithtake();
+
+  console.log('\\n=== compositesubscription ===');
+  compositesubscription();
+
+  console.log('\\n=== subscriptionteardown ===');
+  subscriptionteardown();
+}
+
+main();
+`,
+  "04-subject": `/**
+ * subject
+ *
+ * a subject is both an observable and an observer. it can multicast values
+ * to multiple subscribers simultaneously — all subscribers share the same
+ * execution. unlike a plain observable (which is unicast), a subject acts
+ * as an event bus: you push values into it manually via next(), and all
+ * current subscribers receive them.
+ *
+ * variants: behaviorsubject, replaysubject, asyncsubject each differ in
+ * how they treat late subscribers.
+ *
+ * @see https://rxjs.dev/guide/subject
+ */
+
+import { subject, behaviorsubject, replaysubject, asyncsubject } from 'rxjs';
+
+/**
+ * basic subject: multicast — multiple subscribers all receive the same emission.
+ * values pushed via next() are delivered to every active subscriber.
+ */
+function basicsubject(): void {
+  const subject$ = new subject<number>();
+
+  subject$.subscribe(val => console.log('subscriber a:', val));
+  subject$.subscribe(val => console.log('subscriber b:', val));
+
+  subject$.next(1);
+  subject$.next(2);
+  subject$.complete();
+
+  // expected output:
+  // subscriber a: 1
+  // subscriber b: 1
+  // subscriber a: 2
+  // subscriber b: 2
+}
+
+/**
+ * late subscriber: a plain subject does not replay past values.
+ * a subscriber that joins after emissions have occurred misses those values entirely.
+ */
+function latesubscriber(): void {
+  const subject$ = new subject<string>();
+
+  subject$.subscribe(val => console.log('early subscriber:', val));
+
+  subject$.next('first');
+  subject$.next('second');
+
+  // subscribes after the first two values — receives nothing past
+  subject$.subscribe(val => console.log('late subscriber:', val));
+
+  subject$.next('third');
+
+  // expected output:
+  // early subscriber: first
+  // early subscriber: second
+  // early subscriber: third
+  // late subscriber: third      ← missed "first" and "second"
+}
+
+/**
+ * behaviorsubject: stores the current value and replays it immediately to
+ * any new subscriber. requires an initial value. useful for state management.
+ */
+function behaviorsubjectexample(): void {
+  const behavior$ = new behaviorsubject<number>(0); // initial value: 0
+
+  console.log('current value:', behavior$.value); // 0
+
+  behavior$.subscribe(val => console.log('a:', val)); // immediately gets 0
+
+  behavior$.next(1);
+  behavior$.next(2);
+
+  behavior$.subscribe(val => console.log('b:', val)); // immediately gets 2 (latest)
+
+  behavior$.next(3);
+
+  // expected output:
+  // current value: 0
+  // a: 0
+  // a: 1
+  // a: 2
+  // b: 2    ← replayed on subscribe
+  // a: 3
+  // b: 3
+}
+
+/**
+ * replaysubject: buffers the last n values and replays all of them to new
+ * subscribers. unlike behaviorsubject, it works with any number of past values
+ * and does not require an initial value.
+ */
+function replaysubjectexample(): void {
+  const replay$ = new replaysubject<number>(2); // buffer last 2 values
+
+  replay$.next(10);
+  replay$.next(20);
+  replay$.next(30);
+
+  // late subscriber gets the last 2 buffered values (20 and 30)
+  replay$.subscribe(val => console.log('late subscriber:', val));
+
+  replay$.next(40); // received in real-time
+
+  // expected output:
+  // late subscriber: 20   ← replayed
+  // late subscriber: 30   ← replayed
+  // late subscriber: 40   ← real-time
+}
+
+/**
+ * asyncsubject: only emits the very last value, and only when complete() is called.
+ * useful for representing a single async operation (similar to a promise).
+ */
+function asyncsubjectexample(): void {
+  const async$ = new asyncsubject<number>();
+
+  async$.subscribe(val => console.log('subscriber:', val));
+
+  async$.next(1); // buffered, not emitted yet
+  async$.next(2); // buffered, not emitted yet
+  async$.next(3); // buffered, not emitted yet
+
+  console.log('completing...');
+  async$.complete(); // now emits only the last value: 3
+
+  // late subscriber also gets the last value (asyncsubject replays on subscribe after complete)
+  async$.subscribe(val => console.log('late subscriber:', val));
+
+  // expected output:
+  // completing...
+  // subscriber: 3
+  // late subscriber: 3
+}
+
+function main(): void {
+  console.log('\\n=== basicsubject ===');
+  basicsubject();
+
+  console.log('\\n=== latesubscriber ===');
+  latesubscriber();
+
+  console.log('\\n=== behaviorsubjectexample ===');
+  behaviorsubjectexample();
+
+  console.log('\\n=== replaysubjectexample ===');
+  replaysubjectexample();
+
+  console.log('\\n=== asyncsubjectexample ===');
+  asyncsubjectexample();
+}
+
+main();
+`,
+  "05-scheduler": `/**
+ * scheduler
+ *
+ * a scheduler controls when a subscription starts and when notifications are
+ * delivered. it virtualizes time, allowing you to decide whether an observable
+ * emits synchronously, via settimeout, via setinterval, or via requestanimationframe.
+ *
+ * most operators accept an optional scheduler argument. you can also use
+ * observeon() and subscribeon() to change delivery context at any point.
+ *
+ * @see https://rxjs.dev/guide/scheduler
+ */
+
+import {
+  asyncscheduler,
+  queuescheduler,
+  animationframescheduler,
+  scheduled,
+  of,
+  interval,
+  observable,
+} from 'rxjs';
+import { observeon, subscribeon, take } from 'rxjs';
+
+/**
+ * queuescheduler: executes tasks synchronously in a trampoline queue.
+ * tasks scheduled recursively are queued and executed one by one, preventing
+ * stack overflows. behaves like synchronous execution from the caller's perspective.
+ */
+function queueschedulerexample(): void {
+  console.log('start');
+
+  queuescheduler.schedule(() => console.log('queuescheduler task 1'));
+  queuescheduler.schedule(() => console.log('queuescheduler task 2'));
+
+  console.log('end');
+
+  // expected output:
+  // start
+  // queuescheduler task 1
+  // queuescheduler task 2
+  // end
+}
+
+/**
+ * asyncscheduler: defers execution using setinterval / settimeout.
+ * tasks run asynchronously — after the current call stack clears.
+ * optionally accepts a delay in milliseconds.
+ */
+function asyncschedulerexample(): void {
+  console.log('before schedule');
+
+  asyncscheduler.schedule(() => console.log('async task (no delay)'));
+  asyncscheduler.schedule(() => console.log('async task (100 ms delay)'), 100);
+
+  console.log('after schedule — async tasks run later');
+
+  // expected output:
+  // before schedule
+  // after schedule — async tasks run later
+  // async task (no delay)        ← next event loop tick
+  // async task (100 ms delay)    ← after 100 ms
+}
+
+/**
+ * animationframescheduler: schedules work before the next browser repaint.
+ * only meaningful in a browser environment — in node.js it falls back to
+ * settimeout behavior. safe to import and use the api in node.js.
+ *
+ * note: animationframescheduler is browser-only. this example shows the api
+ * shape. in a browser you would use it to drive smooth animations.
+ */
+function animationframeschedulernote(): void {
+  // safe to import; but calling schedule() requires a browser (requestanimationframe).
+  console.log('animationframescheduler available:', typeof animationframescheduler !== 'undefined');
+  console.log('(browser-only: requires requestanimationframe — do not schedule in node.js)');
+
+  // in a browser you would write:
+  //   animationframescheduler.schedule(() => updatecanvas());
+  // or use it with interval:
+  //   interval(0, animationframescheduler).pipe(take(60)).subscribe(updatecanvas);
+
+  // expected output:
+  // animationframescheduler available: true
+  // (browser-only: requires requestanimationframe — do not schedule in node.js)
+}
+
+/**
+ * observeon(scheduler): re-emits values on the given scheduler.
+ * changes the context in which next/error/complete notifications are delivered
+ * to the subscriber — does not affect when the source produces values.
+ */
+function observeonexample(): void {
+  console.log('before subscribe');
+
+  of(1, 2, 3)
+    .pipe(observeon(asyncscheduler))
+    .subscribe({
+      next:     val => console.log('next:', val),
+      complete: ()  => console.log('complete'),
+    });
+
+  console.log('after subscribe — values delivered asynchronously');
+
+  // expected output:
+  // before subscribe
+  // after subscribe — values delivered asynchronously
+  // next: 1
+  // next: 2
+  // next: 3
+  // complete
+}
+
+/**
+ * subscribeon(scheduler): changes the scheduler on which the subscription itself
+ * starts. useful for moving the entire execution (including the subscriber body)
+ * to a different context.
+ */
+function subscribeonexample(): void {
+  console.log('before subscribe');
+
+  of('a', 'b', 'c')
+    .pipe(subscribeon(asyncscheduler))
+    .subscribe({
+      next:     val => console.log('next:', val),
+      complete: ()  => console.log('complete'),
+    });
+
+  console.log('after subscribe — subscription deferred asynchronously');
+
+  // expected output:
+  // before subscribe
+  // after subscribe — subscription deferred asynchronously
+  // next: a
+  // next: b
+  // next: c
+  // complete
+}
+
+/**
+ * passing a scheduler explicitly to a creation operator.
+ * interval() and other operators accept a scheduler as their last argument,
+ * letting you swap between async (default), queue, or animation-frame delivery.
+ */
+function schedulerwithinterval(): void {
+  // explicitly pass asyncscheduler (same as default, shown for clarity)
+  interval(100, asyncscheduler)
+    .pipe(take(3))
+    .subscribe({
+      next:     val => console.log('tick:', val),
+      complete: ()  => console.log('done'),
+    });
+
+  // scheduled() wraps any iterable/array with a chosen scheduler
+  scheduled([10, 20, 30], asyncscheduler).subscribe({
+    next:     val => console.log('scheduled value:', val),
+    complete: ()  => console.log('scheduled complete'),
+  });
+
+  // expected output (scheduled values appear first — both use asyncscheduler
+  // but scheduled() has no per-item delay whereas interval() does):
+  // scheduled value: 10
+  // scheduled value: 20
+  // scheduled value: 30
+  // scheduled complete
+  // tick: 0
+  // tick: 1
+  // tick: 2
+  // done
+}
+
+function main(): void {
+  console.log('\\n=== queueschedulerexample ===');
+  queueschedulerexample();
+
+  console.log('\\n=== asyncschedulerexample ===');
+  asyncschedulerexample();
+
+  console.log('\\n=== animationframeschedulernote ===');
+  animationframeschedulernote();
+
+  console.log('\\n=== observeonexample ===');
+  observeonexample();
+
+  console.log('\\n=== subscribeonexample ===');
+  subscribeonexample();
+
+  console.log('\\n=== schedulerwithinterval ===');
+  schedulerwithinterval();
+}
+
+main();
+`,
+  "06-operators-creation": `/**
+ * operators: creation
+ *
+ * creation operators are standalone functions that create a new observable
+ * from scratch — from static values, arrays, promises, events, timers, etc.
+ * they are the entry points of most observable pipelines.
+ *
+ * @see https://rxjs.dev/guide/operators#creation-operators-1
+ */
+
+import { eventemitter } from 'events'; // node.js built-in
+import {
+  of,
+  from,
+  interval,
+  timer,
+  range,
+  empty,
+  never,
+  defer,
+  fromevent,
+} from 'rxjs';
+import { take } from 'rxjs';
+
+/**
+ * of(...values): emits each argument synchronously, then completes.
+ * simple way to create an observable from a known set of values.
+ */
+function operatorof(): void {
+  of(1, 2, 3).subscribe({
+    next:     val => console.log('of:', val),
+    complete: ()  => console.log('of complete'),
+  });
+
+  of('hello', 'world').subscribe(val => console.log('of string:', val));
+
+  // expected output:
+  // of: 1
+  // of: 2
+  // of: 3
+  // of complete
+  // of string: hello
+  // of string: world
+}
+
+/**
+ * from(source): converts an array, iterable, promise, or observable-like into an observable.
+ * each element is emitted individually.
+ */
+function operatorfrom(): void {
+  // from an array
+  from([10, 20, 30]).subscribe(val => console.log('from array:', val));
+
+  // from a promise
+  from(promise.resolve('promise value')).subscribe(val => console.log('from promise:', val));
+
+  // from an iterable (generator)
+  function* gen() { yield 'a'; yield 'b'; yield 'c'; }
+  from(gen()).subscribe(val => console.log('from generator:', val));
+
+  // expected output:
+  // from array: 10
+  // from array: 20
+  // from array: 30
+  // from generator: a
+  // from generator: b
+  // from generator: c
+  // from promise: promise value   ← async, arrives after sync output
+}
+
+/**
+ * interval(period): emits an incrementing integer (0, 1, 2, …) every \`period\` ms.
+ * never completes on its own — use take() to limit it.
+ */
+function operatorinterval(): void {
+  interval(100).pipe(take(4)).subscribe({
+    next:     val => console.log('interval:', val),
+    complete: ()  => console.log('interval complete'),
+  });
+
+  // expected output:
+  // interval: 0
+  // interval: 1
+  // interval: 2
+  // interval: 3
+  // interval complete
+}
+
+/**
+ * timer(duetime, period?): waits duetime ms then emits 0 and completes (single-shot),
+ * or if period is given, continues emitting like interval after the initial delay.
+ */
+function operatortimer(): void {
+  // single-shot: emits once after 150 ms
+  timer(150).subscribe({
+    next:     val => console.log('timer one-shot:', val),
+    complete: ()  => console.log('timer one-shot complete'),
+  });
+
+  // interval with initial delay: wait 100 ms, then emit every 80 ms
+  timer(100, 80).pipe(take(3)).subscribe({
+    next:     val => console.log('timer interval:', val),
+    complete: ()  => console.log('timer interval complete'),
+  });
+
+  // expected output (approximate — timers interleave):
+  // timer interval: 0
+  // timer one-shot: 0
+  // timer one-shot complete
+  // timer interval: 1
+  // timer interval: 2
+  // timer interval complete
+}
+
+/**
+ * range(start, count): emits a sequence of integers synchronously, then completes.
+ */
+function operatorrange(): void {
+  range(1, 5).subscribe({
+    next:     val => console.log('range:', val),
+    complete: ()  => console.log('range complete'),
+  });
+
+  // expected output:
+  // range: 1
+  // range: 2
+  // range: 3
+  // range: 4
+  // range: 5
+  // range complete
+}
+
+/**
+ * empty: an observable that completes immediately without emitting any values.
+ * useful as a no-op source or return value in operator callbacks.
+ */
+function operatorempty(): void {
+  console.log('before empty subscribe');
+  empty.subscribe({
+    next:     val => console.log('empty next:', val), // never called
+    complete: ()  => console.log('empty complete'),
+  });
+  console.log('after empty subscribe');
+
+  // expected output:
+  // before empty subscribe
+  // empty complete
+  // after empty subscribe
+}
+
+/**
+ * never: an observable that never emits and never completes.
+ * useful in tests or as a placeholder that should have no effect.
+ */
+function operatornever(): void {
+  console.log('subscribing to never...');
+  const sub = never.subscribe({
+    next:     ()  => console.log('never next'),     // never called
+    complete: ()  => console.log('never complete'), // never called
+  });
+  console.log('never sub.closed:', sub.closed); // false — still open
+
+  sub.unsubscribe();
+  console.log('after unsubscribe, sub.closed:', sub.closed); // true
+
+  // expected output:
+  // subscribing to never...
+  // never sub.closed: false
+  // after unsubscribe, sub.closed: true
+}
+
+/**
+ * defer(observablefactory): creates the observable lazily — the factory function
+ * is called fresh for each subscriber. useful when the observable depends on
+ * state that changes between subscriptions (e.g., current timestamp).
+ */
+function operatordefer(): void {
+  const lazy$ = defer(() => of(date.now()));
+
+  lazy$.subscribe(val => console.log('subscriber a timestamp:', val));
+
+  settimeout(() => {
+    lazy$.subscribe(val => console.log('subscriber b timestamp:', val)); // different value
+  }, 50);
+
+  // expected output (values differ because defer re-evaluates date.now() each time):
+  // subscriber a timestamp: 1713870000000
+  // subscriber b timestamp: 1713870000051
+}
+
+/**
+ * fromevent(target, eventname): wraps a dom or node.js eventemitter into an observable.
+ * in a browser you would pass a dom element; here we use node.js eventemitter.
+ *
+ * note: in a browser, you would write: fromevent(document, 'click')
+ */
+function operatorfromevent(): void {
+  const emitter = new eventemitter();
+  const clicks$ = fromevent<string>(emitter, 'data');
+
+  const sub = clicks$.subscribe(val => console.log('event:', val));
+
+  emitter.emit('data', 'first message');
+  emitter.emit('data', 'second message');
+
+  sub.unsubscribe();
+  emitter.emit('data', 'after unsubscribe'); // not received
+
+  // expected output:
+  // event: first message
+  // event: second message
+}
+
+function main(): void {
+  console.log('\\n=== operatorof ===');
+  operatorof();
+
+  console.log('\\n=== operatorfrom ===');
+  operatorfrom();
+
+  console.log('\\n=== operatorinterval ===');
+  operatorinterval();
+
+  console.log('\\n=== operatortimer ===');
+  operatortimer();
+
+  console.log('\\n=== operatorrange ===');
+  operatorrange();
+
+  console.log('\\n=== operatorempty ===');
+  operatorempty();
+
+  console.log('\\n=== operatornever ===');
+  operatornever();
+
+  console.log('\\n=== operatordefer ===');
+  operatordefer();
+
+  console.log('\\n=== operatorfromevent ===');
+  operatorfromevent();
+}
+
+main();
+`,
+  "07-operators-transformation": `/**
+ * operators: transformation
+ *
+ * transformation operators take each value from the source and produce new
+ * values or inner observables. the "higher-order" operators (mergemap,
+ * switchmap, concatmap, exhaustmap) each flatten those inner observables
+ * back into a single stream — differing only in how they handle concurrency.
+ *
+ * @see https://rxjs.dev/guide/operators#transformation-operators
+ */
+
+import { of, interval, from, timer } from 'rxjs';
+import { map, mergemap, switchmap, concatmap, exhaustmap, scan, reduce, delay, take } from 'rxjs';
+
+/**
+ * map(project): synchronously transforms each value.
+ * the most fundamental transformation operator.
+ */
+function operatormap(): void {
+  of(1, 2, 3, 4, 5)
+    .pipe(map(x => x * x))
+    .subscribe(val => console.log('map:', val));
+
+  of('hello', 'world')
+    .pipe(map(s => s.touppercase()))
+    .subscribe(val => console.log('map string:', val));
+
+  // expected output:
+  // map: 1
+  // map: 4
+  // map: 9
+  // map: 16
+  // map: 25
+  // map string: hello
+  // map string: world
+}
+
+/**
+ * mergemap(project): maps each value to an inner observable and merges all
+ * inner observables concurrently. does not cancel previous inner observables.
+ * use when order does not matter and you want maximum concurrency.
+ */
+function operatormergemap(): void {
+  of('a', 'b', 'c')
+    .pipe(
+      mergemap(letter =>
+        timer(math.random() * 100).pipe(map(() => letter))
+      )
+    )
+    .subscribe(val => console.log('mergemap:', val));
+
+  // expected output (order varies — concurrent, unordered):
+  // mergemap: b
+  // mergemap: a
+  // mergemap: c
+}
+
+/**
+ * switchmap(project): maps to an inner observable, but cancels the previous
+ * inner whenever a new outer value arrives. only the latest inner is active.
+ * classic use case: search-as-you-type (cancel stale http requests).
+ */
+function operatorswitchmap(): void {
+  of(1, 2, 3)
+    .pipe(
+      switchmap(n =>
+        // each inner emits n after 50 ms, but is cancelled by the next outer value
+        timer(50).pipe(map(() => \`result for \${n}\`))
+      )
+    )
+    .subscribe(val => console.log('switchmap:', val));
+
+  // expected output (only the last inner survives because of(1,2,3) is synchronous):
+  // switchmap: result for 3
+}
+
+/**
+ * concatmap(project): maps to inner observables one at a time, waiting for
+ * each to complete before subscribing to the next. preserves order.
+ * use when order matters and observables must not overlap.
+ */
+function operatorconcatmap(): void {
+  of('x', 'y', 'z')
+    .pipe(
+      concatmap(letter =>
+        of(\`\${letter}1\`, \`\${letter}2\`).pipe(delay(50))
+      )
+    )
+    .subscribe(val => console.log('concatmap:', val));
+
+  // expected output (in strict order, each pair waits for the previous):
+  // concatmap: x1
+  // concatmap: x2
+  // concatmap: y1
+  // concatmap: y2
+  // concatmap: z1
+  // concatmap: z2
+}
+
+/**
+ * exhaustmap(project): maps to an inner observable, but ignores new outer values
+ * while the current inner is still active. use when you want to prevent overlapping
+ * executions (e.g., a login button that ignores double-clicks).
+ */
+function operatorexhaustmap(): void {
+  // emit 0,1,2,3 every 60 ms; inner takes 150 ms each
+  interval(60)
+    .pipe(
+      take(4),
+      exhaustmap(n =>
+        timer(150).pipe(map(() => \`inner from \${n}\`))
+      )
+    )
+    .subscribe(val => console.log('exhaustmap:', val));
+
+  // expected output (0 starts an inner; 1 and 2 arrive during it and are ignored;
+  // 3 arrives after the first inner completes and starts a new one):
+  // exhaustmap: inner from 0
+  // exhaustmap: inner from 3
+}
+
+/**
+ * scan(accumulator, seed): applies an accumulator function over time and emits
+ * each intermediate result. like array.reduce() but emits on every step.
+ */
+function operatorscan(): void {
+  of(1, 2, 3, 4, 5)
+    .pipe(scan((acc, val) => acc + val, 0))
+    .subscribe(val => console.log('scan (running sum):', val));
+
+  // building an array incrementally
+  of('a', 'b', 'c')
+    .pipe(scan((acc, val) => [...acc, val], [] as string[]))
+    .subscribe(val => console.log('scan (array):', val));
+
+  // expected output:
+  // scan (running sum): 1
+  // scan (running sum): 3
+  // scan (running sum): 6
+  // scan (running sum): 10
+  // scan (running sum): 15
+  // scan (array): [ 'a' ]
+  // scan (array): [ 'a', 'b' ]
+  // scan (array): [ 'a', 'b', 'c' ]
+}
+
+/**
+ * reduce(accumulator, seed): like scan() but only emits the final accumulated
+ * value when the source completes. equivalent to array.reduce().
+ */
+function operatorreduce(): void {
+  of(1, 2, 3, 4, 5)
+    .pipe(reduce((acc, val) => acc + val, 0))
+    .subscribe(val => console.log('reduce (final sum):', val));
+
+  of('hello', ' ', 'world')
+    .pipe(reduce((acc, val) => acc + val, ''))
+    .subscribe(val => console.log('reduce (string):', val));
+
+  // expected output:
+  // reduce (final sum): 15
+  // reduce (string): hello  world
+}
+
+/**
+ * mergemap vs switchmap contrast: shows the key behavioural difference.
+ * - mergemap: all inners run concurrently, results interleave
+ * - switchmap: only the latest inner runs, previous are cancelled
+ */
+function mergemapvsswitchmap(): void {
+  const source$ = interval(80).pipe(take(3)); // emits 0, 1, 2
+
+  console.log('--- mergemap (all inners run) ---');
+  source$.pipe(
+    mergemap(n => timer(120).pipe(map(() => \`merge:\${n}\`)))
+  ).subscribe(val => console.log(val));
+
+  // delay the switchmap demo so it doesn't interleave with the above
+  settimeout(() => {
+    console.log('--- switchmap (only last inner runs) ---');
+    source$.pipe(
+      switchmap(n => timer(120).pipe(map(() => \`switch:\${n}\`)))
+    ).subscribe(val => console.log(val));
+  }, 500);
+
+  // expected output:
+  // --- mergemap (all inners run) ---
+  // merge:0
+  // merge:1
+  // merge:2
+  // --- switchmap (only last inner runs) ---
+  // switch:2       ← 0 and 1 were cancelled when newer values arrived
+}
+
+function main(): void {
+  console.log('\\n=== operatormap ===');
+  operatormap();
+
+  console.log('\\n=== operatormergemap ===');
+  operatormergemap();
+
+  console.log('\\n=== operatorswitchmap ===');
+  operatorswitchmap();
+
+  console.log('\\n=== operatorconcatmap ===');
+  operatorconcatmap();
+
+  console.log('\\n=== operatorexhaustmap ===');
+  operatorexhaustmap();
+
+  console.log('\\n=== operatorscan ===');
+  operatorscan();
+
+  console.log('\\n=== operatorreduce ===');
+  operatorreduce();
+
+  console.log('\\n=== mergemapvsswitchmap ===');
+  mergemapvsswitchmap();
+}
+
+main();
+`,
+  "08-operators-filtering": `/**
+ * operators: filtering
+ *
+ * filtering operators let values through (or block them) based on a predicate,
+ * position, or timing. they never transform values — a value either passes
+ * through unchanged or is silently discarded.
+ *
+ * @see https://rxjs.dev/guide/operators#filtering-operators
+ */
+
+import { of, interval, subject, from } from 'rxjs';
+import {
+  filter,
+  take,
+  takeuntil,
+  skip,
+  debouncetime,
+  throttletime,
+  distinctuntilchanged,
+  first,
+  last,
+} from 'rxjs';
+
+/**
+ * filter(predicate): passes only values that satisfy the predicate function.
+ * values that return false are silently discarded.
+ */
+function operatorfilter(): void {
+  of(1, 2, 3, 4, 5, 6)
+    .pipe(filter(x => x % 2 === 0))
+    .subscribe(val => console.log('filter (even):', val));
+
+  from(['apple', 'banana', 'avocado', 'cherry'])
+    .pipe(filter(s => s.startswith('a')))
+    .subscribe(val => console.log('filter (starts with a):', val));
+
+  // expected output:
+  // filter (even): 2
+  // filter (even): 4
+  // filter (even): 6
+  // filter (starts with a): apple
+  // filter (starts with a): avocado
+}
+
+/**
+ * take(count): emits the first n values, then completes.
+ * automatically unsubscribes the source after n values.
+ */
+function operatortake(): void {
+  of(1, 2, 3, 4, 5)
+    .pipe(take(3))
+    .subscribe({
+      next:     val => console.log('take:', val),
+      complete: ()  => console.log('take complete'),
+    });
+
+  // expected output:
+  // take: 1
+  // take: 2
+  // take: 3
+  // take complete
+}
+
+/**
+ * takeuntil(notifier$): emits values until the notifier observable emits.
+ * when the notifier fires, the source is unsubscribed immediately.
+ * the canonical way to tie the lifetime of one observable to another.
+ */
+function operatortakeuntil(): void {
+  const stop$ = new subject<void>();
+
+  interval(80)
+    .pipe(takeuntil(stop$))
+    .subscribe({
+      next:     val => console.log('takeuntil:', val),
+      complete: ()  => console.log('takeuntil complete'),
+    });
+
+  settimeout(() => stop$.next(), 300); // stop after ~3 ticks
+
+  // expected output:
+  // takeuntil: 0
+  // takeuntil: 1
+  // takeuntil: 2
+  // takeuntil complete
+}
+
+/**
+ * skip(count): ignores the first n values, then passes all subsequent values through.
+ * opposite of take().
+ */
+function operatorskip(): void {
+  of(1, 2, 3, 4, 5)
+    .pipe(skip(2))
+    .subscribe(val => console.log('skip:', val));
+
+  // expected output:
+  // skip: 3
+  // skip: 4
+  // skip: 5
+}
+
+/**
+ * debouncetime(ms): waits for a "silence period" of ms milliseconds after the
+ * last emission before passing the value through. useful for search inputs —
+ * only fires after the user has stopped typing.
+ */
+function operatordebouncetime(): void {
+  const input$ = new subject<string>();
+
+  input$
+    .pipe(debouncetime(100))
+    .subscribe(val => console.log('debounced:', val));
+
+  // rapid-fire emissions — only the last one in each burst passes through
+  input$.next('r');
+  input$.next('rx');
+  input$.next('rxj');
+  input$.next('rxjs'); // only this passes (100 ms silence after)
+
+  settimeout(() => {
+    input$.next('rxjs '); // new burst after silence
+    input$.next('rxjs o');
+    input$.next('rxjs op'); // only this passes
+  }, 300);
+
+  // expected output:
+  // debounced: rxjs
+  // debounced: rxjs op
+}
+
+/**
+ * throttletime(ms): passes the first value through, then ignores subsequent values
+ * for ms milliseconds. limits the emission rate.
+ * useful for scroll/resize events where you want periodic updates, not every pixel.
+ */
+function operatorthrottletime(): void {
+  const scroll$ = new subject<number>();
+
+  scroll$
+    .pipe(throttletime(150))
+    .subscribe(val => console.log('throttled:', val));
+
+  // emit rapidly — only the first of each 150 ms window passes through
+  scroll$.next(0);
+  scroll$.next(10);
+  scroll$.next(20); // blocked
+  scroll$.next(30); // blocked
+
+  settimeout(() => scroll$.next(100), 200); // new window — passes through
+  settimeout(() => scroll$.next(110), 220); // blocked
+
+  // expected output:
+  // throttled: 0
+  // throttled: 100
+}
+
+/**
+ * distinctuntilchanged(): suppresses consecutive duplicate values.
+ * a value is only emitted if it is different from the immediately preceding value.
+ */
+function operatordistinctuntilchanged(): void {
+  of(1, 1, 2, 2, 2, 3, 1, 1)
+    .pipe(distinctuntilchanged())
+    .subscribe(val => console.log('distinct:', val));
+
+  // with a custom comparator
+  of(
+    { id: 1, name: 'alice' },
+    { id: 1, name: 'alice' },
+    { id: 2, name: 'bob' },
+  )
+    .pipe(distinctuntilchanged((a, b) => a.id === b.id))
+    .subscribe(val => console.log('distinct by id:', val.name));
+
+  // expected output:
+  // distinct: 1
+  // distinct: 2
+  // distinct: 3
+  // distinct: 1
+  // distinct by id: alice
+  // distinct by id: bob
+}
+
+/**
+ * first(predicate?): emits only the first value (or first matching value) then completes.
+ * errors if no matching value is emitted before the source completes.
+ */
+function operatorfirst(): void {
+  of(3, 1, 4, 1, 5, 9)
+    .pipe(first())
+    .subscribe({
+      next:     val => console.log('first:', val),
+      complete: ()  => console.log('first complete'),
+    });
+
+  of(3, 1, 4, 1, 5, 9)
+    .pipe(first(x => x > 4))
+    .subscribe({
+      next:     val => console.log('first > 4:', val),
+      complete: ()  => console.log('first > 4 complete'),
+    });
+
+  // expected output:
+  // first: 3
+  // first complete
+  // first > 4: 5
+  // first > 4 complete
+}
+
+/**
+ * last(): emits only the last value before the source completes, then completes.
+ * the source must complete — last() on an infinite observable never emits.
+ */
+function operatorlast(): void {
+  of(10, 20, 30, 40, 50)
+    .pipe(last())
+    .subscribe({
+      next:     val => console.log('last:', val),
+      complete: ()  => console.log('last complete'),
+    });
+
+  // expected output:
+  // last: 50
+  // last complete
+}
+
+function main(): void {
+  console.log('\\n=== operatorfilter ===');
+  operatorfilter();
+
+  console.log('\\n=== operatortake ===');
+  operatortake();
+
+  console.log('\\n=== operatortakeuntil ===');
+  operatortakeuntil();
+
+  console.log('\\n=== operatorskip ===');
+  operatorskip();
+
+  console.log('\\n=== operatordebouncetime ===');
+  operatordebouncetime();
+
+  console.log('\\n=== operatorthrottletime ===');
+  operatorthrottletime();
+
+  console.log('\\n=== operatordistinctuntilchanged ===');
+  operatordistinctuntilchanged();
+
+  console.log('\\n=== operatorfirst ===');
+  operatorfirst();
+
+  console.log('\\n=== operatorlast ===');
+  operatorlast();
+}
+
+main();
+`,
+  "09-operators-combination": `/**
+ * operators: combination
+ *
+ * combination operators join multiple observables into one. they differ in
+ * timing strategy: some interleave (merge), some sequence (concat), some
+ * wait for all sources (combinelatest, zip, forkjoin), and some enrich a
+ * primary stream with a secondary one (withlatestfrom).
+ *
+ * @see https://rxjs.dev/guide/operators#join-creation-operators
+ */
+
+import { of, interval, timer, merge, concat, combinelatest, zip, forkjoin } from 'rxjs';
+import { withlatestfrom, startwith, take, map, delay } from 'rxjs';
+
+/**
+ * merge(...sources): subscribes to all sources simultaneously and interleaves
+ * their emissions in arrival order. completes when all sources complete.
+ */
+function operatormerge(): void {
+  const fast$ = interval(60).pipe(take(3), map(n => \`fast:\${n}\`));
+  const slow$ = interval(100).pipe(take(3), map(n => \`slow:\${n}\`));
+
+  merge(fast$, slow$).subscribe({
+    next:     val => console.log('merge:', val),
+    complete: ()  => console.log('merge complete'),
+  });
+
+  // expected output (interleaved by arrival time):
+  // merge: fast:0
+  // merge: slow:0
+  // merge: fast:1
+  // merge: fast:2
+  // merge: slow:1
+  // merge: slow:2
+  // merge complete
+}
+
+/**
+ * concat(...sources): subscribes to sources one at a time, waiting for each
+ * to complete before starting the next. preserves strict ordering.
+ */
+function operatorconcat(): void {
+  const first$  = of('a', 'b', 'c');
+  const second$ = of('d', 'e', 'f');
+  const third$  = of('g', 'h', 'i');
+
+  concat(first$, second$, third$).subscribe({
+    next:     val => console.log('concat:', val),
+    complete: ()  => console.log('concat complete'),
+  });
+
+  // expected output (strictly ordered, second$ waits for first$ to complete):
+  // concat: a
+  // concat: b
+  // concat: c
+  // concat: d
+  // concat: e
+  // concat: f
+  // concat: g
+  // concat: h
+  // concat: i
+  // concat complete
+}
+
+/**
+ * combinelatest([sources]): whenever any source emits, combines the latest
+ * value from every source into an array. only starts emitting after all sources
+ * have emitted at least one value.
+ */
+function operatorcombinelatest(): void {
+  const name$  = of('alice').pipe(delay(50));
+  const score$ = of(100).pipe(delay(80));
+
+  combinelatest([name$, score$]).subscribe({
+    next:     ([name, score]) => console.log(\`combinelatest: \${name} scored \${score}\`),
+    complete: ()              => console.log('combinelatest complete'),
+  });
+
+  // expected output:
+  // combinelatest: alice scored 100
+  // combinelatest complete
+}
+
+/**
+ * zip([sources]): pairs the nth value from each source together.
+ * only emits when every source has contributed its nth value.
+ * the output length is limited by the shortest source.
+ */
+function operatorzip(): void {
+  const letters$ = of('a', 'b', 'c');
+  const numbers$ = of(1, 2, 3, 4); // extra value ignored
+
+  zip([letters$, numbers$]).subscribe({
+    next:     ([letter, number]) => console.log(\`zip: \${letter}\${number}\`),
+    complete: ()                 => console.log('zip complete'),
+  });
+
+  // expected output:
+  // zip: a1
+  // zip: b2
+  // zip: c3
+  // zip complete
+}
+
+/**
+ * forkjoin([sources]): waits for all sources to complete, then emits one array
+ * containing the last value from each. equivalent to promise.all().
+ * useful for parallel http requests where you need all results together.
+ */
+function operatorforkjoin(): void {
+  const user$    = of({ name: 'alice' }).pipe(delay(80));
+  const profile$ = of({ role: 'admin' }).pipe(delay(50));
+  const settings$= of({ theme: 'dark' }).pipe(delay(100));
+
+  forkjoin([user$, profile$, settings$]).subscribe({
+    next: ([user, profile, settings]) =>
+      console.log('forkjoin:', user.name, profile.role, settings.theme),
+    complete: () => console.log('forkjoin complete'),
+  });
+
+  // expected output:
+  // forkjoin: alice admin dark
+  // forkjoin complete
+}
+
+/**
+ * withlatestfrom(other$): on each emission of the primary source, also captures
+ * the most recent value from other$. does not trigger on other$ emissions alone.
+ * useful for sampling state (e.g., get current user on each button click).
+ */
+function operatorwithlatestfrom(): void {
+  const clicks$  = interval(120).pipe(take(3));        // primary
+  const counter$ = interval(50).pipe(take(20));        // state to sample
+
+  clicks$
+    .pipe(withlatestfrom(counter$))
+    .subscribe({
+      next:     ([click, count]) => console.log(\`withlatestfrom: click \${click}, counter was \${count}\`),
+      complete: ()               => console.log('withlatestfrom complete'),
+    });
+
+  // expected output (counter value depends on timing):
+  // withlatestfrom: click 0, counter was 1
+  // withlatestfrom: click 1, counter was 4
+  // withlatestfrom: click 2, counter was 7
+  // withlatestfrom complete
+}
+
+/**
+ * startwith(...values): prepends one or more values to the observable before
+ * the source begins emitting. useful for providing an initial/default value.
+ */
+function operatorstartwith(): void {
+  of(1, 2, 3)
+    .pipe(startwith(0))
+    .subscribe(val => console.log('startwith:', val));
+
+  // practical example: loading state
+  of('data loaded')
+    .pipe(
+      delay(50),
+      startwith('loading...'),
+    )
+    .subscribe(val => console.log('status:', val));
+
+  // expected output:
+  // startwith: 0
+  // startwith: 1
+  // startwith: 2
+  // startwith: 3
+  // status: loading...
+  // status: data loaded   ← after 50 ms
+}
+
+function main(): void {
+  console.log('\\n=== operatormerge ===');
+  operatormerge();
+
+  console.log('\\n=== operatorconcat ===');
+  operatorconcat();
+
+  console.log('\\n=== operatorcombinelatest ===');
+  operatorcombinelatest();
+
+  console.log('\\n=== operatorzip ===');
+  operatorzip();
+
+  console.log('\\n=== operatorforkjoin ===');
+  operatorforkjoin();
+
+  console.log('\\n=== operatorwithlatestfrom ===');
+  operatorwithlatestfrom();
+
+  console.log('\\n=== operatorstartwith ===');
+  operatorstartwith();
+}
+
+main();
+`,
+  "10-operators-utility": `/**
+ * operators: utility
+ *
+ * utility operators provide side effects, timing control, and multicasting
+ * without altering the stream's values. they are the "hooks" and
+ * "plumbing" of a pipeline.
+ *
+ * @see https://rxjs.dev/guide/operators#utility-operators
+ */
+
+import { of, interval, timer, subject, never } from 'rxjs';
+import {
+  tap,
+  delay,
+  timeout,
+  sharereplay,
+  finalize,
+  toarray,
+  take,
+  map,
+  catcherror,
+} from 'rxjs';
+
+/**
+ * tap(observer): runs side effects for each notification without modifying
+ * the stream. ideal for logging, debugging, or triggering external actions
+ * while keeping the pipeline values unchanged.
+ */
+function operatortap(): void {
+  of(1, 2, 3)
+    .pipe(
+      tap(val => console.log('  tap before map:', val)),
+      map(val => val * 10),
+      tap({
+        next:     val => console.log('  tap after map:', val),
+        complete: ()  => console.log('  tap complete'),
+      }),
+    )
+    .subscribe(val => console.log('subscriber:', val));
+
+  // expected output:
+  //   tap before map: 1
+  //   tap after map: 10
+  // subscriber: 10
+  //   tap before map: 2
+  //   tap after map: 20
+  // subscriber: 20
+  //   tap before map: 3
+  //   tap after map: 30
+  // subscriber: 30
+  //   tap complete
+}
+
+/**
+ * delay(ms): shifts every emission forward in time by ms milliseconds.
+ * the source runs immediately; notifications are buffered and delivered later.
+ */
+function operatordelay(): void {
+  console.log('before subscribe');
+
+  of('a', 'b', 'c')
+    .pipe(delay(100))
+    .subscribe({
+      next:     val => console.log('delay:', val),
+      complete: ()  => console.log('delay complete'),
+    });
+
+  console.log('after subscribe — values arrive in 100 ms');
+
+  // expected output:
+  // before subscribe
+  // after subscribe — values arrive in 100 ms
+  // delay: a       ← after 100 ms
+  // delay: b
+  // delay: c
+  // delay complete
+}
+
+/**
+ * timeout(config): errors with timeouterror if no value arrives within the
+ * specified window. useful for enforcing sla on slow observables.
+ */
+function operatortimeout(): void {
+  // fast source — completes within timeout
+  of(42)
+    .pipe(timeout({ each: 200 }))
+    .subscribe({
+      next:     val => console.log('timeout ok:', val),
+      error:    err => console.log('timeout error:', err.message),
+    });
+
+  // slow source — exceeds timeout
+  timer(300)
+    .pipe(
+      timeout({ each: 100 }),
+      catcherror(err => {
+        console.log('slow source timed out:', err.name);
+        return of(-1);
+      })
+    )
+    .subscribe(val => console.log('timeout fallback:', val));
+
+  // expected output:
+  // timeout ok: 42
+  // slow source timed out: timeouterror
+  // timeout fallback: -1
+}
+
+/**
+ * sharereplay(buffersize): multicasts the source observable and replays the
+ * last n values to new subscribers. prevents multiple subscriptions from
+ * re-executing expensive sources (e.g., http requests).
+ */
+function operatorsharereplay(): void {
+  let executecount = 0;
+
+  const expensive$ = new subject<number>();
+  const shared$ = expensive$.pipe(
+    tap(() => executecount++),
+    sharereplay(1),
+  );
+
+  // first subscriber
+  shared$.subscribe(val => console.log('sharereplay a:', val));
+
+  expensive$.next(100);
+  expensive$.next(200);
+
+  // second subscriber joins late — immediately gets the last replayed value (200)
+  shared$.subscribe(val => console.log('sharereplay b:', val));
+
+  expensive$.next(300);
+
+  console.log('total emissions processed:', executecount); // 3 (not 5)
+
+  // expected output:
+  // sharereplay a: 100
+  // sharereplay a: 200
+  // sharereplay b: 200   ← replayed on subscribe
+  // sharereplay a: 300
+  // sharereplay b: 300
+  // total emissions processed: 3
+}
+
+/**
+ * finalize(callback): runs a cleanup callback when the observable terminates
+ * for any reason — complete, error, or unsubscribe. like a finally block.
+ */
+function operatorfinalize(): void {
+  of(1, 2, 3)
+    .pipe(
+      finalize(() => console.log('finalize: cleanup on complete')),
+    )
+    .subscribe({
+      next:     val => console.log('finalize next:', val),
+      complete: ()  => console.log('finalize complete'),
+    });
+
+  // also runs on unsubscribe
+  const sub = interval(50).pipe(
+    take(10),
+    finalize(() => console.log('finalize: cleanup on unsubscribe')),
+  ).subscribe();
+
+  settimeout(() => sub.unsubscribe(), 120);
+
+  // expected output:
+  // finalize next: 1
+  // finalize next: 2
+  // finalize next: 3
+  // finalize complete
+  // finalize: cleanup on complete
+  // finalize: cleanup on unsubscribe   ← after ~120 ms
+}
+
+/**
+ * toarray(): collects all values emitted by the source and emits them as a
+ * single array when the source completes. the source must be finite.
+ */
+function operatortoarray(): void {
+  of(1, 2, 3, 4, 5)
+    .pipe(toarray())
+    .subscribe(arr => console.log('toarray:', arr));
+
+  interval(50)
+    .pipe(take(4), toarray())
+    .subscribe(arr => console.log('toarray from interval:', arr));
+
+  // expected output:
+  // toarray: [ 1, 2, 3, 4, 5 ]
+  // toarray from interval: [ 0, 1, 2, 3 ]
+}
+
+function main(): void {
+  console.log('\\n=== operatortap ===');
+  operatortap();
+
+  console.log('\\n=== operatordelay ===');
+  operatordelay();
+
+  console.log('\\n=== operatortimeout ===');
+  operatortimeout();
+
+  console.log('\\n=== operatorsharereplay ===');
+  operatorsharereplay();
+
+  console.log('\\n=== operatorfinalize ===');
+  operatorfinalize();
+
+  console.log('\\n=== operatortoarray ===');
+  operatortoarray();
+}
+
+main();
+`,
+  "11-operators-error-handling": `/**
+ * operators: error handling
+ *
+ * error handling operators intercept errors in a pipeline, giving you the
+ * chance to recover, retry, or inspect and rethrow. without them, an unhandled
+ * error terminates the observable and propagates to the subscriber's error callback.
+ *
+ * @see https://rxjs.dev/guide/operators#error-handling-operators
+ */
+
+import { of, throwerror, interval, observable } from 'rxjs';
+import { catcherror, retry, map, take, delay, tap } from 'rxjs';
+
+/**
+ * catcherror(selector): intercepts an error and returns a replacement observable.
+ * the stream resumes with the replacement — the subscriber never sees the error.
+ */
+function operatorcatcherror(): void {
+  const failing$ = new observable<number>(subscriber => {
+    subscriber.next(1);
+    subscriber.next(2);
+    subscriber.error(new error('source failed'));
+  });
+
+  failing$
+    .pipe(catcherror(err => {
+      console.log('caught:', (err as error).message);
+      return of(-1, -2); // replacement observable
+    }))
+    .subscribe({
+      next:     val => console.log('catcherror next:', val),
+      complete: ()  => console.log('catcherror complete'),
+    });
+
+  // expected output:
+  // catcherror next: 1
+  // catcherror next: 2
+  // caught: source failed
+  // catcherror next: -1
+  // catcherror next: -2
+  // catcherror complete
+}
+
+/**
+ * throwerror(factory): an observable that immediately errors.
+ * used to create error sources in examples or to rethrow inside catcherror.
+ */
+function operatorthrowerror(): void {
+  throwerror(() => new error('immediate error'))
+    .pipe(
+      catcherror(err => {
+        console.log('throwerror caught:', (err as error).message);
+        return of('recovered');
+      })
+    )
+    .subscribe(val => console.log('throwerror result:', val));
+
+  // expected output:
+  // throwerror caught: immediate error
+  // throwerror result: recovered
+}
+
+/**
+ * retry(count): on error, re-subscribes to the source up to \`count\` times.
+ * if the source still fails after all retries, the error propagates.
+ * useful for transient failures (network timeouts, flaky apis).
+ */
+function operatorretry(): void {
+  let attempt = 0;
+
+  const flaky$ = new observable<string>(subscriber => {
+    attempt++;
+    console.log(\`  attempt #\${attempt}\`);
+    if (attempt < 3) {
+      subscriber.error(new error(\`attempt \${attempt} failed\`));
+    } else {
+      subscriber.next('success!');
+      subscriber.complete();
+    }
+  });
+
+  flaky$
+    .pipe(retry(3))
+    .subscribe({
+      next:     val => console.log('retry result:', val),
+      error:    err => console.log('retry gave up:', (err as error).message),
+      complete: ()  => console.log('retry complete'),
+    });
+
+  // expected output:
+  //   attempt #1
+  //   attempt #2
+  //   attempt #3
+  // retry result: success!
+  // retry complete
+}
+
+/**
+ * retry with delay (rxjs 7+): the modern way to retry with a delay between
+ * attempts. pass a config object with \`count\` and \`delay\` (ms or a function).
+ * this is preferred over the deprecated retrywhen().
+ */
+function operatorretrywithdelay(): void {
+  let attempt = 0;
+
+  const flaky$ = new observable<string>(subscriber => {
+    attempt++;
+    console.log(\`  attempt #\${attempt}\`);
+    if (attempt < 3) {
+      subscriber.error(new error('not ready yet'));
+    } else {
+      subscriber.next('finally succeeded');
+      subscriber.complete();
+    }
+  });
+
+  flaky$
+    .pipe(
+      retry({ count: 5, delay: 50 }) // retry up to 5 times, 50 ms between each
+    )
+    .subscribe({
+      next:     val => console.log('retrywithdelay result:', val),
+      complete: ()  => console.log('retrywithdelay complete'),
+    });
+
+  // expected output:
+  //   attempt #1
+  //   attempt #2   ← after 50 ms
+  //   attempt #3   ← after 50 ms
+  // retrywithdelay result: finally succeeded
+  // retrywithdelay complete
+}
+
+/**
+ * catcherror — inspect and rethrow: sometimes you want to log or track an error
+ * but still propagate it. re-throw inside catcherror using throwerror or \`throw\`.
+ */
+function catcherrorrethrow(): void {
+  const source$ = throwerror(() => new error('critical failure'));
+
+  source$
+    .pipe(
+      catcherror(err => {
+        console.log('logging error before rethrow:', (err as error).message);
+        throw err; // rethrow — propagates to subscriber's error handler
+      })
+    )
+    .subscribe({
+      next:  val => console.log('value:', val),
+      error: err => console.log('subscriber got error:', (err as error).message),
+    });
+
+  // expected output:
+  // logging error before rethrow: critical failure
+  // subscriber got error: critical failure
+}
+
+/**
+ * exhausting retries — what happens when all retries are used up.
+ * the final error propagates to the subscriber's error callback.
+ */
+function retryexhausted(): void {
+  let attempt = 0;
+
+  const alwaysfails$ = new observable<number>(subscriber => {
+    attempt++;
+    console.log(\`  attempt #\${attempt}\`);
+    subscriber.error(new error('always fails'));
+  });
+
+  alwaysfails$
+    .pipe(retry(2)) // try original + 2 retries = 3 total attempts
+    .subscribe({
+      next:  val => console.log('value:', val),
+      error: err => console.log(\`gave up after \${attempt} attempts:\`, (err as error).message),
+    });
+
+  // expected output:
+  //   attempt #1
+  //   attempt #2
+  //   attempt #3
+  // gave up after 3 attempts: always fails
+}
+
+function main(): void {
+  console.log('\\n=== operatorcatcherror ===');
+  operatorcatcherror();
+
+  console.log('\\n=== operatorthrowerror ===');
+  operatorthrowerror();
+
+  console.log('\\n=== operatorretry ===');
+  operatorretry();
+
+  console.log('\\n=== operatorretrywithdelay ===');
+  operatorretrywithdelay();
+
+  console.log('\\n=== catcherrorrethrow ===');
+  catcherrorrethrow();
+
+  console.log('\\n=== retryexhausted ===');
+  retryexhausted();
+}
+
+main();
+`
+};
+
+const searchInput = document.getElementById('search');
+const clearBtn    = document.querySelector('.search-clear');
+
+function setActive(el) {
+  document.querySelectorAll('#nav-list a').forEach(a => a.classList.remove('active'));
+  el.classList.add('active');
+  // Expand parent group if this link is inside one
+  const group = el.closest('.nav-group');
+  if (group && group.classList.contains('collapsed')) {
+    group.classList.remove('collapsed');
+    group.querySelector('.chevron').textContent = '\u25bc';
+  }
+}
+
+function toggleGroup(id) {
+  const group = document.getElementById('group-' + id);
+  const c = group.classList.toggle('collapsed');
+  group.querySelector('.chevron').textContent = c ? '\u25b6' : '\u25bc';
+}
+
+function filterMenu(term) {
+  const lower = term.trim().toLowerCase();
+  let anyVisible = false;
+
+  // Flat top-level items
+  document.querySelectorAll('#nav-list > li:not(.nav-group)').forEach(function(li) {
+    const pkg   = (li.dataset.pkg || '').toLowerCase();
+    const match = !lower || pkg.includes(lower)
+                  || (PKG_CODE[li.dataset.pkg] && PKG_CODE[li.dataset.pkg].includes(lower));
+    li.classList.toggle('no-match',  !match);
+    li.classList.toggle('has-match', !!lower && match);
+    if (match) anyVisible = true;
+  });
+
+  // Grouped items
+  document.querySelectorAll('.nav-group').forEach(function(group) {
+    let anySubMatch = false;
+    group.querySelectorAll('.sub-list li').forEach(function(li) {
+      const pkg   = (li.dataset.pkg || '').toLowerCase();
+      const match = !lower || pkg.includes(lower)
+                    || (PKG_CODE[li.dataset.pkg] && PKG_CODE[li.dataset.pkg].includes(lower));
+      li.classList.toggle('no-match',  !match);
+      li.classList.toggle('has-match', !!lower && match);
+      if (match) anySubMatch = true;
+    });
+    group.classList.toggle('no-match', !anySubMatch);
+    if (anySubMatch) {
+      anyVisible = true;
+      if (lower) {
+        group.classList.remove('collapsed');
+        group.querySelector('.chevron').textContent = '\u25bc';
+      }
+    }
+  });
+
+  document.getElementById('no-match-msg').classList.toggle('visible', !!lower && !anyVisible);
+}
+
+function sendSearch(term) {
+  const frame = document.getElementById('frame');
+  if (frame.contentWindow) {
+    frame.contentWindow.postMessage({ type: 'page-search', term: term }, '*');
+  }
+}
+
+searchInput.addEventListener('input', function() {
+  filterMenu(this.value);
+  sendSearch(this.value);
+});
+clearBtn.addEventListener('click', function() {
+  searchInput.value = ''; filterMenu(''); sendSearch(''); searchInput.focus();
+});
+document.getElementById('frame').addEventListener('load', function() {
+  if (searchInput.value) sendSearch(searchInput.value);
+});
+</script>
+</body>
+</html>

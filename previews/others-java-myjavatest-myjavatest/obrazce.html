@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Obrazce - Java Preview</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── sticky header panel ── */
+    #page-header {
+      flex-shrink: 0;
+      background: #f0f2f5;
+      padding: 16px 20px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    h1 { color: #2d3748; margin-bottom: 10px; font-size: 1.3rem; }
+
+    /* ── toolbar (show/collapse all) ── */
+    .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .toolbar button {
+      padding: 5px 13px; border: none; border-radius: 5px; cursor: pointer;
+      font-size: 0.82rem; font-weight: 600; transition: background 0.15s;
+    }
+    .btn-show { background: #3182ce; color: #fff; }
+    .btn-show:hover { background: #2b6cb0; }
+    .btn-hide { background: #718096; color: #fff; }
+    .btn-hide:hover { background: #4a5568; }
+    .match-info { font-size: 0.82rem; color: #718096; margin-left: 4px; }
+
+    /* ── page search bar ── */
+    .page-search-bar {
+      display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+      background: #fff; border: 1px solid #cbd5e0; border-radius: 7px;
+      padding: 6px 12px;
+    }
+    .page-search-bar input {
+      flex: 1; min-width: 160px; padding: 5px 8px;
+      border: 1px solid #cbd5e0; border-radius: 5px;
+      font-size: 0.85rem; outline: none; color: #2d3748;
+    }
+    .page-search-bar input:focus { border-color: #63b3ed; }
+    .psb-btn {
+      padding: 5px 11px; border: 1px solid #cbd5e0; border-radius: 5px;
+      background: #f7fafc; cursor: pointer; font-size: 0.8rem;
+      color: #4a5568; transition: background 0.12s;
+    }
+    .psb-btn:hover { background: #e2e8f0; }
+    .psb-btn:disabled { opacity: 0.4; cursor: default; }
+    .psb-clear {
+      padding: 5px 9px; border: 1px solid #cbd5e0; border-radius: 5px;
+      background: #f7fafc; cursor: pointer; font-size: 0.85rem;
+      color: #718096; transition: background 0.12s;
+    }
+    .psb-clear:hover { background: #fed7d7; color: #c53030; border-color: #fc8181; }
+    .psb-count { font-size: 0.8rem; color: #718096; white-space: nowrap; min-width: 60px; }
+
+    /* ── highlight marks ── */
+    mark.sh { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 1px; }
+    mark.sh-current { background: #f97316; color: #fff; border-radius: 2px; padding: 0 1px; }
+
+    /* ── scrollable cards area ── */
+    #cards-container {
+      flex: 1; overflow-y: auto;
+      padding: 20px;
+    }
+
+    .card { background: #fff; border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: hidden; }
+    .card.hidden-by-search { display: none; }
+
+    .card-header {
+      background: #2d3748; color: #e2e8f0;
+      padding: 9px 14px;
+      display: flex; align-items: center; gap: 10px; cursor: pointer;
+      user-select: none;
+    }
+    .card-header:hover { background: #3a4a5c; }
+    .card-header .filename { font-size: 0.9rem; font-weight: 700; flex: 1; }
+    .card-header .path { color: #a0aec0; font-size: 0.78rem; }
+    .card-header .toggle-btn {
+      background: none; border: 1px solid #4a5568; border-radius: 4px;
+      color: #a0aec0; font-size: 0.75rem; padding: 2px 8px; cursor: pointer;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .card-header .toggle-btn:hover { border-color: #63b3ed; color: #63b3ed; }
+
+    .card-body { display: block; }
+    .card-body.collapsed { display: none; }
+
+    pre { margin: 0; overflow-x: auto; }
+    pre code.hljs { font-size: 13px; line-height: 1.5; padding: 16px !important; }
+  </style>
+</head>
+<body>
+  <div id="page-header">
+    <h1>Obrazce</h1>
+    <div class="toolbar">
+      <button class="btn-show" onclick="showAll()">&#9660; Show all</button>
+      <button class="btn-hide" onclick="collapseAll()">&#9654; Collapse all</button>
+      <span class="match-info" id="match-info"></span>
+    </div>
+    <div class="page-search-bar">
+      <input id="psb-input" type="text" placeholder="&#128269; Search in code&hellip;" autocomplete="off">
+      <button class="psb-btn" id="psb-prev" onclick="prevMatch()" disabled title="Previous (Shift+Enter)">&#9650; Prev</button>
+      <button class="psb-btn" id="psb-next" onclick="nextMatch()" disabled title="Next (Enter)">&#9660; Next</button>
+      <button class="psb-clear" onclick="clearPageSearch()" title="Clear (Esc)">&#x2715;</button>
+      <span class="psb-count" id="psb-count"></span>
+    </div>
+  </div>
+  <div id="cards-container">
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Ctverec.java</span>
+        <span class="path">Ctverec.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.obrazce;
+
+public class Ctverec extends Obdelnik {
+    public Ctverec(double x, double y, double a) {
+        super(x, y, a, a);
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Kruh.java</span>
+        <span class="path">Kruh.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.obrazce;
+
+public class Kruh extends Obrazec {
+    public Kruh(double x, double y, double r) {
+        super(x, y);
+        this.r = r;
+    }
+    public double obvod() { return 2 * 3.14159 * r; }
+    public double obsah() { return 3.14159 * r * r; }
+
+    protected double r;
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Obdelnik.java</span>
+        <span class="path">Obdelnik.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.obrazce;
+
+public class Obdelnik extends Obrazec {
+    public Obdelnik(double x, double y, double a, double b) {
+        super(x, y);
+        this.a = a; this.b = b;
+    }
+    public double obvod() { return 2 * (a + b); }
+    public double obsah() { return a * b; }
+
+    protected double a;
+    protected double b;
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Obrazec.java</span>
+        <span class="path">Obrazec.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.obrazce;
+
+abstract class Obrazec {
+    public Obrazec(double x, double y) {
+        this.x = x; this.y = y;
+    }
+    public abstract double obvod();
+    public abstract double obsah();
+
+    protected double x;
+    protected double y;
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">TestObrazcu.java</span>
+        <span class="path">TestObrazcu.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.obrazce;
+
+public class TestObrazcu {
+    public static void main(String[] args) {
+        Obrazec[] pole = new Obrazec[] {
+                new Obdelnik(0,0,2,5),
+                new Ctverec(0,0,4),
+                new Kruh(0,0,1) };
+        for(int i = 0; i &lt; pole.length; i++ ) {
+            System.out.print  (&quot;pole[&quot;+i+&quot;]:&quot;);
+            System.out.print  (&quot; obvod=&quot; + pole[i].obvod());
+            System.out.println(&quot; obsah=&quot; + pole[i].obsah());
+        }
+//        pole[0]: obvod=14.0 obsah=10.0
+//        pole[1]: obvod=16.0 obsah=16.0
+//        pole[2]: obvod=6.28318 obsah=3.14159
+    }
+}
+</code></pre>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      hljs.highlightAll();
+    });
+
+    // ── per-card toggle ──────────────────────────────────────────────
+    function toggleCard(header) {
+      const body = header.nextElementSibling;
+      const btn  = header.querySelector('.toggle-btn');
+      const collapsed = body.classList.toggle('collapsed');
+      btn.textContent = collapsed ? '\u25b6 Show' : '\u25bc Hide';
+    }
+
+    // ── show / collapse all ──────────────────────────────────────────
+    function showAll() {
+      document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+        b.classList.remove('collapsed');
+        b.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+      });
+    }
+    function collapseAll() {
+      document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+        b.classList.add('collapsed');
+        b.closest('.card').querySelector('.toggle-btn').textContent = '\u25b6 Show';
+      });
+    }
+
+    // ── card-level filter (show/hide cards by match) ─────────────────
+    function applyCardFilter(term) {
+      const lower = term.trim().toLowerCase();
+      let shown = 0;
+      document.querySelectorAll('.card').forEach(card => {
+        const has = !lower || card.querySelector('code').textContent.toLowerCase().includes(lower);
+        card.classList.toggle('hidden-by-search', !has);
+        if (has) shown++;
+      });
+      const info = document.getElementById('match-info');
+      info.textContent = lower
+        ? (shown === 0 ? 'No files match' : shown + ' file' + (shown > 1 ? 's' : '') + ' match')
+        : '';
+    }
+
+    // ── in-page text search ──────────────────────────────────────────
+    let marks = [];
+    let currentIdx = -1;
+    const psbInput = document.getElementById('psb-input');
+    const psbCount = document.getElementById('psb-count');
+
+    function clearMarks() {
+      document.querySelectorAll('mark.sh, mark.sh-current').forEach(m => {
+        m.outerHTML = m.textContent
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      });
+      // normalize() re-merges adjacent text nodes
+      document.querySelectorAll('.card-body code').forEach(c => c.normalize());
+      marks = [];
+      currentIdx = -1;
+    }
+
+    function findAll(term) {
+      clearMarks();
+      if (!term) { updateCount(); return; }
+      const lower = term.toLowerCase();
+
+      document.querySelectorAll('.card-body code').forEach(code => {
+        const walker = document.createTreeWalker(code, NodeFilter.SHOW_TEXT);
+        const nodes = [];
+        let n;
+        while ((n = walker.nextNode())) nodes.push(n);
+
+        nodes.forEach(node => {
+          const text = node.textContent;
+          const ltxt = text.toLowerCase();
+          let pos = 0, start;
+          const frags = [];
+          while ((start = ltxt.indexOf(lower, pos)) !== -1) {
+            if (start > pos) frags.push(document.createTextNode(text.slice(pos, start)));
+            const m = document.createElement('mark');
+            m.className = 'sh';
+            m.textContent = text.slice(start, start + term.length);
+            frags.push(m);
+            marks.push(m);
+            pos = start + term.length;
+          }
+          if (frags.length) {
+            if (pos < text.length) frags.push(document.createTextNode(text.slice(pos)));
+            node.replaceWith(...frags);
+          }
+        });
+      });
+      updateCount();
+    }
+
+    function goTo(idx) {
+      if (!marks.length) return;
+      if (currentIdx >= 0) {
+        marks[currentIdx].className = 'sh';
+      }
+      currentIdx = ((idx % marks.length) + marks.length) % marks.length;
+      const m = marks[currentIdx];
+      m.className = 'sh-current';
+      // expand card if collapsed
+      const body = m.closest('.card-body');
+      if (body && body.classList.contains('collapsed')) {
+        body.classList.remove('collapsed');
+        body.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+      }
+      m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      updateCount();
+    }
+
+    function updateCount() {
+      if (!psbInput.value.trim()) { psbCount.textContent = ''; return; }
+      psbCount.textContent = marks.length === 0
+        ? '0 matches'
+        : (currentIdx + 1) + ' / ' + marks.length;
+      document.getElementById('psb-prev').disabled = marks.length === 0;
+      document.getElementById('psb-next').disabled = marks.length === 0;
+    }
+
+    function runPageSearch() {
+      const term = psbInput.value;
+      applyCardFilter(term);
+      findAll(term);
+      if (marks.length) goTo(0);
+    }
+
+    function prevMatch() { if (marks.length) goTo(currentIdx - 1); }
+    function nextMatch() { if (marks.length) goTo(currentIdx + 1); }
+
+    function clearPageSearch() {
+      psbInput.value = '';
+      clearMarks();
+      applyCardFilter('');
+      updateCount();
+    }
+
+    psbInput.addEventListener('input', runPageSearch);
+    psbInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.shiftKey ? prevMatch() : nextMatch(); }
+      if (e.key === 'Escape') clearPageSearch();
+    });
+
+    // ── messages from sidebar ────────────────────────────────────────
+    window.addEventListener('message', function (e) {
+      if (!e.data) return;
+      if (e.data.type === 'page-search') {
+        psbInput.value = e.data.term || '';
+        runPageSearch();
+      }
+    });
+  </script>
+</body>
+</html>

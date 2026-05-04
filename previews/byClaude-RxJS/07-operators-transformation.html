@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operators: Transformation</title>
+<link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #1e1e2e; color: #cdd6f4; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Page header ── */
+  #page-header {
+    flex-shrink: 0;
+    background: #181825;
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid #313244;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    z-index: 10;
+  }
+  #page-header h1 {
+    font-size: 18px; font-weight: 700; color: #cba6f7; margin-bottom: 8px;
+    letter-spacing: 0.03em;
+  }
+  #match-info { font-size: 12px; color: #a6adc8; margin-left: 4px; }
+
+  /* ── Page search bar ── */
+  .page-search-bar {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  #psb-input {
+    flex: 1; min-width: 180px; max-width: 320px;
+    background: #313244; border: 1px solid #45475a; color: #cdd6f4;
+    border-radius: 4px; padding: 5px 10px; font-size: 13px; outline: none;
+  }
+  #psb-input:focus { border-color: #89b4fa; box-shadow: 0 0 0 2px rgba(137,180,250,.2); }
+  #psb-input::placeholder { color: #6c7086; }
+  .psb-btn {
+    padding: 4px 10px; border: 1px solid #45475a; border-radius: 4px;
+    background: #313244; color: #cdd6f4; cursor: pointer; font-size: 12px;
+    transition: background .15s;
+  }
+  .psb-btn:hover { background: #45475a; }
+  .psb-btn:disabled { opacity: .4; cursor: default; }
+  .psb-clear {
+    padding: 4px 10px; border: none; border-radius: 4px;
+    background: #f38ba8; color: #1e1e2e; cursor: pointer; font-size: 12px;
+    font-weight: 600; transition: background .15s;
+  }
+  .psb-clear:hover { background: #eba0ac; }
+  #psb-count { font-size: 12px; color: #a6adc8; min-width: 60px; }
+
+  /* ── Cards container ── */
+  #cards-container {
+    flex: 1; overflow-y: auto; padding: 12px 16px 20px;
+  }
+  .card {
+    margin-bottom: 12px; border-radius: 8px; overflow: hidden;
+    border: 1px solid #313244; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .card.hidden-by-search { display: none; }
+
+  /* ── Card header ── */
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #2a2a3d; padding: 8px 14px; cursor: pointer;
+    user-select: none; transition: background .15s;
+    border-bottom: 1px solid #313244;
+  }
+  .card-header:hover { background: #313244; }
+  .filename { font-size: 14px; font-weight: 600; color: #89dceb; font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+  .toggle-btn {
+    background: none; border: 1px solid #45475a; color: #a6adc8;
+    border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 11px;
+    transition: all .15s; white-space: nowrap;
+  }
+  .toggle-btn:hover { background: #45475a; color: #cdd6f4; }
+
+  /* ── Card body ── */
+  .card-body { overflow: hidden; }
+  .card-body.collapsed { display: none; }
+  .card-body pre { margin: 0; }
+  .card-body pre code.hljs {
+    font-size: 13px; line-height: 1.55; padding: 14px 16px !important;
+    background: #282c34 !important;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  }
+
+  /* ── Search highlights ── */
+  mark.sh         { background: #f9e2af; color: #1e1e2e; border-radius: 2px; }
+  mark.sh-current { background: #fab387; color: #1e1e2e; border-radius: 2px; outline: 2px solid #f38ba8; }
+</style>
+</head>
+<body>
+<div id="page-header">
+  <h1>Operators: Transformation</h1>
+  <div class="page-search-bar">
+    <input id="psb-input" placeholder="Search in code…" autocomplete="off" spellcheck="false" />
+    <button class="psb-btn" id="psb-prev" onclick="prevMatch()">&#8593; Prev</button>
+    <button class="psb-btn" id="psb-next" onclick="nextMatch()">&#8595; Next</button>
+    <button class="psb-clear" onclick="clearPageSearch()">&#10005; Clear</button>
+    <span id="psb-count"></span>
+  </div>
+</div>
+<div id="cards-container">
+  <div class="card" id="07-operators-transformation">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="filename">07-operators-transformation.ts</span>
+      <button class="toggle-btn">&#x25bc; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-typescript">/**
+ * Operators: Transformation
+ *
+ * Transformation operators take each value from the source and produce new
+ * values or inner Observables. The &quot;higher-order&quot; operators (mergeMap,
+ * switchMap, concatMap, exhaustMap) each flatten those inner Observables
+ * back into a single stream — differing only in how they handle concurrency.
+ *
+ * @see https://rxjs.dev/guide/operators#transformation-operators
+ */
+
+import { of, interval, from, timer } from &#x27;rxjs&#x27;;
+import { map, mergeMap, switchMap, concatMap, exhaustMap, scan, reduce, delay, take } from &#x27;rxjs&#x27;;
+
+/**
+ * map(project): synchronously transforms each value.
+ * The most fundamental transformation operator.
+ */
+function operatorMap(): void {
+  of(1, 2, 3, 4, 5)
+    .pipe(map(x =&gt; x * x))
+    .subscribe(val =&gt; console.log(&#x27;map:&#x27;, val));
+
+  of(&#x27;hello&#x27;, &#x27;world&#x27;)
+    .pipe(map(s =&gt; s.toUpperCase()))
+    .subscribe(val =&gt; console.log(&#x27;map string:&#x27;, val));
+
+  // Expected output:
+  // map: 1
+  // map: 4
+  // map: 9
+  // map: 16
+  // map: 25
+  // map string: HELLO
+  // map string: WORLD
+}
+
+/**
+ * mergeMap(project): maps each value to an inner Observable and merges all
+ * inner Observables concurrently. Does NOT cancel previous inner Observables.
+ * Use when order does not matter and you want maximum concurrency.
+ */
+function operatorMergeMap(): void {
+  of(&#x27;A&#x27;, &#x27;B&#x27;, &#x27;C&#x27;)
+    .pipe(
+      mergeMap(letter =&gt;
+        timer(Math.random() * 100).pipe(map(() =&gt; letter))
+      )
+    )
+    .subscribe(val =&gt; console.log(&#x27;mergeMap:&#x27;, val));
+
+  // Expected output (order varies — concurrent, unordered):
+  // mergeMap: B
+  // mergeMap: A
+  // mergeMap: C
+}
+
+/**
+ * switchMap(project): maps to an inner Observable, but cancels the previous
+ * inner whenever a new outer value arrives. Only the latest inner is active.
+ * Classic use case: search-as-you-type (cancel stale HTTP requests).
+ */
+function operatorSwitchMap(): void {
+  of(1, 2, 3)
+    .pipe(
+      switchMap(n =&gt;
+        // Each inner emits n after 50 ms, but is cancelled by the next outer value
+        timer(50).pipe(map(() =&gt; `result for ${n}`))
+      )
+    )
+    .subscribe(val =&gt; console.log(&#x27;switchMap:&#x27;, val));
+
+  // Expected output (only the last inner survives because of(1,2,3) is synchronous):
+  // switchMap: result for 3
+}
+
+/**
+ * concatMap(project): maps to inner Observables one at a time, waiting for
+ * each to complete before subscribing to the next. Preserves order.
+ * Use when order matters and Observables must not overlap.
+ */
+function operatorConcatMap(): void {
+  of(&#x27;X&#x27;, &#x27;Y&#x27;, &#x27;Z&#x27;)
+    .pipe(
+      concatMap(letter =&gt;
+        of(`${letter}1`, `${letter}2`).pipe(delay(50))
+      )
+    )
+    .subscribe(val =&gt; console.log(&#x27;concatMap:&#x27;, val));
+
+  // Expected output (in strict order, each pair waits for the previous):
+  // concatMap: X1
+  // concatMap: X2
+  // concatMap: Y1
+  // concatMap: Y2
+  // concatMap: Z1
+  // concatMap: Z2
+}
+
+/**
+ * exhaustMap(project): maps to an inner Observable, but ignores new outer values
+ * while the current inner is still active. Use when you want to prevent overlapping
+ * executions (e.g., a login button that ignores double-clicks).
+ */
+function operatorExhaustMap(): void {
+  // Emit 0,1,2,3 every 60 ms; inner takes 150 ms each
+  interval(60)
+    .pipe(
+      take(4),
+      exhaustMap(n =&gt;
+        timer(150).pipe(map(() =&gt; `inner from ${n}`))
+      )
+    )
+    .subscribe(val =&gt; console.log(&#x27;exhaustMap:&#x27;, val));
+
+  // Expected output (0 starts an inner; 1 and 2 arrive during it and are ignored;
+  // 3 arrives after the first inner completes and starts a new one):
+  // exhaustMap: inner from 0
+  // exhaustMap: inner from 3
+}
+
+/**
+ * scan(accumulator, seed): applies an accumulator function over time and emits
+ * each intermediate result. Like Array.reduce() but emits on every step.
+ */
+function operatorScan(): void {
+  of(1, 2, 3, 4, 5)
+    .pipe(scan((acc, val) =&gt; acc + val, 0))
+    .subscribe(val =&gt; console.log(&#x27;scan (running sum):&#x27;, val));
+
+  // Building an array incrementally
+  of(&#x27;a&#x27;, &#x27;b&#x27;, &#x27;c&#x27;)
+    .pipe(scan((acc, val) =&gt; [...acc, val], [] as string[]))
+    .subscribe(val =&gt; console.log(&#x27;scan (array):&#x27;, val));
+
+  // Expected output:
+  // scan (running sum): 1
+  // scan (running sum): 3
+  // scan (running sum): 6
+  // scan (running sum): 10
+  // scan (running sum): 15
+  // scan (array): [ &#x27;a&#x27; ]
+  // scan (array): [ &#x27;a&#x27;, &#x27;b&#x27; ]
+  // scan (array): [ &#x27;a&#x27;, &#x27;b&#x27;, &#x27;c&#x27; ]
+}
+
+/**
+ * reduce(accumulator, seed): like scan() but only emits the final accumulated
+ * value when the source completes. Equivalent to Array.reduce().
+ */
+function operatorReduce(): void {
+  of(1, 2, 3, 4, 5)
+    .pipe(reduce((acc, val) =&gt; acc + val, 0))
+    .subscribe(val =&gt; console.log(&#x27;reduce (final sum):&#x27;, val));
+
+  of(&#x27;hello&#x27;, &#x27; &#x27;, &#x27;world&#x27;)
+    .pipe(reduce((acc, val) =&gt; acc + val, &#x27;&#x27;))
+    .subscribe(val =&gt; console.log(&#x27;reduce (string):&#x27;, val));
+
+  // Expected output:
+  // reduce (final sum): 15
+  // reduce (string): hello  world
+}
+
+/**
+ * mergeMap vs switchMap contrast: shows the key behavioural difference.
+ * - mergeMap: all inners run concurrently, results interleave
+ * - switchMap: only the latest inner runs, previous are cancelled
+ */
+function mergeMapVsSwitchMap(): void {
+  const source$ = interval(80).pipe(take(3)); // emits 0, 1, 2
+
+  console.log(&#x27;--- mergeMap (all inners run) ---&#x27;);
+  source$.pipe(
+    mergeMap(n =&gt; timer(120).pipe(map(() =&gt; `merge:${n}`)))
+  ).subscribe(val =&gt; console.log(val));
+
+  // Delay the switchMap demo so it doesn&#x27;t interleave with the above
+  setTimeout(() =&gt; {
+    console.log(&#x27;--- switchMap (only last inner runs) ---&#x27;);
+    source$.pipe(
+      switchMap(n =&gt; timer(120).pipe(map(() =&gt; `switch:${n}`)))
+    ).subscribe(val =&gt; console.log(val));
+  }, 500);
+
+  // Expected output:
+  // --- mergeMap (all inners run) ---
+  // merge:0
+  // merge:1
+  // merge:2
+  // --- switchMap (only last inner runs) ---
+  // switch:2       ← 0 and 1 were cancelled when newer values arrived
+}
+
+function main(): void {
+  console.log(&#x27;\n=== operatorMap ===&#x27;);
+  operatorMap();
+
+  console.log(&#x27;\n=== operatorMergeMap ===&#x27;);
+  operatorMergeMap();
+
+  console.log(&#x27;\n=== operatorSwitchMap ===&#x27;);
+  operatorSwitchMap();
+
+  console.log(&#x27;\n=== operatorConcatMap ===&#x27;);
+  operatorConcatMap();
+
+  console.log(&#x27;\n=== operatorExhaustMap ===&#x27;);
+  operatorExhaustMap();
+
+  console.log(&#x27;\n=== operatorScan ===&#x27;);
+  operatorScan();
+
+  console.log(&#x27;\n=== operatorReduce ===&#x27;);
+  operatorReduce();
+
+  console.log(&#x27;\n=== mergeMapVsSwitchMap ===&#x27;);
+  mergeMapVsSwitchMap();
+}
+
+main();
+</code></pre>
+    </div>
+  </div>
+</div>
+<script>
+// ── Card toggle ──────────────────────────────────────────────────────────────
+function toggleCard(header) {
+  const body = header.nextElementSibling;
+  const btn  = header.querySelector('.toggle-btn');
+  const c    = body.classList.toggle('collapsed');
+  btn.textContent = c ? '\u25b6 Show' : '\u25bc Hide';
+}
+
+// ── In-page text search ──────────────────────────────────────────────────────
+const psbInput = document.getElementById('psb-input');
+const psbCount = document.getElementById('psb-count');
+let marks = [], currentIdx = -1;
+
+function clearMarks() {
+  document.querySelectorAll('mark.sh, mark.sh-current').forEach(m => {
+    m.parentNode.replaceChild(document.createTextNode(m.textContent), m);
+  });
+  document.querySelectorAll('.card-body code').forEach(c => c.normalize());
+  marks = []; currentIdx = -1;
+}
+
+function findAll(term) {
+  clearMarks();
+  if (!term.trim()) { updateCount(); return; }
+  const lower = term.toLowerCase();
+  document.querySelectorAll('.card-body code').forEach(code => {
+    const walker = document.createTreeWalker(code, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.textContent, ltxt = text.toLowerCase();
+      let pos = 0, start;
+      const frags = [];
+      while ((start = ltxt.indexOf(lower, pos)) !== -1) {
+        if (start > pos) frags.push(document.createTextNode(text.slice(pos, start)));
+        const m = document.createElement('mark');
+        m.className = 'sh';
+        m.textContent = text.slice(start, start + term.length);
+        frags.push(m); marks.push(m);
+        pos = start + term.length;
+      }
+      if (frags.length) {
+        if (pos < text.length) frags.push(document.createTextNode(text.slice(pos)));
+        node.replaceWith(...frags);
+      }
+    });
+  });
+  updateCount();
+}
+
+function goTo(idx) {
+  if (!marks.length) return;
+  if (currentIdx >= 0) marks[currentIdx].className = 'sh';
+  currentIdx = ((idx % marks.length) + marks.length) % marks.length;
+  const m = marks[currentIdx];
+  m.className = 'sh-current';
+  const body = m.closest('.card-body');
+  if (body && body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    body.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+  }
+  m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  updateCount();
+}
+
+function updateCount() {
+  const v = psbInput.value.trim();
+  if (!v) { psbCount.textContent = ''; return; }
+  psbCount.textContent = marks.length === 0
+    ? '0 matches'
+    : (currentIdx + 1) + ' / ' + marks.length;
+  document.getElementById('psb-prev').disabled = marks.length === 0;
+  document.getElementById('psb-next').disabled = marks.length === 0;
+}
+
+function runPageSearch() {
+  const term = psbInput.value;
+  findAll(term);
+  if (marks.length) goTo(0);
+}
+function prevMatch() { if (marks.length) goTo(currentIdx - 1); }
+function nextMatch() { if (marks.length) goTo(currentIdx + 1); }
+function clearPageSearch() {
+  psbInput.value = ''; clearMarks(); updateCount();
+}
+
+psbInput.addEventListener('input', runPageSearch);
+psbInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.shiftKey ? prevMatch() : nextMatch(); }
+  if (e.key === 'Escape') clearPageSearch();
+});
+
+window.addEventListener('message', function(e) {
+  if (!e.data || e.data.type !== 'page-search') return;
+  psbInput.value = e.data.term || '';
+  runPageSearch();
+});
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  hljs.highlightAll();
+  if (location.hash) {
+    const target = document.querySelector(location.hash);
+    if (target) {
+      const body = target.querySelector('.card-body');
+      if (body) body.classList.remove('collapsed');
+      setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+    }
+  }
+});
+</script>
+</body>
+</html>

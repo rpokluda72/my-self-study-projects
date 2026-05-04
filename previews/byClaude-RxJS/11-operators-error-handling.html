@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operators: Error Handling</title>
+<link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #1e1e2e; color: #cdd6f4; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Page header ── */
+  #page-header {
+    flex-shrink: 0;
+    background: #181825;
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid #313244;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    z-index: 10;
+  }
+  #page-header h1 {
+    font-size: 18px; font-weight: 700; color: #cba6f7; margin-bottom: 8px;
+    letter-spacing: 0.03em;
+  }
+  #match-info { font-size: 12px; color: #a6adc8; margin-left: 4px; }
+
+  /* ── Page search bar ── */
+  .page-search-bar {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  #psb-input {
+    flex: 1; min-width: 180px; max-width: 320px;
+    background: #313244; border: 1px solid #45475a; color: #cdd6f4;
+    border-radius: 4px; padding: 5px 10px; font-size: 13px; outline: none;
+  }
+  #psb-input:focus { border-color: #89b4fa; box-shadow: 0 0 0 2px rgba(137,180,250,.2); }
+  #psb-input::placeholder { color: #6c7086; }
+  .psb-btn {
+    padding: 4px 10px; border: 1px solid #45475a; border-radius: 4px;
+    background: #313244; color: #cdd6f4; cursor: pointer; font-size: 12px;
+    transition: background .15s;
+  }
+  .psb-btn:hover { background: #45475a; }
+  .psb-btn:disabled { opacity: .4; cursor: default; }
+  .psb-clear {
+    padding: 4px 10px; border: none; border-radius: 4px;
+    background: #f38ba8; color: #1e1e2e; cursor: pointer; font-size: 12px;
+    font-weight: 600; transition: background .15s;
+  }
+  .psb-clear:hover { background: #eba0ac; }
+  #psb-count { font-size: 12px; color: #a6adc8; min-width: 60px; }
+
+  /* ── Cards container ── */
+  #cards-container {
+    flex: 1; overflow-y: auto; padding: 12px 16px 20px;
+  }
+  .card {
+    margin-bottom: 12px; border-radius: 8px; overflow: hidden;
+    border: 1px solid #313244; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .card.hidden-by-search { display: none; }
+
+  /* ── Card header ── */
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #2a2a3d; padding: 8px 14px; cursor: pointer;
+    user-select: none; transition: background .15s;
+    border-bottom: 1px solid #313244;
+  }
+  .card-header:hover { background: #313244; }
+  .filename { font-size: 14px; font-weight: 600; color: #89dceb; font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+  .toggle-btn {
+    background: none; border: 1px solid #45475a; color: #a6adc8;
+    border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 11px;
+    transition: all .15s; white-space: nowrap;
+  }
+  .toggle-btn:hover { background: #45475a; color: #cdd6f4; }
+
+  /* ── Card body ── */
+  .card-body { overflow: hidden; }
+  .card-body.collapsed { display: none; }
+  .card-body pre { margin: 0; }
+  .card-body pre code.hljs {
+    font-size: 13px; line-height: 1.55; padding: 14px 16px !important;
+    background: #282c34 !important;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  }
+
+  /* ── Search highlights ── */
+  mark.sh         { background: #f9e2af; color: #1e1e2e; border-radius: 2px; }
+  mark.sh-current { background: #fab387; color: #1e1e2e; border-radius: 2px; outline: 2px solid #f38ba8; }
+</style>
+</head>
+<body>
+<div id="page-header">
+  <h1>Operators: Error Handling</h1>
+  <div class="page-search-bar">
+    <input id="psb-input" placeholder="Search in code…" autocomplete="off" spellcheck="false" />
+    <button class="psb-btn" id="psb-prev" onclick="prevMatch()">&#8593; Prev</button>
+    <button class="psb-btn" id="psb-next" onclick="nextMatch()">&#8595; Next</button>
+    <button class="psb-clear" onclick="clearPageSearch()">&#10005; Clear</button>
+    <span id="psb-count"></span>
+  </div>
+</div>
+<div id="cards-container">
+  <div class="card" id="11-operators-error-handling">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="filename">11-operators-error-handling.ts</span>
+      <button class="toggle-btn">&#x25bc; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-typescript">/**
+ * Operators: Error Handling
+ *
+ * Error handling operators intercept errors in a pipeline, giving you the
+ * chance to recover, retry, or inspect and rethrow. Without them, an unhandled
+ * error terminates the Observable and propagates to the subscriber&#x27;s error callback.
+ *
+ * @see https://rxjs.dev/guide/operators#error-handling-operators
+ */
+
+import { of, throwError, interval, Observable } from &#x27;rxjs&#x27;;
+import { catchError, retry, map, take, delay, tap } from &#x27;rxjs&#x27;;
+
+/**
+ * catchError(selector): intercepts an error and returns a replacement Observable.
+ * The stream resumes with the replacement — the subscriber never sees the error.
+ */
+function operatorCatchError(): void {
+  const failing$ = new Observable&lt;number&gt;(subscriber =&gt; {
+    subscriber.next(1);
+    subscriber.next(2);
+    subscriber.error(new Error(&#x27;source failed&#x27;));
+  });
+
+  failing$
+    .pipe(catchError(err =&gt; {
+      console.log(&#x27;caught:&#x27;, (err as Error).message);
+      return of(-1, -2); // replacement Observable
+    }))
+    .subscribe({
+      next:     val =&gt; console.log(&#x27;catchError next:&#x27;, val),
+      complete: ()  =&gt; console.log(&#x27;catchError complete&#x27;),
+    });
+
+  // Expected output:
+  // catchError next: 1
+  // catchError next: 2
+  // caught: source failed
+  // catchError next: -1
+  // catchError next: -2
+  // catchError complete
+}
+
+/**
+ * throwError(factory): an Observable that immediately errors.
+ * Used to create error sources in examples or to rethrow inside catchError.
+ */
+function operatorThrowError(): void {
+  throwError(() =&gt; new Error(&#x27;immediate error&#x27;))
+    .pipe(
+      catchError(err =&gt; {
+        console.log(&#x27;throwError caught:&#x27;, (err as Error).message);
+        return of(&#x27;recovered&#x27;);
+      })
+    )
+    .subscribe(val =&gt; console.log(&#x27;throwError result:&#x27;, val));
+
+  // Expected output:
+  // throwError caught: immediate error
+  // throwError result: recovered
+}
+
+/**
+ * retry(count): on error, re-subscribes to the source up to `count` times.
+ * If the source still fails after all retries, the error propagates.
+ * Useful for transient failures (network timeouts, flaky APIs).
+ */
+function operatorRetry(): void {
+  let attempt = 0;
+
+  const flaky$ = new Observable&lt;string&gt;(subscriber =&gt; {
+    attempt++;
+    console.log(`  attempt #${attempt}`);
+    if (attempt &lt; 3) {
+      subscriber.error(new Error(`attempt ${attempt} failed`));
+    } else {
+      subscriber.next(&#x27;success!&#x27;);
+      subscriber.complete();
+    }
+  });
+
+  flaky$
+    .pipe(retry(3))
+    .subscribe({
+      next:     val =&gt; console.log(&#x27;retry result:&#x27;, val),
+      error:    err =&gt; console.log(&#x27;retry gave up:&#x27;, (err as Error).message),
+      complete: ()  =&gt; console.log(&#x27;retry complete&#x27;),
+    });
+
+  // Expected output:
+  //   attempt #1
+  //   attempt #2
+  //   attempt #3
+  // retry result: success!
+  // retry complete
+}
+
+/**
+ * retry with delay (RxJS 7+): the modern way to retry with a delay between
+ * attempts. Pass a config object with `count` and `delay` (ms or a function).
+ * This is preferred over the deprecated retryWhen().
+ */
+function operatorRetryWithDelay(): void {
+  let attempt = 0;
+
+  const flaky$ = new Observable&lt;string&gt;(subscriber =&gt; {
+    attempt++;
+    console.log(`  attempt #${attempt}`);
+    if (attempt &lt; 3) {
+      subscriber.error(new Error(&#x27;not ready yet&#x27;));
+    } else {
+      subscriber.next(&#x27;finally succeeded&#x27;);
+      subscriber.complete();
+    }
+  });
+
+  flaky$
+    .pipe(
+      retry({ count: 5, delay: 50 }) // retry up to 5 times, 50 ms between each
+    )
+    .subscribe({
+      next:     val =&gt; console.log(&#x27;retryWithDelay result:&#x27;, val),
+      complete: ()  =&gt; console.log(&#x27;retryWithDelay complete&#x27;),
+    });
+
+  // Expected output:
+  //   attempt #1
+  //   attempt #2   ← after 50 ms
+  //   attempt #3   ← after 50 ms
+  // retryWithDelay result: finally succeeded
+  // retryWithDelay complete
+}
+
+/**
+ * catchError — inspect and rethrow: sometimes you want to log or track an error
+ * but still propagate it. Re-throw inside catchError using throwError or `throw`.
+ */
+function catchErrorRethrow(): void {
+  const source$ = throwError(() =&gt; new Error(&#x27;critical failure&#x27;));
+
+  source$
+    .pipe(
+      catchError(err =&gt; {
+        console.log(&#x27;logging error before rethrow:&#x27;, (err as Error).message);
+        throw err; // rethrow — propagates to subscriber&#x27;s error handler
+      })
+    )
+    .subscribe({
+      next:  val =&gt; console.log(&#x27;value:&#x27;, val),
+      error: err =&gt; console.log(&#x27;subscriber got error:&#x27;, (err as Error).message),
+    });
+
+  // Expected output:
+  // logging error before rethrow: critical failure
+  // subscriber got error: critical failure
+}
+
+/**
+ * Exhausting retries — what happens when all retries are used up.
+ * The final error propagates to the subscriber&#x27;s error callback.
+ */
+function retryExhausted(): void {
+  let attempt = 0;
+
+  const alwaysFails$ = new Observable&lt;number&gt;(subscriber =&gt; {
+    attempt++;
+    console.log(`  attempt #${attempt}`);
+    subscriber.error(new Error(&#x27;always fails&#x27;));
+  });
+
+  alwaysFails$
+    .pipe(retry(2)) // try original + 2 retries = 3 total attempts
+    .subscribe({
+      next:  val =&gt; console.log(&#x27;value:&#x27;, val),
+      error: err =&gt; console.log(`gave up after ${attempt} attempts:`, (err as Error).message),
+    });
+
+  // Expected output:
+  //   attempt #1
+  //   attempt #2
+  //   attempt #3
+  // gave up after 3 attempts: always fails
+}
+
+function main(): void {
+  console.log(&#x27;\n=== operatorCatchError ===&#x27;);
+  operatorCatchError();
+
+  console.log(&#x27;\n=== operatorThrowError ===&#x27;);
+  operatorThrowError();
+
+  console.log(&#x27;\n=== operatorRetry ===&#x27;);
+  operatorRetry();
+
+  console.log(&#x27;\n=== operatorRetryWithDelay ===&#x27;);
+  operatorRetryWithDelay();
+
+  console.log(&#x27;\n=== catchErrorRethrow ===&#x27;);
+  catchErrorRethrow();
+
+  console.log(&#x27;\n=== retryExhausted ===&#x27;);
+  retryExhausted();
+}
+
+main();
+</code></pre>
+    </div>
+  </div>
+</div>
+<script>
+// ── Card toggle ──────────────────────────────────────────────────────────────
+function toggleCard(header) {
+  const body = header.nextElementSibling;
+  const btn  = header.querySelector('.toggle-btn');
+  const c    = body.classList.toggle('collapsed');
+  btn.textContent = c ? '\u25b6 Show' : '\u25bc Hide';
+}
+
+// ── In-page text search ──────────────────────────────────────────────────────
+const psbInput = document.getElementById('psb-input');
+const psbCount = document.getElementById('psb-count');
+let marks = [], currentIdx = -1;
+
+function clearMarks() {
+  document.querySelectorAll('mark.sh, mark.sh-current').forEach(m => {
+    m.parentNode.replaceChild(document.createTextNode(m.textContent), m);
+  });
+  document.querySelectorAll('.card-body code').forEach(c => c.normalize());
+  marks = []; currentIdx = -1;
+}
+
+function findAll(term) {
+  clearMarks();
+  if (!term.trim()) { updateCount(); return; }
+  const lower = term.toLowerCase();
+  document.querySelectorAll('.card-body code').forEach(code => {
+    const walker = document.createTreeWalker(code, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.textContent, ltxt = text.toLowerCase();
+      let pos = 0, start;
+      const frags = [];
+      while ((start = ltxt.indexOf(lower, pos)) !== -1) {
+        if (start > pos) frags.push(document.createTextNode(text.slice(pos, start)));
+        const m = document.createElement('mark');
+        m.className = 'sh';
+        m.textContent = text.slice(start, start + term.length);
+        frags.push(m); marks.push(m);
+        pos = start + term.length;
+      }
+      if (frags.length) {
+        if (pos < text.length) frags.push(document.createTextNode(text.slice(pos)));
+        node.replaceWith(...frags);
+      }
+    });
+  });
+  updateCount();
+}
+
+function goTo(idx) {
+  if (!marks.length) return;
+  if (currentIdx >= 0) marks[currentIdx].className = 'sh';
+  currentIdx = ((idx % marks.length) + marks.length) % marks.length;
+  const m = marks[currentIdx];
+  m.className = 'sh-current';
+  const body = m.closest('.card-body');
+  if (body && body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    body.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+  }
+  m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  updateCount();
+}
+
+function updateCount() {
+  const v = psbInput.value.trim();
+  if (!v) { psbCount.textContent = ''; return; }
+  psbCount.textContent = marks.length === 0
+    ? '0 matches'
+    : (currentIdx + 1) + ' / ' + marks.length;
+  document.getElementById('psb-prev').disabled = marks.length === 0;
+  document.getElementById('psb-next').disabled = marks.length === 0;
+}
+
+function runPageSearch() {
+  const term = psbInput.value;
+  findAll(term);
+  if (marks.length) goTo(0);
+}
+function prevMatch() { if (marks.length) goTo(currentIdx - 1); }
+function nextMatch() { if (marks.length) goTo(currentIdx + 1); }
+function clearPageSearch() {
+  psbInput.value = ''; clearMarks(); updateCount();
+}
+
+psbInput.addEventListener('input', runPageSearch);
+psbInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.shiftKey ? prevMatch() : nextMatch(); }
+  if (e.key === 'Escape') clearPageSearch();
+});
+
+window.addEventListener('message', function(e) {
+  if (!e.data || e.data.type !== 'page-search') return;
+  psbInput.value = e.data.term || '';
+  runPageSearch();
+});
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  hljs.highlightAll();
+  if (location.hash) {
+    const target = document.querySelector(location.hash);
+    if (target) {
+      const body = target.querySelector('.card-body');
+      if (body) body.classList.remove('collapsed');
+      setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+    }
+  }
+});
+</script>
+</body>
+</html>

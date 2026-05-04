@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>10 — Single Maybe Completable</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#1e1e2e;--surface:#24273a;--text:#cdd6f4;--subtext:#a6adc8;
+  --accent:#89b4fa;--accent2:#cba6f7;--border:#313244;--hover:#45475a;
+  --mark-y:#f9e2af;--mark-o:#fab387;--red:#f38ba8;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+#header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:10px 16px 8px}
+.header-top{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+h1{font-size:16px;font-weight:600;color:var(--accent2);white-space:nowrap}
+h1 .num{color:var(--accent);margin-right:6px}
+.toolbar{display:flex;align-items:center;gap:6px}
+.toolbar button{background:var(--hover);border:1px solid var(--border);color:var(--text);
+                border-radius:5px;padding:3px 10px;font-size:12px;cursor:pointer}
+.toolbar button:hover{background:var(--accent);color:#1e1e2e}
+.match-info{font-size:12px;color:var(--subtext);margin-left:4px}
+.search-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.search-input-wrap{position:relative;display:flex;align-items:center}
+#psb-input{background:#313244;border:1px solid var(--border);color:var(--text);
+           border-radius:6px;padding:4px 28px 4px 10px;font-size:13px;width:220px;outline:none}
+#psb-input:focus{border-color:var(--accent)}
+.search-clear{position:absolute;right:6px;background:none;border:none;
+              color:var(--subtext);cursor:pointer;font-size:14px}
+.search-clear:hover{color:var(--red)}
+.search-bar button{background:var(--hover);border:1px solid var(--border);color:var(--text);
+                   border-radius:5px;padding:3px 9px;font-size:12px;cursor:pointer}
+.search-bar button:hover:not(:disabled){background:var(--accent);color:#1e1e2e}
+.search-bar button:disabled{opacity:.4;cursor:default}
+#psb-count{font-size:12px;color:var(--accent);min-width:70px}
+#cards{padding:16px}
+/* scroll-margin-top keeps the card below the sticky header when jumped to via hash */
+.card{background:var(--surface);border:1px solid var(--border);
+      border-radius:8px;margin-bottom:14px;overflow:hidden;scroll-margin-top:115px}
+.card.hidden-by-search{display:none}
+.card-header{display:flex;align-items:center;justify-content:space-between;
+             padding:10px 14px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border)}
+.card-header:hover{background:var(--hover)}
+.card-filename{font-family:'JetBrains Mono','Fira Code',Consolas,monospace;
+               font-size:13px;color:var(--accent);font-weight:600}
+.toggle-btn{background:none;border:1px solid var(--border);color:var(--subtext);
+            border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer}
+.toggle-btn:hover{background:var(--accent);color:#1e1e2e;border-color:var(--accent)}
+.card-body{overflow:hidden}
+.card-body.collapsed{display:none}
+.card-body pre{margin:0;border-radius:0}
+.card-body code{font-family:'JetBrains Mono','Fira Code',Consolas,monospace!important;
+                font-size:13px!important;line-height:1.6!important}
+mark.sh{background:var(--mark-y);color:#1e1e2e;border-radius:2px}
+mark.sh-current{background:var(--mark-o);color:#1e1e2e;border-radius:2px;outline:2px solid var(--red)}
+</style>
+</head>
+<body>
+<div id="header">
+  <div class="header-top">
+    <h1><span class="num">10</span>Single Maybe Completable</h1>
+    <div class="toolbar">
+      <button onclick="showAll()">&#9660; Show all</button>
+      <button onclick="collapseAll()">&#9654; Collapse all</button>
+      <span id="match-info" class="match-info"></span>
+    </div>
+  </div>
+  <div class="search-bar">
+    <div class="search-input-wrap">
+      <input id="psb-input" type="text" placeholder="Search in code..." autocomplete="off" spellcheck="false">
+      <button class="search-clear" onclick="clearPageSearch()" title="Clear">&#x2715;</button>
+    </div>
+    <button id="psb-prev" onclick="prevMatch()" disabled>&#9664; Prev</button>
+    <button id="psb-next" onclick="nextMatch()" disabled>Next &#9654;</button>
+    <span id="psb-count"></span>
+    <button onclick="copySearch()" title="Copy search text">&#x2398; Copy</button>
+  </div>
+</div>
+<div id="cards">
+  <div class="card" id="card-header">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">_10_SingleMaybeCompletable.java</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package tutorial;
+
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Maybe;
+import io.reactivex.rxjava3.core.Single;
+
+/**
+ * TUTORIAL 10 — Single, Maybe, and Completable
+ *
+ * &lt;p&gt;RxJava provides specialized reactive types for streams with a known fixed number of items.
+ * These are more expressive than Observable when you know the cardinality up front:
+ *
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@link Single}&amp;lt;T&amp;gt;      — emits exactly ONE item, or an error. Never completes empty.
+ *                                     Use for HTTP requests, database queries, computations.&lt;/li&gt;
+ *   &lt;li&gt;{@link Maybe}&amp;lt;T&amp;gt;       — emits ZERO or ONE item, then completes (or errors).
+ *                                     Use for optional results (nullable cache lookups).&lt;/li&gt;
+ *   &lt;li&gt;{@link Completable}          — emits NO items, only a completion or error signal.
+ *                                     Use for fire-and-forget actions (write to DB, send email).&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;Run: right-click → Run &#x27;_10_SingleMaybeCompletable.main()&#x27;
+ */
+public class _10_SingleMaybeCompletable {
+
+    public static void main(String[] args) {
+        // Single
+        demoSingleJust();
+        demoSingleError();
+        demoSingleFromCallable();
+        demoSingleFlatMap();
+
+        // Maybe
+        demoMaybeJust();
+        demoMaybeEmpty();
+        demoMaybeError();
+        demoMaybeFilter();
+
+        // Completable
+        demoCompletableFromAction();
+        demoCompletableAndThen();
+        demoCompletableError();
+        demoChainAll();
+    }
+
+    // =========================================================================
+    //  SINGLE
+    // =========================================================================
+
+    // -------------------------------------------------------------------------
+    // Single.just
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Single.just(value)} creates a Single that immediately emits the given value
+     * and then signals success. The subscriber uses {@code onSuccess} (not {@code onNext}).
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demosinglejust">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoSingleJust()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoSingleJust() {
+        System.out.println(&quot;=== Single.just ===&quot;);
+
+        Single.just(42)
+                .subscribe(
+                        value -&gt; System.out.println(&quot;Success: &quot; + value), // → Success: 42
+                        error -&gt; System.out.println(&quot;Error: &quot; + error)
+                );
+        // === Single.just ===
+        //Success: 42
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Single.error
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Single.error(Throwable)} creates a Single that immediately signals an error.
+     * No success value is ever emitted.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demosingleerror">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoSingleError()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoSingleError() {
+        System.out.println(&quot;=== Single.error ===&quot;);
+
+        Single.error(new RuntimeException(&quot;Query failed&quot;))
+                .subscribe(
+                        value -&gt; System.out.println(&quot;Success: &quot; + value), // not called
+                        error -&gt; System.out.println(&quot;Error: &quot; + error.getMessage()) // → Error: Query failed
+                );
+        // === Single.error ===
+        //Error: Query failed
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Single.fromCallable
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Single.fromCallable(Callable&lt;T&gt;)} lazily executes a {@link java.util.concurrent.Callable}
+     * when subscribed. Any checked exception thrown is forwarded to {@code onError}.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demosinglefromcallable">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoSingleFromCallable()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoSingleFromCallable() {
+        System.out.println(&quot;=== Single.fromCallable ===&quot;);
+
+        Single&lt;String&gt; single = Single.fromCallable(() -&gt; {
+            // Simulate a database lookup
+            return &quot;User{id=1, name=&#x27;Alice&#x27;}&quot;;
+        });
+
+        single.subscribe(
+                result -&gt; System.out.println(&quot;Fetched: &quot; + result), // → Fetched: User{id=1, name=&#x27;Alice&#x27;}
+                error  -&gt; System.out.println(&quot;Error: &quot; + error)
+        );
+        // === Single.fromCallable ===
+        //Fetched: User{id=1, name=&#x27;Alice&#x27;}
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Single.flatMap
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Single.flatMap(Function&lt;T, Single&lt;R&gt;&gt;)} chains two Singles together:
+     * when the first Single succeeds, its value is fed into a function that returns
+     * a second Single. The final result is the second Single&#x27;s value.
+     *
+     * &lt;p&gt;Use this to sequence asynchronous operations that depend on each other
+     * (e.g., fetch a user, then fetch that user&#x27;s orders).
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demosingleflatmap">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoSingleFlatMap()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoSingleFlatMap() {
+        System.out.println(&quot;=== Single.flatMap (chain two Singles) ===&quot;);
+
+        Single&lt;Integer&gt; userId = Single.just(1);
+
+        userId
+                .flatMap(id -&gt; Single.fromCallable(() -&gt; &quot;User #&quot; + id + &quot; → Alice&quot;))
+                .flatMap(user -&gt; Single.fromCallable(() -&gt; user + &quot; (verified)&quot;))
+                .subscribe(
+                        result -&gt; System.out.println(&quot;Result: &quot; + result),
+                        // → Result: User #1 → Alice (verified)
+                        error  -&gt; System.out.println(&quot;Error: &quot; + error)
+                );
+        // === Single.flatMap (chain two Singles) ===
+        //Result: User #1 → Alice (verified)
+        System.out.println();
+    }
+
+    // =========================================================================
+    //  MAYBE
+    // =========================================================================
+
+    // -------------------------------------------------------------------------
+    // Maybe.just
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Maybe.just(value)} creates a Maybe that emits exactly one item via
+     * {@code onSuccess}, then completes. Behaves like a Single when a value is present.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demomaybejust">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoMaybeJust()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoMaybeJust() {
+        System.out.println(&quot;=== Maybe.just ===&quot;);
+
+        Maybe.just(&quot;Found it!&quot;)
+                .subscribe(
+                        value    -&gt; System.out.println(&quot;onSuccess: &quot; + value), // → onSuccess: Found it!
+                        error    -&gt; System.out.println(&quot;onError: &quot; + error),
+                        ()       -&gt; System.out.println(&quot;onComplete (no value)&quot;)  // not called when value present
+                );
+        // === Maybe.just ===
+        //onSuccess: Found it!
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Maybe.empty
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Maybe.empty()} creates a Maybe that emits NO item and immediately completes.
+     * Use this to represent a &quot;nothing found&quot; result (like an empty Optional).
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demomaybeempty">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoMaybeEmpty()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoMaybeEmpty() {
+        System.out.println(&quot;=== Maybe.empty ===&quot;);
+
+        Maybe.empty()
+                .subscribe(
+                        value -&gt; System.out.println(&quot;onSuccess: &quot; + value), // not called
+                        error -&gt; System.out.println(&quot;onError: &quot; + error),   // not called
+                        ()    -&gt; System.out.println(&quot;onComplete (empty)&quot;)   // → onComplete (empty)
+                );
+        // === Maybe.empty ===
+        //onComplete (empty)
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Maybe.error
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Maybe.error(Throwable)} signals an error immediately, with no item.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demomaybeerror">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoMaybeError()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoMaybeError() {
+        System.out.println(&quot;=== Maybe.error ===&quot;);
+
+        Maybe.error(new IllegalArgumentException(&quot;Invalid ID&quot;))
+                .subscribe(
+                        value -&gt; System.out.println(&quot;onSuccess: &quot; + value),           // not called
+                        error -&gt; System.out.println(&quot;onError: &quot; + error.getMessage()), // → onError: Invalid ID
+                        ()    -&gt; System.out.println(&quot;onComplete&quot;)                      // not called
+                );
+        // === Maybe.error ===
+        //onError: Invalid ID
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Observable → Maybe via filter + firstElement
+    // -------------------------------------------------------------------------
+
+    /**
+     * A common way to obtain a {@code Maybe&lt;T&gt;} is by calling {@code firstElement()} on
+     * a filtered Observable — it emits the first matching item, or completes empty if none match.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demomaybefilter">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoMaybeFilter()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoMaybeFilter() {
+        System.out.println(&quot;=== Maybe from Observable.firstElement ===&quot;);
+
+        // Find the first even number — exists
+        io.reactivex.rxjava3.core.Observable.just(1, 3, 4, 6, 7)
+                .filter(n -&gt; n % 2 == 0)
+                .firstElement()              // returns Maybe&lt;Integer&gt;
+                .subscribe(
+                        n  -&gt; System.out.println(&quot;First even: &quot; + n), // → First even: 4
+                        e  -&gt; System.out.println(&quot;Error: &quot; + e),
+                        () -&gt; System.out.println(&quot;No even found&quot;)
+                );
+
+        // Find the first even number — does NOT exist
+        io.reactivex.rxjava3.core.Observable.just(1, 3, 5)
+                .filter(n -&gt; n % 2 == 0)
+                .firstElement()
+                .subscribe(
+                        n  -&gt; System.out.println(&quot;First even: &quot; + n),
+                        e  -&gt; System.out.println(&quot;Error: &quot; + e),
+                        () -&gt; System.out.println(&quot;No even found&quot;) // → No even found
+                );
+        // === Maybe from Observable.firstElement ===
+        //First even: 4
+        //No even found
+        System.out.println();
+    }
+
+    // =========================================================================
+    //  COMPLETABLE
+    // =========================================================================
+
+    // -------------------------------------------------------------------------
+    // Completable.fromAction
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Completable.fromAction(Action)} wraps a void operation in a Completable.
+     * When subscribed, it runs the action and signals {@code onComplete} on success,
+     * or {@code onError} if an exception is thrown.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-democompletablefromaction">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoCompletableFromAction()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoCompletableFromAction() {
+        System.out.println(&quot;=== Completable.fromAction ===&quot;);
+
+        Completable saveAction = Completable.fromAction(() -&gt; {
+            System.out.println(&quot;  [Action] Saving to database...&quot;); // → [Action] Saving to database...
+            // Simulate a write operation
+        });
+
+        saveAction.subscribe(
+                ()  -&gt; System.out.println(&quot;Save completed successfully&quot;), // → Save completed successfully
+                err -&gt; System.out.println(&quot;Save failed: &quot; + err)
+        );
+        // === Completable.fromAction ===
+        //  [Action] Saving to database...
+        //Save completed successfully
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Completable.andThen
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code completable.andThen(other)} sequences two reactive sources:
+     * {@code other} only starts after {@code completable} completes successfully.
+     * If {@code completable} errors, {@code other} is never subscribed to.
+     *
+     * &lt;p&gt;You can chain:
+     * &lt;ul&gt;
+     *   &lt;li&gt;{@code Completable.andThen(Completable)} — sequence two void operations&lt;/li&gt;
+     *   &lt;li&gt;{@code Completable.andThen(Single)}      — run action, then get a value&lt;/li&gt;
+     *   &lt;li&gt;{@code Completable.andThen(Observable)}  — run action, then stream items&lt;/li&gt;
+     * &lt;/ul&gt;
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-democompletableandthen">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoCompletableAndThen()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoCompletableAndThen() {
+        System.out.println(&quot;=== Completable.andThen ===&quot;);
+
+        Completable step1 = Completable.fromAction(() -&gt;
+                System.out.println(&quot;  Step 1: validate input&quot;)); // → Step 1: validate input
+
+        Completable step2 = Completable.fromAction(() -&gt;
+                System.out.println(&quot;  Step 2: persist data&quot;));   // → Step 2: persist data
+
+        Single&lt;String&gt; step3 = Single.fromCallable(() -&gt; {
+            System.out.println(&quot;  Step 3: fetch confirmation&quot;);  // → Step 3: fetch confirmation
+            return &quot;Confirmation #12345&quot;;
+        });
+
+        step1.andThen(step2)
+                .andThen(step3)
+                .subscribe(
+                        result -&gt; System.out.println(&quot;Final result: &quot; + result),
+                        // → Final result: Confirmation #12345
+                        error  -&gt; System.out.println(&quot;Error: &quot; + error)
+                );
+        // === Completable.andThen ===
+        //  Step 1: validate input
+        //  Step 2: persist data
+        //  Step 3: fetch confirmation
+        //Final result: Confirmation #12345
+        System.out.println();
+    }
+
+    // -------------------------------------------------------------------------
+    // Completable.error
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Completable.error(Throwable)} creates a Completable that immediately errors.
+     * The {@code andThen} chain is aborted — subsequent steps are skipped.
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-democompletableerror">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoCompletableError()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoCompletableError() {
+        System.out.println(&quot;=== Completable chain with error ===&quot;);
+
+        Completable failing = Completable.error(new RuntimeException(&quot;Permission denied&quot;));
+        Completable next    = Completable.fromAction(() -&gt;
+                System.out.println(&quot;  This step is skipped&quot;)); // never reached
+
+        failing.andThen(next)
+                .subscribe(
+                        ()  -&gt; System.out.println(&quot;Completed&quot;),
+                        err -&gt; System.out.println(&quot;Chain failed: &quot; + err.getMessage())
+                        // → Chain failed: Permission denied
+                );
+        // === Completable chain with error ===
+        //Chain failed: Permission denied
+        System.out.println();
+    }
+
+    // =========================================================================
+    //  Combined example
+    // =========================================================================
+
+    /**
+     * A realistic chain mixing all three types:
+     * &lt;ol&gt;
+     *   &lt;li&gt;Authenticate (Completable) — no value produced&lt;/li&gt;
+     *   &lt;li&gt;Fetch user ID (Single)     — produces an Integer&lt;/li&gt;
+     *   &lt;li&gt;Look up profile (Maybe)    — profile may or may not exist&lt;/li&gt;
+     * &lt;/ol&gt;
+     */</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demochainall">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoChainAll()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    private static void demoChainAll() {
+        System.out.println(&quot;=== Real-world chain: Completable → Single → Maybe ===&quot;);
+
+        Completable authenticate = Completable.fromAction(() -&gt;
+                System.out.println(&quot;  [Auth] Token validated&quot;)); // → [Auth] Token validated
+
+        Single&lt;Integer&gt; fetchUserId = Single.fromCallable(() -&gt; {
+            System.out.println(&quot;  [DB] Fetching user ID&quot;); // → [DB] Fetching user ID
+            return 42;
+        });
+
+        authenticate
+                .andThen(fetchUserId)                                  // after auth, get ID
+                .flatMapMaybe(id -&gt; Maybe.fromCallable(() -&gt; {         // look up profile (may be absent)
+                    System.out.println(&quot;  [DB] Loading profile for ID=&quot; + id);
+                    // → [DB] Loading profile for ID=42
+                    return &quot;Profile{id=&quot; + id + &quot;, name=&#x27;Bob&#x27;}&quot;;
+                }))
+                .subscribe(
+                        profile  -&gt; System.out.println(&quot;Loaded: &quot; + profile),
+                        // → Loaded: Profile{id=42, name=&#x27;Bob&#x27;}
+                        error    -&gt; System.out.println(&quot;Error: &quot; + error),
+                        ()       -&gt; System.out.println(&quot;Profile not found&quot;)
+                );
+        // === Real-world chain: Completable → Single → Maybe ===
+        //  [Auth] Token validated
+        //  [DB] Fetching user ID
+        //  [DB] Loading profile for ID=42
+        //Loaded: Profile{id=42, name=&#x27;Bob&#x27;}
+        System.out.println();
+    }
+}
+
+/*
+&quot;C:\Program Files\Java\jdk-25\bin\java.exe&quot; -Dvaadin.copilot.pluginDotFilePath=C:\Users\roman\Work\claude\projects\RxJava\.idea\.copilot-plugin &quot;-javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.3.1\lib\idea_rt.jar=55734&quot; -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -classpath C:\Users\roman\Work\claude\projects\RxJava\target\classes;C:\Users\roman\.m2\repository\io\reactivex\rxjava3\rxjava\3.1.9\rxjava-3.1.9.jar;C:\Users\roman\.m2\repository\org\reactivestreams\reactive-streams\1.0.4\reactive-streams-1.0.4.jar tutorial._10_SingleMaybeCompletable
+=== Single.just ===
+Success: 42
+
+=== Single.error ===
+Error: Query failed
+
+=== Single.fromCallable ===
+Fetched: User{id=1, name=&#x27;Alice&#x27;}
+
+=== Single.flatMap (chain two Singles) ===
+Result: User #1 → Alice (verified)
+
+=== Maybe.just ===
+onSuccess: Found it!
+
+=== Maybe.empty ===
+onComplete (empty)
+
+=== Maybe.error ===
+onError: Invalid ID
+
+=== Maybe from Observable.firstElement ===
+First even: 4
+No even found
+
+=== Completable.fromAction ===
+  [Action] Saving to database...
+Save completed successfully
+
+=== Completable.andThen ===
+  Step 1: validate input
+  Step 2: persist data
+  Step 3: fetch confirmation
+Final result: Confirmation #12345
+
+=== Completable chain with error ===
+Chain failed: Permission denied
+
+=== Real-world chain: Completable → Single → Maybe ===
+  [Auth] Token validated
+  [DB] Fetching user ID
+  [DB] Loading profile for ID=42
+Loaded: Profile{id=42, name=&#x27;Bob&#x27;}
+
+
+Process finished with exit code 0
+
+ */</code></pre>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<script>
+hljs.highlightAll();
+function toggleCard(h){const b=h.nextElementSibling,btn=h.querySelector('.toggle-btn'),c=b.classList.toggle('collapsed');btn.textContent=c?'\u25b6 Show':'\u25bc Hide';}
+function showAll(){document.querySelectorAll('.card-body').forEach(b=>{b.classList.remove('collapsed');b.closest('.card').querySelector('.toggle-btn').textContent='\u25bc Hide';});}
+function collapseAll(){document.querySelectorAll('.card-body').forEach(b=>{b.classList.add('collapsed');b.closest('.card').querySelector('.toggle-btn').textContent='\u25b6 Show';});}
+const psbInput=document.getElementById('psb-input'),psbCount=document.getElementById('psb-count');
+let marks=[],currentIdx=-1;
+function clearMarks(){document.querySelectorAll('mark.sh,mark.sh-current').forEach(m=>m.parentNode.replaceChild(document.createTextNode(m.textContent),m));document.querySelectorAll('.card-body code').forEach(c=>c.normalize());marks=[];currentIdx=-1;}
+function findAll(term){clearMarks();if(!term.trim()){updateCount();return;}const lower=term.toLowerCase();document.querySelectorAll('.card-body code').forEach(code=>{const walker=document.createTreeWalker(code,NodeFilter.SHOW_TEXT);const nodes=[];let n;while((n=walker.nextNode()))nodes.push(n);nodes.forEach(node=>{const text=node.textContent,ltxt=text.toLowerCase();let pos=0,start;const frags=[];while((start=ltxt.indexOf(lower,pos))!==-1){if(start>pos)frags.push(document.createTextNode(text.slice(pos,start)));const m=document.createElement('mark');m.className='sh';m.textContent=text.slice(start,start+term.length);frags.push(m);marks.push(m);pos=start+term.length;}if(frags.length){if(pos<text.length)frags.push(document.createTextNode(text.slice(pos)));node.replaceWith(...frags);}});});updateCount();}
+function goTo(idx){if(!marks.length)return;if(currentIdx>=0)marks[currentIdx].className='sh';currentIdx=((idx%marks.length)+marks.length)%marks.length;marks[currentIdx].className='sh-current';const body=marks[currentIdx].closest('.card-body');if(body&&body.classList.contains('collapsed')){body.classList.remove('collapsed');body.closest('.card').querySelector('.toggle-btn').textContent='\u25bc Hide';}marks[currentIdx].scrollIntoView({behavior:'smooth',block:'center'});updateCount();}
+function nextMatch(){if(marks.length)goTo(currentIdx+1);}
+function prevMatch(){if(marks.length)goTo(currentIdx-1);}
+function updateCount(){const v=psbInput.value.trim();if(!v){psbCount.textContent='';return;}psbCount.textContent=marks.length===0?'0 matches':(currentIdx+1)+' / '+marks.length;document.getElementById('psb-prev').disabled=marks.length===0;document.getElementById('psb-next').disabled=marks.length===0;}
+function applyCardFilter(term){const lower=term.trim().toLowerCase();let shown=0;document.querySelectorAll('.card').forEach(card=>{const has=!lower||card.querySelector('code').textContent.toLowerCase().includes(lower);card.classList.toggle('hidden-by-search',!has);if(has)shown++;});document.getElementById('match-info').textContent=lower?(shown===0?'No match':shown+' card'+(shown>1?'s':'')+' match'):'';}
+function runPageSearch(){const term=psbInput.value;applyCardFilter(term);findAll(term);if(marks.length)goTo(0);}
+function clearPageSearch(){psbInput.value='';clearMarks();applyCardFilter('');psbCount.textContent='';document.getElementById('psb-prev').disabled=true;document.getElementById('psb-next').disabled=true;document.getElementById('match-info').textContent='';}
+function copySearch(){if(psbInput.value)navigator.clipboard.writeText(psbInput.value);}
+psbInput.addEventListener('input',runPageSearch);
+psbInput.addEventListener('keydown',function(e){if(e.key==='Enter'){e.shiftKey?prevMatch():nextMatch();}if(e.key==='Escape')clearPageSearch();});
+window.addEventListener('message',function(e){if(!e.data||e.data.type!=='page-search')return;psbInput.value=e.data.term||'';runPageSearch();});
+</script>
+</body>
+</html>

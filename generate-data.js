@@ -330,6 +330,26 @@ function getCommentsTxt(projectDir) {
   return safeRead(path.join(projectDir, 'comments.txt'));
 }
 
+// Recursively copy a directory
+function copyDirRecursive(src, dest) {
+  fs.mkdirSync(dest, { recursive: true });
+  for (const entry of fs.readdirSync(src)) {
+    const s = path.join(src, entry);
+    const d = path.join(dest, entry);
+    if (fs.statSync(s).isDirectory()) copyDirRecursive(s, d);
+    else fs.copyFileSync(s, d);
+  }
+}
+
+// Copy html_preview/ into previews/<uid>/ and return relative path, or null
+function copyHtmlPreview(projectDir, uid) {
+  const src = path.join(projectDir, 'html_preview');
+  if (!fs.existsSync(path.join(src, 'index.html'))) return null;
+  const dest = path.join(OUTPUT_DIR, 'previews', uid);
+  copyDirRecursive(src, dest);
+  return norm(path.join('previews', uid, 'index.html'));
+}
+
 // Copy screenshots into screens/<uid>/ and return relative paths
 function getScreenshots(projectDir, uid) {
   const files = safeDir(projectDir)
@@ -436,7 +456,7 @@ function buildProject(dir, name, uid) {
     examples:    getExamples(dir, uid),
     screenshots: getScreenshots(dir, uid),
     github:      getGitOrigin(dir),
-    htmlPreview: fs.existsSync(path.join(dir, 'html_preview', 'index.html')),
+    htmlPreview: copyHtmlPreview(dir, uid),
   };
 }
 

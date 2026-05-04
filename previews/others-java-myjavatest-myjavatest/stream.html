@@ -1,0 +1,2320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stream - Java Preview</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── sticky header panel ── */
+    #page-header {
+      flex-shrink: 0;
+      background: #f0f2f5;
+      padding: 16px 20px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    h1 { color: #2d3748; margin-bottom: 10px; font-size: 1.3rem; }
+
+    /* ── toolbar (show/collapse all) ── */
+    .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .toolbar button {
+      padding: 5px 13px; border: none; border-radius: 5px; cursor: pointer;
+      font-size: 0.82rem; font-weight: 600; transition: background 0.15s;
+    }
+    .btn-show { background: #3182ce; color: #fff; }
+    .btn-show:hover { background: #2b6cb0; }
+    .btn-hide { background: #718096; color: #fff; }
+    .btn-hide:hover { background: #4a5568; }
+    .match-info { font-size: 0.82rem; color: #718096; margin-left: 4px; }
+
+    /* ── page search bar ── */
+    .page-search-bar {
+      display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+      background: #fff; border: 1px solid #cbd5e0; border-radius: 7px;
+      padding: 6px 12px;
+    }
+    .page-search-bar input {
+      flex: 1; min-width: 160px; padding: 5px 8px;
+      border: 1px solid #cbd5e0; border-radius: 5px;
+      font-size: 0.85rem; outline: none; color: #2d3748;
+    }
+    .page-search-bar input:focus { border-color: #63b3ed; }
+    .psb-btn {
+      padding: 5px 11px; border: 1px solid #cbd5e0; border-radius: 5px;
+      background: #f7fafc; cursor: pointer; font-size: 0.8rem;
+      color: #4a5568; transition: background 0.12s;
+    }
+    .psb-btn:hover { background: #e2e8f0; }
+    .psb-btn:disabled { opacity: 0.4; cursor: default; }
+    .psb-clear {
+      padding: 5px 9px; border: 1px solid #cbd5e0; border-radius: 5px;
+      background: #f7fafc; cursor: pointer; font-size: 0.85rem;
+      color: #718096; transition: background 0.12s;
+    }
+    .psb-clear:hover { background: #fed7d7; color: #c53030; border-color: #fc8181; }
+    .psb-count { font-size: 0.8rem; color: #718096; white-space: nowrap; min-width: 60px; }
+
+    /* ── highlight marks ── */
+    mark.sh { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 1px; }
+    mark.sh-current { background: #f97316; color: #fff; border-radius: 2px; padding: 0 1px; }
+
+    /* ── scrollable cards area ── */
+    #cards-container {
+      flex: 1; overflow-y: auto;
+      padding: 20px;
+    }
+
+    .card { background: #fff; border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: hidden; }
+    .card.hidden-by-search { display: none; }
+
+    .card-header {
+      background: #2d3748; color: #e2e8f0;
+      padding: 9px 14px;
+      display: flex; align-items: center; gap: 10px; cursor: pointer;
+      user-select: none;
+    }
+    .card-header:hover { background: #3a4a5c; }
+    .card-header .filename { font-size: 0.9rem; font-weight: 700; flex: 1; }
+    .card-header .path { color: #a0aec0; font-size: 0.78rem; }
+    .card-header .toggle-btn {
+      background: none; border: 1px solid #4a5568; border-radius: 4px;
+      color: #a0aec0; font-size: 0.75rem; padding: 2px 8px; cursor: pointer;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .card-header .toggle-btn:hover { border-color: #63b3ed; color: #63b3ed; }
+
+    .card-body { display: block; }
+    .card-body.collapsed { display: none; }
+
+    pre { margin: 0; overflow-x: auto; }
+    pre code.hljs { font-size: 13px; line-height: 1.5; padding: 16px !important; }
+  </style>
+</head>
+<body>
+  <div id="page-header">
+    <h1>Stream</h1>
+    <div class="toolbar">
+      <button class="btn-show" onclick="showAll()">&#9660; Show all</button>
+      <button class="btn-hide" onclick="collapseAll()">&#9654; Collapse all</button>
+      <span class="match-info" id="match-info"></span>
+    </div>
+    <div class="page-search-bar">
+      <input id="psb-input" type="text" placeholder="&#128269; Search in code&hellip;" autocomplete="off">
+      <button class="psb-btn" id="psb-prev" onclick="prevMatch()" disabled title="Previous (Shift+Enter)">&#9650; Prev</button>
+      <button class="psb-btn" id="psb-next" onclick="nextMatch()" disabled title="Next (Enter)">&#9660; Next</button>
+      <button class="psb-clear" onclick="clearPageSearch()" title="Clear (Esc)">&#x2715;</button>
+      <span class="psb-count" id="psb-count"></span>
+    </div>
+  </div>
+  <div id="cards-container">
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Footballer.java</span>
+        <span class="path">Footballer.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.stream;
+
+import java.util.List;
+
+public class Footballer {
+    private String name;
+    private int age;
+    private Gender gender;
+    private List&lt;String&gt; positions;
+
+    public Footballer(String name, int age, Gender gender, List&lt;String&gt; positions) {
+        this.name = name;
+        this.age = age;
+        this.gender = gender;
+        this.positions = positions;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public Gender getGender() {
+        return gender;
+    }
+
+    public void setGender(Gender gender) {
+        this.gender = gender;
+    }
+
+    public List&lt;String&gt; getPositions() {
+        return positions;
+    }
+
+    public void setPositions(List&lt;String&gt; positions) {
+        this.positions = positions;
+    }
+
+//    @Override
+//    public String toString() {
+//        return &quot;Footballer{&quot; +
+//                &quot;name=&#x27;&quot; + name + &#x27;\&#x27;&#x27; +
+//                &quot;, age=&quot; + age +
+//                &quot;, gender=&quot; + gender +
+//                &quot;, clubs=&quot; + clubs +
+//                &#x27;}&#x27;;
+//    }
+
+    @Override
+    public String toString() {
+        return &quot;{ &quot; + name + &quot;,&quot; + age + &quot;,&quot; + gender + &quot;,&quot; + positions + &quot; }&quot;;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Fruit.java</span>
+        <span class="path">Fruit.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.stream;
+
+public class Fruit {
+    private String name;
+    private FruitCategory category;
+    private double price;
+
+    public Fruit(String name, FruitCategory category, double price) {
+        this.name = name;
+        this.category = category;
+        this.price = price;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public FruitCategory getCategory() {
+        return category;
+    }
+
+    public void setCategory(FruitCategory category) {
+        this.category = category;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public void setPrice(double price) {
+        this.price = price;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;Fruit{&quot; +
+                &quot;name=&#x27;&quot; + name + &#x27;\&#x27;&#x27; +
+                &quot;, category=&quot; + category +
+                &quot;, price=&quot; + price +
+                &#x27;}&#x27;;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">FruitCategory.java</span>
+        <span class="path">FruitCategory.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.stream;
+
+public enum FruitCategory {
+    NonSweet,
+    SubAcid,
+    Sweet,
+    Acid,
+    Nightshades
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Gender.java</span>
+        <span class="path">Gender.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.stream;
+
+public enum Gender {
+    MALE,
+    FEMALE
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Product.java</span>
+        <span class="path">Product.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.stream;
+
+public class Product {
+    int price;
+    String name;
+
+    public Product(int price, String name) {
+        this.price = price;
+        this.name = name;
+    }
+
+    public int getPrice() {
+        return price;
+    }
+
+    public void setPrice(int price) {
+        this.price = price;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;Product{&quot; +
+                &quot;price=&quot; + price +
+                &quot;, name=&#x27;&quot; + name + &#x27;\&#x27;&#x27; +
+                &#x27;}&#x27;;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Student.java</span>
+        <span class="path">Student.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.stream;
+
+public class Student {
+    int roll;
+    int marks;
+    String name;
+
+    Student(int r, String n, int m)
+    {
+        roll = r;
+        name = n;
+        marks = m;
+    }
+
+    int getRoll() {
+        return roll;
+    }
+
+    String getName() {
+        return name;
+    }
+
+    int getMarks() { return marks; }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">TestStream.java</span>
+        <span class="path">TestStream.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.stream;
+
+import org.apache.commons.lang3.ArrayUtils;
+
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+/**
+ * Collection&lt;String&gt; collection = Arrays.asList(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;);
+ * Stream&lt;String&gt; streamOfCollection = collection.stream();
+ *
+ * Stream&lt;String&gt; streamOfArray = Stream.of(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;);
+ *
+ * String[] arr = new String[]{&quot;a&quot;, &quot;b&quot;, &quot;c&quot;};
+ * Stream&lt;String&gt; streamOfArrayFull = Arrays.stream(arr);
+ * Stream&lt;String&gt; streamOfArrayPart = Arrays.stream(arr, 1, 3);
+ *
+ * Stream&lt;String&gt; streamBuilder = Stream.&lt;String&gt;builder().add(&quot;a&quot;).add(&quot;b&quot;).add(&quot;c&quot;).build();
+ *
+ * Stream&lt;String&gt; streamGenerated = Stream.generate(() -&gt; &quot;element&quot;).limit(10);
+ *
+ * Stream&lt;Integer&gt; streamIterated = Stream.iterate(40, n -&gt; n + 2).limit(20);
+ *
+ * IntStream intStream = IntStream.range(1, 3);
+ * LongStream longStream = LongStream.rangeClosed(1, 3);
+ * DoubleStream doubleStream = new Random().doubles(3);
+ * IntStream streamOfChars = &quot;abc&quot;.chars();
+ *
+ * Stream&lt;String&gt; streamOfString = Pattern.compile(&quot;, &quot;).splitAsStream(&quot;a, b, c&quot;);
+ */
+public class TestStream {
+    public static void main(String[] args) {
+        int[] arr = { 30, 20, 10 };
+
+        System.out.println(&quot;sum=&quot; + Arrays.stream(arr).sum()); // sum=60
+        System.out.println(&quot;max=&quot; + Arrays.stream(arr).max()); // max=OptionalInt[30]
+        System.out.println(&quot;max=&quot; + Arrays.stream(arr).max().getAsInt()); // max=30
+        System.out.println(&quot;average=&quot; + Arrays.stream(arr).average()); // average=OptionalDouble[20.0]
+        System.out.println(&quot;average=&quot; + Arrays.stream(arr).average().getAsDouble()); // average=20.0
+
+        // Print first N natural numbers with given digit d
+        Stream.iterate(1, x -&gt; x + 1)
+                .filter(x -&gt; x.toString().contains(&quot;5&quot;))
+                .limit(10)
+                .forEach(System.out::println);
+        /*
+        5
+        15
+        25
+        35
+        45
+        50
+        51
+        52
+        53
+        54
+        */
+
+        Iterator&lt;Integer&gt; iter1 = Stream.iterate(1, x -&gt; x + 1)
+                .filter(x -&gt; x.toString().contains(&quot;5&quot;))
+                .limit(10).iterator();
+        while (iter1.hasNext()) {
+            System.out.println(&quot;iter1.next()=&quot; + iter1.next());
+        }
+        /*
+        iter1.next()=5
+        iter1.next()=15
+        iter1.next()=25
+        iter1.next()=35
+        iter1.next()=45
+        iter1.next()=50
+        iter1.next()=51
+        iter1.next()=52
+        iter1.next()=53
+        iter1.next()=54
+        */
+
+        List&lt;Integer&gt; list1 = Stream.iterate(1, x -&gt; x + 1)
+                .filter(x -&gt; x.toString().contains(&quot;5&quot;))
+                .limit(10).toList();
+        System.out.println(&quot;list1=&quot; + list1); // list1=[5, 15, 25, 35, 45, 50, 51, 52, 53, 54]
+
+        // Strings That Begin with &#x27;a&#x27; and End with &#x27;c&#x27;
+        String[] arr2 = { &quot;abc&quot;, &quot;cde&quot;, &quot;ac&quot;, &quot;aec&quot;, &quot;xy3&quot; };
+        Arrays.stream(arr2)
+                .filter(x -&gt; x.startsWith(&quot;a&quot;))
+                .filter(x -&gt; x.endsWith(&quot;c&quot;))
+                .sorted()
+                .forEach(System.out::println);
+        // abc
+        // ac
+        // aec
+
+        // Average Marks for Students
+        Student[] students = {
+                new Student(110, &quot;abc&quot;, 70),
+                new Student(101, &quot;bcd&quot;, 80),
+                new Student(120, &quot;xyz&quot;, 60) };
+
+        double res = Arrays.stream(students)
+                .mapToInt(x -&gt; x.getMarks())
+                .average()
+                .getAsDouble();
+        System.out.println(&quot;Average Marks for Students=&quot; + res); // Average Marks for Students=70.0
+
+        double res2 = Arrays.stream(students)
+                .mapToInt(Student::getMarks)
+                .average()
+                .getAsDouble();
+        System.out.println(&quot;Average Marks for Students 2 =&quot; + res2); // Average Marks for Students 2 =70.0
+
+        // Collect() method to convert a stream of Student objects into a map, where the student&#x27;s roll number is the key, and the student&#x27;s name is the value.
+        Map&lt;Integer, String&gt; studentsMap = Arrays.stream(students)
+                .collect(Collectors.toMap(Student::getRoll, Student::getName));
+        for (Map.Entry&lt;Integer, String&gt; ent : studentsMap.entrySet()) {
+            System.out.println(ent.getKey() + &quot; &quot; + ent.getValue());
+        }
+        // 101 bcd
+        // 120 xyz
+        // 110 abc
+
+        // Group students by their marks using the groupingBy() collector.
+        // It creates a map where the key is the marks, and the value is a list of students with those marks.
+        Student[] students2 = {
+                new Student(178, &quot;abc&quot;, 70),
+                new Student(171, &quot;xyz&quot;, 50) };
+        Student[] studentsAll = ArrayUtils.addAll(students, students2);
+        Map&lt;Integer, List&lt;Student&gt; &gt; map
+                = Arrays.stream(studentsAll).collect(
+                Collectors.groupingBy(Student::getMarks));
+
+        for (Map.Entry&lt;Integer, List&lt;Student&gt; &gt; ent :
+                map.entrySet()) {
+            List&lt;Student&gt; ls = ent.getValue();
+            System.out.print(ent.getKey() + &quot;: &quot;);
+            ls.stream().forEach(
+                    x
+                            -&gt; System.out.print(&quot;{&quot; + x.getRoll() + &quot;, &quot;
+                            + x.getName() + &quot;, &quot;
+                            + x.getMarks() + &quot;} &quot;));
+            // 80: {101, bcd, 80}
+            // 50: {171, xyz, 50}
+            // 70: {110, abc, 70} {178, abc, 70}
+            // 60: {120, xyz, 60}
+        }
+    }
+
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">TestStream2.java</span>
+        <span class="path">TestStream2.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.stream;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+import static java.util.Comparator.comparing;
+import static java.util.Comparator.reverseOrder;
+
+public class TestStream2 {
+    public static void main(String[] args) {
+
+        // finding all the even values in a List&lt;Integer&gt;
+        var numbers = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        var evenNumbers = new ArrayList&lt;Integer&gt;();
+
+        for (Integer number : numbers) {
+            if (number % 2 == 0) {
+                evenNumbers.add(number);
+            }
+        }
+        System.out.println(&quot;evenNumbers=&quot; + evenNumbers); // evenNumbers=[2, 4, 6, 8, 10]
+
+        // The code sample uses control flow structures with for and if statements.
+        // There’s nothing wrong with this approach, but we can do better with streams
+        var evenNumbers2 = numbers.stream()
+                .filter(number -&gt; number % 2 == 0)
+                .toList();
+        System.out.println(&quot;evenNumbers2=&quot; + evenNumbers2); // evenNumbers2=[2, 4, 6, 8, 10]
+
+        var names = Arrays.asList(&quot;Maarten&quot;, &quot;Marit&quot;, &quot;Mala&quot;);
+        var khalid = names.stream()
+                .filter(n -&gt; n.equals(&quot;Khalid&quot;))
+                .findFirst();
+        System.out.println(&quot;khalid=&quot; + khalid); // khalid=Optional.empty
+
+        var maarten = names.stream()
+                .filter(n -&gt; n.equals(&quot;Maarten&quot;))
+                .findFirst();
+        System.out.println(&quot;maarten=&quot; + maarten); // maarten=Optional[Maarten]
+
+        Optional&lt;String&gt; name = Optional.empty();
+        System.out.println(name.isEmpty()); // true
+        System.out.println(name.isPresent()); // false
+        System.out.println(name.orElse(&quot;Khalid&quot;)); // &quot;Khalid&quot;
+        // System.out.println(name.get()); // Exception in thread &quot;main&quot; java.util.NoSuchElementException: No value present
+
+        System.out.println(&quot;\n - - - Fruit - - -&quot;);
+        List&lt;Fruit&gt; fruits = Arrays.asList(
+                new Fruit(&quot;Avocado&quot;, FruitCategory.NonSweet, 10.0),
+                new Fruit(&quot;Cucumbers&quot;, FruitCategory.NonSweet, 1.0),
+                new Fruit(&quot;Apple&quot;, FruitCategory.SubAcid, 2.0),
+                new Fruit(&quot;Mango&quot;, FruitCategory.SubAcid, 5.0),
+                new Fruit(&quot;Peach&quot;, FruitCategory.SubAcid, 7.0),
+                new Fruit(&quot;Banana&quot;, FruitCategory.Sweet, 2.0),
+                new Fruit(&quot;Fig&quot;, FruitCategory.Sweet, 8.0),
+                new Fruit(&quot;Papaya&quot;, FruitCategory.Sweet, 12.0),
+                new Fruit(&quot;Grapefruit&quot;, FruitCategory.Acid, 7.0),
+                new Fruit(&quot;Kiwi&quot;, FruitCategory.Acid, 12.0),
+                new Fruit(&quot;Pineapple&quot;, FruitCategory.Acid, 14.0),
+                new Fruit(&quot;Tomato&quot;, FruitCategory.Nightshades, 1.0),
+                new Fruit(&quot;Eggplant&quot;, FruitCategory.Nightshades, 2.0),
+                new Fruit(&quot;Habanero&quot;, FruitCategory.Nightshades, 1.0),
+                new Fruit(&quot;Jalapeno&quot;, FruitCategory.Nightshades, 1.0)
+        );
+
+        var onlyNames = fruits.stream()
+                .map(Fruit::getName)
+                .toList();
+        System.out.println(&quot;onlyNames=&quot; + onlyNames);
+        // onlyNames=[Avocado, Cucumbers, Apple, Mango, Peach, Banana, Fig, Papaya, Grapefruit, Kiwi, Pineapple, Tomato, Eggplant, Habanero, Jalapeno]
+
+        var onlyPrices = fruits.stream()
+                .map(Fruit::getPrice)
+                .toList();
+        System.out.println(&quot;onlyPrices=&quot; + onlyPrices);
+        // onlyPrices=[10.0, 1.0, 2.0, 5.0, 7.0, 2.0, 8.0, 12.0, 7.0, 12.0, 14.0, 1.0, 2.0, 1.0, 1.0]
+
+        // we wanted to apply a 20% discount to all the prices
+        var discountedFruits = fruits.stream()
+                .map(f -&gt; new Fruit(f.getName(), f.getCategory(), f.getPrice() * 0.8))
+                .toList();
+        System.out.println(&quot;discountedFruits=&quot; + discountedFruits);
+
+        // skip, which allows you to iterate past a specified number of elements.
+        var skipFive = fruits.stream().skip(5).toList();
+        System.out.println(&quot;skipFive=&quot; + skipFive);
+        // skipFive=[Fruit{name=&#x27;Banana&#x27;, category=Sweet, price=2.0}, Fruit{name=&#x27;Fig&#x27;, category=Sweet, price=8.0}, ...
+
+        // limit method allows you to retrieve a set number of elements.
+        var onlyFive = fruits.stream().limit(5).toList();
+        System.out.println(&quot;onlyFive=&quot; + onlyFive);
+        //onlyFive=[Fruit{name=&#x27;Avocado&#x27;, category=NonSweet, price=10.0}, ... , category=SubAcid, price=5.0}, Fruit{name=&#x27;Peach&#x27;, category=SubAcid, price=7.0}},
+
+        // use the static methods of comparing and reverseOrder, which you can apply to order the values from highest to lowest.
+        var highestToLowest = fruits.stream()
+                .sorted(comparing(Fruit::getPrice, reverseOrder()))
+                .toList();
+        System.out.println(&quot;highestToLowest=&quot; + highestToLowest);
+        // highestToLowest=[Fruit{name=&#x27;Pineapple&#x27;, category=Acid, price=14.0}, Fruit{name=&#x27;Papaya&#x27;, category=Sweet, price=12.0}, ...
+
+        // These methods can be combined to page through any collection and are especially useful in large datasets.
+        int pageSize = 5;
+        int currentPage = 1;
+        var highestToLowest2 = fruits.stream()
+                .sorted(comparing(Fruit::getPrice, reverseOrder()))
+                .skip((currentPage - 1) * pageSize)
+                .limit(pageSize)
+                .toList();
+        System.out.println(&quot;highestToLowest2=&quot; + highestToLowest2);
+        // currentPage = 1 : highestToLowest2=[Fruit{name=&#x27;Pineapple&#x27;, category=Acid, price=14.0}, Fruit{name=&#x27;Papaya&#x27;, category=Sweet, price=12.0}, ...
+        // currentPage = 2 : highestToLowest2=[Fruit{name=&#x27;Peach&#x27;, category=SubAcid, price=7.0}, Fruit{name=&#x27;Grapefruit&#x27;, category=Acid, price=7.0}, ...
+
+        List&lt;Double&gt; priceList = fruits.stream()
+                .map(Fruit::getPrice)
+                .toList(); // terminate stream
+        System.out.println(&quot;priceList=&quot; + priceList);
+        // priceList=[10.0, 1.0, 2.0, 5.0, 7.0, 2.0, 8.0, 12.0, 7.0, 12.0, 14.0, 1.0, 2.0, 1.0, 1.0]
+
+        // a new stream from List&lt;Double&gt;
+        double total = priceList.stream()
+                .mapToDouble(Double::valueOf)
+                .sum(); // terminate new stream
+        System.out.println(&quot;total=&quot; + total); // total=85.0
+
+        /** Java Stream Queries */
+        System.out.println(&quot;\n - - - Java Stream Queries - - -&quot;);
+
+        // Let’s say we need to find the first fruit priced over 10.0 in the Acid category.
+        var expensiveAcid = fruits.stream()
+                .filter(f -&gt; f.getPrice() &gt; 10.0 &amp;&amp; f.getCategory() == FruitCategory.Acid)
+                .findFirst();
+        System.out.println(&quot;expensiveAcid=&quot; + expensiveAcid); // expensiveAcid=Optional[Fruit{name=&#x27;Kiwi&#x27;, category=Acid, price=12.0}]
+
+        // We can use the method anyMatch to determine if any elements exist that match a predicate, with a boolean informing us of the result.
+        var hasExpensiveAcid = fruits.stream()
+                .anyMatch(f -&gt; f.getPrice() &gt; 10.0 &amp;&amp; f.getCategory() == FruitCategory.Acid);
+        System.out.println(&quot;hasExpensiveAcid=&quot; + hasExpensiveAcid); // hasExpensiveAcid=true
+
+        // You may use the methods of allMatch to see if all elements match a particular criteria.
+        var nothingIsFree = fruits.stream()
+                .allMatch(f -&gt; f.getPrice() &gt; 0.0);
+        System.out.println(&quot;nothingIsFree=&quot; + nothingIsFree); // nothingIsFree=true
+
+        /** Reducing values in Java Streams */
+        System.out.println(&quot;\n - - - Reducing values in Java Streams - - -&quot;);
+
+        var acidicTotalCount = fruits.stream()
+                .filter(f -&gt; f.getCategory() == FruitCategory.Acid)
+                .count();
+        System.out.println(&quot;acidicTotalCount=&quot; + acidicTotalCount); // acidicTotalCount=3
+
+        var averagePrice = fruits.stream()
+                .mapToDouble(Fruit::getPrice)
+                .average();
+        System.out.println(&quot;averagePrice=&quot; + averagePrice); // averagePrice=OptionalDouble[5.666666666666667]
+
+        var sum = fruits.stream()
+                .mapToDouble(Fruit::getPrice)
+                .sum();
+        System.out.println(&quot;sum=&quot; + sum); // sum=85.0
+
+        var min = fruits.stream()
+                .mapToDouble(Fruit::getPrice)
+                .min();
+        System.out.println(&quot;min=&quot; + min); // min=OptionalDouble[1.0]
+
+        var max = fruits.stream()
+                .mapToDouble(Fruit::getPrice)
+                .max();
+        System.out.println(&quot;max=&quot; + max); // max=OptionalDouble[14.0]
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">TestStream3.java</span>
+        <span class="path">TestStream3.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.stream;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+public class TestStream3 {
+    public static void main(String[] args) {
+        // https://medium.com/@anil.goyal0057/mastering-java-streams-25-hands-on-examples-45d56ba52cf2
+
+        // Question 1: Given a list of integers, find the k most frequent elements.
+
+        // let&#x27;s see how groupingBy works - It takes the first argument which is a classifier function to classify the
+        // elements of the stream. The input is T which is stream element and output is K which is key of the Map.
+        // n-&gt;n means the element itself is the key.
+
+        // The second argument is a downstream collector which is applied to the values associated with a given key.
+        // It returns a Collector that accepts elements of type T, A -&gt; Intermediate accumulation type used internally
+        // by the downstream collector and produces a result of type D.
+        List&lt;Integer&gt; numbers = List.of(1, 1, 1, 2, 2, 3, 3, 3, 3, 4, 5, 5, 5, 5, 5);
+        int k = 2;
+        numbers.stream()
+                // group and count occurrences
+                .collect(Collectors.groupingBy(n -&gt; n, Collectors.counting()))
+                // convert map to stream of map entry
+                .entrySet().stream()
+                // Sort entries by count in descending order
+                .sorted((e1, e2) -&gt; e2.getValue().compareTo(e1.getValue()))
+                // Take only top &#x27;k&#x27; entries
+                .limit(k)
+                // Print result
+                .forEach(e -&gt; System.out.println(e.getKey() + &quot; appears &quot; + e.getValue() + &quot; times&quot;));
+
+        /** Output:
+         5 appears 5 times
+         3 appears 4 times **/
+
+        // Question 2: Find the second most frequent element
+        List&lt;Integer&gt; numberList = List.of(1, 2, 2, 3, 3, 3, 4, 4, 4, 4);
+        numberList.stream()
+                // group and count occurrences
+                .collect(Collectors.groupingBy(n -&gt; n, Collectors.counting()))
+                // Convert the Map into a Stream of Map.Entry&lt;Integer, Long&gt;
+                .entrySet().stream()
+                // Sort entries by frequency (value) in descending order
+                .sorted((e1, e2) -&gt; e2.getValue().compareTo(e1.getValue()))
+                // Skip the first entry (most frequent element)
+                .skip(1)
+                // Get the second entry (second most frequent element)
+                .findFirst()
+                // Print the result if present
+                .ifPresent(e -&gt; System.out.println(
+                        &quot;Second most frequent: &quot; + e.getKey() + &quot; appears &quot; + e.getValue() + &quot; times&quot;));
+
+        /** Output:
+         Second most frequent: 3 appears 3 times
+         **/
+
+        // Question 3: Merge two list into one using flatmap
+        List&lt;Integer&gt; list1 = List.of(1, 2, 3);
+        List&lt;Integer&gt; list2 = List.of(4, 5, 6);
+        // create a stream where each element is a list
+        List&lt;Integer&gt; collect = Stream.of(list1, list2)
+                // for each element i.e. List&lt;Integer&gt;, it creates a stream of that list i.e. Stream&lt;Integer&gt;
+                // and then flatten those inner streams into one continuous stream
+                .flatMap(Collection::stream)
+                // Collect results into a List&lt;Integer&gt;
+                .toList();
+        System.out.println(collect);
+        /** Output:
+         [1, 2, 3, 4, 5, 6]
+         **/
+        /**
+         * flatMap
+         * Returns a stream consisting of the results of replacing each element of this stream
+         * with the contents of a mapped stream produced by applying the provided mapping function to each element.
+         * Each mapped stream is closed after its contents have been placed into this stream.
+         * (If a mapped stream is null an empty stream is used, instead.)
+         */
+
+        // Question 4: Find common elements from two lists using streams
+        List&lt;Integer&gt; list3 = List.of(1, 2, 3);
+        List&lt;Integer&gt; list4 = List.of(3, 4, 5);
+        // create a stream of list3
+        list3.stream()
+                // filter elements that are also in list4
+                .filter(list4::contains)
+                // print each common element
+                .forEach(System.out::println);
+
+        /** Output:
+         3
+         **/
+
+        // Question 5: Convert a list of strings to a map with string lengths as values
+        List&lt;String&gt; strings = List.of(&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;);
+        strings.stream()
+                // Collectors.toMap takes two functions - first function is for key and second function is for value
+                // If duplicate keys occur, toMap() throws IllegalStateException
+                .collect(Collectors.toMap(s -&gt; s, String::length))
+                // Iterate through the map and print key-value pairs
+                .forEach((key, value) -&gt; System.out.println(key + &quot; has length &quot; + value));
+
+        /** Output:
+         banana has length 6
+         apple has length 5
+         cherry has length 6
+         **/
+
+        // Question 6: Calculate the sum, product, min and max of all integers in a list
+        List&lt;Integer&gt; nums = List.of(1, 2, 3, 4);
+        Integer reduceSum = nums.stream()
+                // reduce() is used when we want to combine all elements of a stream into a single value (e.g., sum,
+                // product, minimum, maximum, concatenation).
+                // The first argument is the identity value (1 for multiplication, 0 for sum). The second argument is a
+                // accumulator i.e. Function that combines the current result (a) with the next element (b)
+                // For identity version: Always return a value (but may be just the identity if stream is empty).
+                // No identity version: Return an Optional describing the reduced value, if any.
+                .reduce(0, Integer::sum);
+        System.out.println(&quot;reduceSum=&quot; + reduceSum); // reduceSum=10
+
+        Integer reduceProduct = nums.stream()
+                .reduce(1, (a, b) -&gt; a * b);
+        System.out.println(&quot;reduceProduct=&quot; + reduceProduct); // reduceProduct=24
+
+        Integer reduceMax = nums.stream()
+                .reduce(Integer::max).orElse(Integer.MIN_VALUE);
+        System.out.println(&quot;reduceMax=&quot; + reduceMax); // reduceMax=4
+
+        Integer reduceMin = nums.stream()
+                .reduce(Integer::min).orElse(Integer.MAX_VALUE);
+        System.out.println(&quot;reduceMin=&quot; + reduceMin); // reduceMin=1
+
+        List&lt;String&gt; givenWords = List.of(&quot;Java&quot;, &quot;Streams&quot;, &quot;are&quot;, &quot;powerful&quot;);
+        String reduceString = givenWords.stream()
+                .reduce(String::concat).orElse(&quot;&quot;);
+        System.out.println(&quot;reduceString=&quot; + reduceString); // reduceString=JavaStreamsarepowerful
+
+        /** Output:
+         reduceSum=10
+         reduceProduct=24
+         reduceMax=4
+         reduceMin=1
+         reduceString=JavaStreamsarepowerful
+         **/
+
+        // Question 7: Filter out non-prime numbers using streams
+        List&lt;Integer&gt; numList = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        List&lt;Integer&gt; collect1 = numList.stream()
+                // we are excluding 1 because 1 is neither prime nor composite. No need to check divisors beyond sqrt(n)
+                // because if n has a factor greater than sqrt(n), it must also have one smaller than sqrt(n).
+                // Ensures no number in the range divides n evenly. if none divides n, then n is prime.
+                .filter(n -&gt; n &gt; 1 &amp;&amp; IntStream.rangeClosed(2, (int) Math.sqrt(n)).noneMatch(i -&gt; n % i == 0))
+                .collect((Collectors.toList()));
+        System.out.println(collect1);
+
+        /** Output:
+         [2, 3, 5, 7]
+         **/
+
+        // Question 8: Partition strings by length: short (&lt;5), medium (5-10), long (&gt;10)
+        List&lt;String&gt; words = List.of(&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;, &quot;date&quot;, &quot;fig&quot;, &quot;grapefruit&quot;, &quot;kiwi&quot;);
+        words.stream()
+                // Takes a classification function to decide the key which is either &quot;short&quot;, &quot;medium&quot; or &quot;long&quot;
+                // Uses a downstream collector (second argument, optional). If not provided, defaults to Collectors .toList().
+                .collect(Collectors.groupingBy(word -&gt; {
+                    if (word.length() &lt; 5) return &quot;short&quot;;
+                    else if (word.length() &lt;= 10) return &quot;medium&quot;;
+                    else return &quot;long&quot;;
+                }))
+                .forEach((key, value) -&gt; System.out.println(key + &quot;: &quot; + value));
+
+        /** Output:
+         * short: [date, fig, kiwi]
+         * medium: [apple, banana, cherry, grapefruit]
+         */
+
+
+        // Question 9: Find repeating characters in a string
+        String input = &quot;programming&quot;;
+        // input.chars() returns an IntStream of Unicode code points (integers), not char objects.
+        // .mapToObj(c -&gt; (char) c) converts each int code point to its corresponding Character object and now we have
+        // a Stream&lt;Character&gt;.
+        List&lt;Character&gt; collect2 = input.chars().mapToObj(c -&gt; (char) c)
+                // Groups characters by themselves (c -&gt; c) and counts their occurrences.
+                .collect(Collectors.groupingBy(c -&gt; c, Collectors.counting()))
+                .entrySet().stream()
+                // Filters out characters that appear more than once (i.e., repeating characters).
+                .filter(e -&gt; e.getValue() &gt; 1)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+        System.out.println(collect2);
+
+        /**
+         * Output:
+         * [r, g, m]
+         */
+
+        // Question 10: Find the first recurring element in a list
+        List&lt;Integer&gt; nums1 = List.of(1, 2, 3, 4, 5, 3, 6, 7);
+        nums1.stream()
+                // if the index of first occurrence is not equal to index of last occurrence, it means the element is
+                // repeating
+                .filter(n -&gt; nums1.indexOf(n) != nums1.lastIndexOf(n))
+                .findFirst()
+                .ifPresent(System.out::println);
+
+        /**
+         * Output:
+         * 3
+         */
+
+        // Question 11: Find longest common prefix of a list of strings
+        List&lt;String&gt; stringList = List.of(&quot;flower&quot;, &quot;flow&quot;, &quot;flight&quot;);
+        String prefix = stringList.stream()
+                // reduce combine elements pair wise using the given lambda. Here we are comparing two strings
+                // flower and flow and the output string is flow. Then flow is compared with flight and the output
+                // string is fl which is the longest common prefix
+                .reduce((s1, s2) -&gt; {
+                    int i = 0;
+                    while (i &lt; s1.length() &amp;&amp; i &lt; s2.length() &amp;&amp; s1.charAt(i) == s2.charAt(i)) {
+                        i++;
+                    }
+                    return s1.substring(0, i);
+                }).orElse(&quot;&quot;);
+        System.out.println(prefix);
+
+        /**
+         * Output:
+         * fl
+         */
+
+        // Question 12: Create a map of initials to concatenated names
+        List&lt;String&gt; names = List.of(&quot;Alice&quot;, &quot;Anil&quot;, &quot;Bob&quot;, &quot;Charlie&quot;, &quot;David&quot;, &quot;Eve&quot;, &quot;Frank&quot;);
+        Map&lt;Character, String&gt; initialsMap = names.stream()
+                // Here the classifier function is name -&gt; name.charAt(0) which extracts the first character of each
+                // name to be used as the key in the resulting map.
+                // The downstream collector is Collectors.joining(&quot;, &quot;) which concatenates all names that share the same
+                // initial into a single string, separated by commas.
+                .collect(Collectors.groupingBy(name -&gt; name.charAt(0), Collectors.joining(&quot;, &quot;)));
+        initialsMap.forEach((initial, nameList) -&gt; System.out.println(initial + &quot;: &quot; + nameList));
+        /**
+         * Output:
+         * A: Alice, Anil
+         * B: Bob
+         * C: Charlie
+         * D: David
+         * E: Eve
+         * F: Frank
+         */
+
+        // Question 13: Find the longest word in a list of strings
+        List&lt;String&gt; wordList = List.of(&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;, &quot;date&quot;, &quot;fig&quot;, &quot;grapefruit&quot;, &quot;kiwi&quot;);
+        // convert the given list into Stream&lt;String&gt;
+        wordList.stream()
+                // reduce takes a binary operator which takes two strings and returns the longer string
+                // and repeat this for all pairs of elements in the stream
+                .reduce((s1, s2) -&gt; s1.length() &gt;= s2.length() ? s1 : s2)
+                .ifPresent(System.out::println);
+        /**
+         * Output:
+         * grapefruit
+         */
+
+        // Question 14: Find the shortest word in a list of strings
+        // Convert the list into a stream using wordList.stream()
+        wordList.stream()
+                // reduce() takes a binary operator: a function that combines two elements into one.
+                // It compares two strings (s1 and s2) and returns the shorter one. Repeat for all pairs in the stream.
+                // Since no identity is provided, reduce() returns an Optional&lt;String&gt;.
+                // ifPresent() prints the shortest word if the list is not empty.
+                .reduce((s1, s2) -&gt; s1.length() &lt;= s2.length() ? s1 : s2)
+                .ifPresent(System.out::println);
+        /**
+         * Output:
+         * fig
+         */
+
+        // Question 15: Find the average length of strings in a list
+        // convert List&lt;String&gt; into a Stream&lt;String&gt;
+        wordList.stream()
+                // This will convert each string in the stream to its length (int) and produce an IntStream
+                .mapToInt(String::length)
+                // Calculate the average of the lengths in the IntStream. Returns an OptionalDouble.
+                .average()
+                // If the average is present (i.e., the list was not empty), print it.
+                .ifPresent(avg -&gt; System.out.println(&quot;Average length: &quot; + avg));
+        /**
+         * Output:
+         * Average length: 5.428571428571429
+         */
+
+        // Question 16: Find the sum of lengths of all strings in a list
+        // Converts the List&lt;String&gt; into a Stream&lt;String&gt;
+        int totalLength = wordList.stream()
+                // Maps each string to its length, producing an IntStream of lengths
+                .mapToInt(String::length)
+                .sum();
+        System.out.println(&quot;Total length: &quot; + totalLength);
+        /**
+         * Output:
+         * Total length: 38
+         */
+
+        // Question 17: Find the count of strings that start with a specific letter
+        long count = wordList.stream()
+                // keeps only strings that start with the letter &#x27;a&#x27;
+                .filter(s -&gt; s.startsWith(&quot;a&quot;))
+                // counts the number of elements in the filtered stream
+                .count();
+        System.out.println(&quot;Total count: &quot; + count);
+        /**
+         * Output:
+         * Total count: 1
+         */
+
+        // Question 18: Find the distinct strings in a list
+        List&lt;String&gt; duplicatesList = List.of(&quot;apple&quot;, &quot;banana&quot;, &quot;apple&quot;, &quot;cherry&quot;, &quot;banana&quot;, &quot;date&quot;);
+        List&lt;String&gt; distinctList = duplicatesList.stream()
+                // distinct() filters out duplicate elements, keeping only unique ones
+                .distinct()
+                // Collects the unique elements into a new List&lt;String&gt;
+                .toList();
+        System.out.println(distinctList);
+        /**
+         * Output:
+         * [apple, banana, cherry, date]
+         */
+
+        // Question 19: Find the second longest word in a list of strings
+        // Converts the list of String into Stream&lt;String&gt;
+        wordList.stream()
+                // Sort the strings in descending order based on their lengths
+                .sorted((s1, s2) -&gt; Integer.compare(s2.length(), s1.length()))
+                // skips the first element (longest word)
+                .skip(1)
+                // retrieves the next element (second longest word) if it exists
+                .findFirst()
+                // prints the second longest word if present
+                .ifPresent(System.out::println);
+        /**
+         * Output:
+         * banana
+         */
+
+        // Question 20: Identify anagrams in a list of strings
+        List&lt;String&gt; anagrams = List.of(&quot;listen&quot;, &quot;silent&quot;, &quot;enlist&quot;, &quot;inlets&quot;, &quot;google&quot;, &quot;gooogle&quot;);
+        // what is anagram? An anagram is a word or phrase formed by rearranging the letters of a different word or
+        // phrase, typically using all the original letters exactly once.
+        Map&lt;String, List&lt;String&gt;&gt; anagramMap = anagrams.stream()
+                // here we need to do groupingBy because anagrams will have the same key when sorted
+                // And the downstream collector is Collectors.toList() which collects all anagrams into a list
+                .collect(Collectors.groupingBy(word -&gt; {
+                    char[] chars = word.toCharArray();
+                    java.util.Arrays.sort(chars);
+                    return new String(chars);
+                }));
+        // Print only those lists which have more than one anagram
+        anagramMap.values().stream()
+                .filter(list -&gt; list.size() &gt; 1)
+                .forEach(System.out::println);
+        /**
+         * Output:
+         * [listen, silent, enlist, inlets]
+         */
+
+        // Question 21: Remove consecutive duplicates from a list using streams
+        List&lt;Integer&gt; consecutiveList = List.of(1, 1, 2, 2, 3, 3, 3, 4, 4, 5);
+        // Here we are creating an index stream from 0 to size of the list
+        List&lt;Integer&gt; result = IntStream.range(0, consecutiveList.size())
+                // always keep the first element or keep the element if it is not equal to the previous element
+                .filter(i -&gt; i == 0 || !consecutiveList.get(i).equals(consecutiveList.get(i - 1)))
+                .mapToObj(consecutiveList::get)
+                .toList();
+        System.out.println(result);
+        /**
+         * Output:
+         * [1, 2, 3, 4, 5]
+         */
+
+        // Question 22: Group words by their length
+        List&lt;String&gt; wordsList = List.of(&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;, &quot;date&quot;, &quot;fig&quot;, &quot;grapefruit&quot;, &quot;kiwi&quot;);
+        // Converts the list into a Stream&lt;String&gt;
+        Map&lt;Integer, List&lt;String&gt;&gt; collect3 = wordsList.stream()
+                // Groups the strings by their lengths (String::length) and collects them into lists
+                .collect(Collectors.groupingBy(String::length, Collectors.toList()));
+        collect3.forEach((length, wordGroup) -&gt; System.out.println(length + &quot;: &quot; + wordGroup));
+        /**
+         * Output:
+         * 3: [fig]
+         * 4: [date, kiwi]
+         * 5: [apple]
+         * 6: [banana, cherry]
+         * 10: [grapefruit]
+         */
+
+        // Question 23: Partition numbers into even and odd
+        List&lt;Integer&gt; evenAndOddList = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        Map&lt;Boolean, List&lt;Integer&gt;&gt; isEvenToListOfNumbersMapping = evenAndOddList.stream()
+                // partition divides elements into two groups based on a predicate (here n -&gt; n % 2 == 0)
+                // true key will have even numbers and false key will have odd numbers
+                .collect(Collectors.partitioningBy(n -&gt; n % 2 == 0));
+        isEvenToListOfNumbersMapping.forEach(
+                (isEven, numberedList) -&gt; System.out.println(isEven + &quot;: &quot; + numberedList));
+        /**
+         * Output:
+         * false: [1, 3, 5, 7, 9]
+         * true: [2, 4, 6, 8, 10]
+         */
+
+        // Question 24: Group by length and count words in each group
+        List&lt;String&gt; wordsList1 = List.of(&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;, &quot;date&quot;, &quot;fig&quot;, &quot;grapefruit&quot;, &quot;kiwi&quot;);
+        Map&lt;Integer, Long&gt; lengthToCountMap = wordsList1.stream()
+                // groups words by their length and counts how many words fall into each group.
+                .collect(Collectors.groupingBy(String::length, Collectors.counting()));
+        lengthToCountMap.forEach((length, count1) -&gt; System.out.println(length + &quot;: &quot; + count1));
+        /**
+         * Output:
+         * 3: 1
+         * 4: 2
+         * 5: 1
+         * 6: 2
+         * 10: 1
+         */
+
+        // Question 25: Batch process a large stream in fixed-size chunks (e.g., 100 items each)
+        List&lt;Integer&gt; largeList = IntStream.rangeClosed(1, 1000).boxed().toList();
+        int batchSize = 100;
+        for (int i = 0; i &lt; batchSize; i++) {
+            List&lt;Integer&gt; batch = largeList.stream()
+                    .skip(i * batchSize)
+                    .limit(batchSize)
+                    .toList();
+            if (batch.isEmpty()) {
+                break;
+            }
+            System.out.println(&quot;Processing batch &quot; + (i + 1) + &quot;: &quot; + batch);
+        }
+        /**
+         * Output:
+         *Processing batch 1: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100]
+         * Processing batch 2: [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200]
+         * Processing batch 3: [201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300]
+         * Processing batch 4: [301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400]
+         * Processing batch 5: [401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 419, 420, 421, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432, 433, 434, 435, 436, 437, 438, 439, 440, 441, 442, 443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474, 475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493, 494, 495, 496, 497, 498, 499, 500]
+         * Processing batch 6: [501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 519, 520, 521, 522, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 552, 553, 554, 555, 556, 557, 558, 559, 560, 561, 562, 563, 564, 565, 566, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 579, 580, 581, 582, 583, 584, 585, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595, 596, 597, 598, 599, 600]
+         * Processing batch 7: [601, 602, 603, 604, 605, 606, 607, 608, 609, 610, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625, 626, 627, 628, 629, 630, 631, 632, 633, 634, 635, 636, 637, 638, 639, 640, 641, 642, 643, 644, 645, 646, 647, 648, 649, 650, 651, 652, 653, 654, 655, 656, 657, 658, 659, 660, 661, 662, 663, 664, 665, 666, 667, 668, 669, 670, 671, 672, 673, 674, 675, 676, 677, 678, 679, 680, 681, 682, 683, 684, 685, 686, 687, 688, 689, 690, 691, 692, 693, 694, 695, 696, 697, 698, 699, 700]
+         * Processing batch 8: [701, 702, 703, 704, 705, 706, 707, 708, 709, 710, 711, 712, 713, 714, 715, 716, 717, 718, 719, 720, 721, 722, 723, 724, 725, 726, 727, 728, 729, 730, 731, 732, 733, 734, 735, 736, 737, 738, 739, 740, 741, 742, 743, 744, 745, 746, 747, 748, 749, 750, 751, 752, 753, 754, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 766, 767, 768, 769, 770, 771, 772, 773, 774, 775, 776, 777, 778, 779, 780, 781, 782, 783, 784, 785, 786, 787, 788, 789, 790, 791, 792, 793, 794, 795, 796, 797, 798, 799, 800]
+         * Processing batch 9: [801, 802, 803, 804, 805, 806, 807, 808, 809, 810, 811, 812, 813, 814, 815, 816, 817, 818, 819, 820, 821, 822, 823, 824, 825, 826, 827, 828, 829, 830, 831, 832, 833, 834, 835, 836, 837, 838, 839, 840, 841, 842, 843, 844, 845, 846, 847, 848, 849, 850, 851, 852, 853, 854, 855, 856, 857, 858, 859, 860, 861, 862, 863, 864, 865, 866, 867, 868, 869, 870, 871, 872, 873, 874, 875, 876, 877, 878, 879, 880, 881, 882, 883, 884, 885, 886, 887, 888, 889, 890, 891, 892, 893, 894, 895, 896, 897, 898, 899, 900]
+         * Processing batch 10: [901, 902, 903, 904, 905, 906, 907, 908, 909, 910, 911, 912, 913, 914, 915, 916, 917, 918, 919, 920, 921, 922, 923, 924, 925, 926, 927, 928, 929, 930, 931, 932, 933, 934, 935, 936, 937, 938, 939, 940, 941, 942, 943, 944, 945, 946, 947, 948, 949, 950, 951, 952, 953, 954, 955, 956, 957, 958, 959, 960, 961, 962, 963, 964, 965, 966, 967, 968, 969, 970, 971, 972, 973, 974, 975, 976, 977, 978, 979, 980, 981, 982, 983, 984, 985, 986, 987, 988, 989, 990, 991, 992, 993, 994, 995, 996, 997, 998, 999, 1000]
+         */
+
+        // Question 26: Create a time-windowed stream from timestamped events
+        /*List&lt;Event&gt; events = List.of(
+                new Event(1620000000000L, &quot;Login&quot;),
+                new Event(1620000000100L, &quot;Click&quot;),
+                new Event(1620000060000L, &quot;Purchase&quot;), // + 1 min
+                new Event(1620000120000L, &quot;Logout&quot;)   // + 2 min
+        );
+        Map&lt;Long, List&lt;Event&gt;&gt; windows = events.stream()
+                // groupingBy classifier function divides events into time windows of 1 minute (60000 ms)
+                // e.getTimestamp() / 60000 gives the minute window for each event
+                // downstream collector is Collectors.toList() which collects events in the same window into a list
+                .collect(Collectors.groupingBy(e -&gt; e.getTimestamp() / 60000)); // Group by minute
+        windows.forEach((window, eventList) -&gt; {
+            System.out.println(
+                    &quot;Window starting at &quot; + (window * 60000) + &quot;: &quot; + eventList.stream().map(Event::getName).toList());
+        });*/
+        /**
+         * Output:
+         * Window starting at 1620000120000: [Logout]
+         * Window starting at 1620000060000: [Purchase]
+         * Window starting at 1620000000000: [Login, Click]
+         */
+
+        // Question 27: Partition Strings Based on Uppercase Start
+        List&lt;String&gt; mixedCaseWords = List.of(&quot;Apple&quot;, &quot;banana&quot;, &quot;Cherry&quot;, &quot;date&quot;, &quot;Elderberry&quot;, &quot;fig&quot;, &quot;Grape&quot;);
+        // partitioningBy is used when there are only two groups based on a predicate
+        // Character.isUpperCase(word.charAt(0)) checks if the first character of the word is uppercase
+        // The result is a Map&lt;Boolean, List&lt;String&gt;&gt; where true key has words starting with uppercase and false key
+        // has words starting with lowercase
+        Map&lt;Boolean, List&lt;String&gt;&gt; collect3b = mixedCaseWords.stream().collect(Collectors.partitioningBy(word -&gt; Character.isUpperCase(word.charAt(0))));
+        System.out.println(&quot;* collect3b : &quot; + collect3b);
+        // * collect3b : {false=[banana, date, fig], true=[Apple, Cherry, Elderberry, Grape]}
+
+        System.out.println(&quot;* Question 27&quot;);
+        mixedCaseWords.stream().collect(Collectors.partitioningBy(word -&gt; Character.isUpperCase(word.charAt(0))))
+                .forEach((isUppercase, wordGroup) -&gt; System.out.println(isUppercase + &quot;: &quot; + wordGroup));
+        /**
+         * Output:
+         * false: [banana, date, fig]
+         * true: [Apple, Cherry, Elderberry, Grape]
+         */
+
+        // Question 28: Partition Characters into Vowels &amp; Consonants
+        List&lt;Character&gt; characters = List.of(&#x27;a&#x27;, &#x27;b&#x27;, &#x27;e&#x27;, &#x27;f&#x27;, &#x27;i&#x27;, &#x27;j&#x27;, &#x27;o&#x27;, &#x27;p&#x27;, &#x27;u&#x27;, &#x27;v&#x27;);
+        Map&lt;Boolean, List&lt;Character&gt;&gt; collect4 = characters.stream()
+                // here we are using partitioningBy because there are only two groups - vowels and consonants
+                // aeiou.indexOf(...) &gt;= 0 checks if the character is a vowel (true) or consonant (false)
+                // return Map&lt;Boolean, List&lt;Character&gt;&gt;
+                .collect(Collectors.partitioningBy(ch -&gt; &quot;aeiou&quot;.indexOf(Character.toLowerCase(ch)) &gt;= 0));
+        collect4.forEach((isVowel, charGroup) -&gt; System.out.println(isVowel + &quot;: &quot; + charGroup));
+        /**
+         * Output:
+         * true: [a, e, i, o, u]
+         * false: [b, f, j, p, v]
+         */
+    }
+
+    /*static class Event {
+        private final long timestamp;
+        private final String name;
+
+        Event(long timestamp, String name) {
+            this.timestamp = timestamp;
+            this.name = name;
+        }
+
+        public long getTimestamp() {
+            return timestamp;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }*/
+
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">TestStream4.java</span>
+        <span class="path">TestStream4.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.stream;
+
+import org.apache.commons.lang3.reflect.TypeUtilsTest;
+
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+public class TestStream4 {
+    public static void main(String[] args) {
+        // https://gist.github.com/tahniat-ashraf/a03c2545adf0c5fbc339568b2a756846
+
+        List&lt;Footballer&gt; footballers = getFootballers();
+        //  System.out.println(&quot;footballers=&quot; + footballers);
+        System.out.println(&quot;footballers.size()=&quot; + footballers.size()); // footballers.size()=8
+
+        // The ‘filter’ method is used to eliminate elements based on a criteria.
+        List&lt;Footballer&gt; collect = footballers.stream()
+                .filter(footballer -&gt; footballer.getGender().equals(Gender.FEMALE))
+                .filter(footballer -&gt; footballer.getAge() &gt; 23)
+                .toList();
+        System.out.println(&quot;collect=&quot; + collect);
+        // collect=[{ Jennifer,29,FEMALE,[CF, CAM] }, { Alexia,25,FEMALE,[CAM, RF, LF] }]
+
+        /* map() produces a new stream after applying a function to each element of the original stream.
+           The new stream could be of different type.*/
+        long femalesMoreThan24y= footballers.stream()
+                .filter(footballer -&gt; footballer.getGender().equals(Gender.FEMALE))
+                .map(Footballer::getAge)
+                .filter(age -&gt; age &gt; 24)
+                .count();
+        System.out.println(&quot;femalesMoreThan24y = &quot; + femalesMoreThan24y);
+        // femalesMoreThan24y = 2
+
+        /* A stream can hold complex data structures like Stream&lt;List&gt;.
+            In cases like this, flatMap() helps us to flatten the data structure to simplify further operations. */
+        String allPositionsOfMaleLessThan30y = footballers.stream()
+                .filter(footballer -&gt; footballer.getGender().equals(Gender.MALE))
+                .filter(footballer -&gt; footballer.getAge() &lt; 30)
+                .map(Footballer::getPositions)
+                .flatMap(Collection::stream)
+                .collect(Collectors.joining(&quot;,&quot;));
+
+        System.out.println(&quot;allPositionsOfMaleLessThan30y = &quot; + allPositionsOfMaleLessThan30y);
+        // allPositionsOfMaleLessThan30y = CF,CAM,LF,CM,CAM,GK,CM,CDM
+
+         /* Returns distinct elements in the stream, eliminating duplicates.
+             It uses the equals() method of the elements to decide whether two elements are equal or not. */
+         String allUniquePositionsOfMaleLessThan30y = footballers.stream()
+                .filter(footballer -&gt; footballer.getGender().equals(Gender.MALE))
+                .filter(footballer -&gt; footballer.getAge() &lt; 30)
+                .map(Footballer::getPositions)
+                .flatMap(Collection::stream)
+                .distinct()
+                .collect(Collectors.joining(&quot;,&quot;));
+
+        System.out.println(&quot;allUniquePositionsOfMaleLessThan30y = &quot; + allUniquePositionsOfMaleLessThan30y);
+        // allUniquePositionsOfMaleLessThan30y = CF,CAM,LF,CM,GK,CDM
+
+         /* TypeUtilsTest.The ‘sorted’ method is used to sort the stream. */
+         List&lt;Footballer&gt;  sortByGenderAndName= footballers.stream()
+                .sorted(Comparator.comparing(Footballer::getGender).thenComparing(Footballer::getName))
+                .toList();
+        System.out.println(&quot;sortByGenderAndName = &quot; + sortByGenderAndName);
+        // sortByGenderAndName = [
+        // { Arthur,23,MALE,[CM, CAM] },
+        // { Griezmann,28,MALE,[CF, CAM, LF] },
+        // { Messi,32,MALE,[CF, CAM, RF] },
+        // { Puig,20,MALE,[CM, CDM] },
+        // { Ter Stegen,27,MALE,[GK] },
+        // { Alexia,25,FEMALE,[CAM, RF, LF] },
+        // { Jana,17,FEMALE,[CB] },
+        // { Jennifer,29,FEMALE,[CF, CAM] }]
+
+        /* Peek - It performs the specified operation on each element of the stream and returns a new stream which can be used further. */
+        long malePlayerCount = footballers.stream()
+                .filter(footballer -&gt; footballer.getGender().equals(Gender.MALE))
+                .sorted(Comparator.comparing(Footballer::getAge))
+                .peek(footballer -&gt; {
+                    System.out.println(&quot;footballer = &quot; + footballer);
+                })
+                .count();
+        System.out.println(&quot;malePlayerCount = &quot; + malePlayerCount);
+//        prints
+//        footballer = Footballer{name=&#x27;Puig&#x27;, age=20, gender=MALE, positions=[CM, CDM]}
+//        footballer = Footballer{name=&#x27;Arthur&#x27;, age=23, gender=MALE, positions=[CM, CAM]}
+//        footballer = Footballer{name=&#x27;Ter Stegen&#x27;, age=27, gender=MALE, positions=[GK]}
+//        footballer = Footballer{name=&#x27;Griezmann&#x27;, age=28, gender=MALE, positions=[CF, CAM, LF]}
+//        footballer = Footballer{name=&#x27;Messi&#x27;, age=32, gender=MALE, positions=[CF, CAM, RF]}
+//        malePlayerCount = 5
+
+        /* The ‘limit’ method is used to reduce the size of the stream. */
+        List&lt;Footballer&gt; twoMaleFootballers = footballers.stream()
+                .filter(footballer -&gt; footballer.getGender().equals(Gender.MALE))
+                .limit(2)
+                .toList();
+        // 
+        //twoMaleFootballers = [
+        // Footballer{name=&#x27;Messi&#x27;, age=32, gender=MALE, positions=[CF, CAM, RF]}, 
+        // Footballer{name=&#x27;Griezmann&#x27;, age=28, gender=MALE, positions=[CF, CAM, LF]}]
+
+        /* Skip */
+        List&lt;Footballer&gt;  sortByGenderAndNameSkipping5= footballers.stream()
+                .sorted(Comparator.comparing(Footballer::getGender).thenComparing(Footballer::getName))
+                .skip(5)
+                .toList();
+        // (prettified)
+        //sortByGenderAndNameSkipping5 = [
+        //Footballer{name=&#x27;Alexia&#x27;, age=25, gender=FEMALE, positions=[CAM, RF, LF]}, 
+        //Footballer{name=&#x27;Jana&#x27;, age=17, gender=FEMALE, positions=[CB]}, 
+        //Footballer{name=&#x27;Jennifer&#x27;, age=29, gender=FEMALE, positions=[CF, CAM]}]
+        //Note : See the above mentioned Sorted example for comparison
+
+        /* Take While */
+        //Normal Filter - Returns a stream consisting of the elements of this stream that match the given predicate.
+        List&lt;Integer&gt; filteredList = Stream.of(2, 4, 6, 8, 9, 10, 11, 12)
+                .filter(n -&gt; n % 2 == 0)
+                .toList();
+        System.out.println(&quot;filteredList = &quot; + filteredList);
+        // filteredList = [2, 4, 6, 8, 10, 12]
+
+        //Take, While ...Returns, if this stream is ordered, a stream consisting of the longest prefix of elements
+        // taken from this stream that match the given predicate.
+        // Otherwise returns, if this stream is unordered, a stream consisting of a subset of elements
+        // taken from this stream that match the given predicate.
+        List&lt;Integer&gt; takeAWhile = Stream.of(2, 4, 6, 8, 9, 10, 11, 12)
+                .takeWhile(n -&gt; n % 2 == 0)
+                .toList();
+        System.out.println(&quot;takeAWhile = &quot; + takeAWhile);
+        // takeAWhile = [2, 4, 6, 8]
+
+        List&lt;Integer&gt; takeAWhile2 = Stream.of(12, 4, 7, 8, 10, 6, 2, 9)
+                .takeWhile(n -&gt; n % 2 == 0)
+                .toList();
+        System.out.println(&quot;takeAWhile2 = &quot; + takeAWhile2); // takeAWhile2 = [12, 4]
+
+        /* Drop While */
+        List&lt;Integer&gt; dropWhile = Stream.of(2, 4, 6, 8, 9, 10, 11, 12)
+                .dropWhile(n -&gt; n % 2 == 0)
+                .toList();
+        System.out.println(&quot;dropWhile = &quot; + dropWhile);
+        // dropWhile = [9, 10, 11, 12]
+
+        /* Count */
+        long femalesMoreThan24y2= footballers.stream()
+                .filter(footballer -&gt; footballer.getGender().equals(Gender.FEMALE))
+                .map(Footballer::getAge)
+                .filter(age -&gt; age &gt; 24)
+                .count();
+
+        System.out.println(&quot;femalesMoreThan24y2 = &quot; + femalesMoreThan24y2);
+        // femalesMoreThan24y = 2
+
+        /* For Each - It loops over the stream elements, calling the supplied function on each element. */
+        System.out.println(&quot;- For Each -&quot;);
+        Stream.of(4,1,6,7,19,2,3,81,64)
+                .parallel()
+                .filter(number -&gt; number&lt;65)
+                .forEach(number -&gt; System.out.println(&quot;number = &quot; + number));
+        //number = 2
+        //number = 19
+        //number = 3
+        //number = 4
+        //number = 6
+        //number = 7
+        //number = 1
+        //number = 64
+
+        /* For Each Ordered */
+        System.out.println(&quot;- For Each Ordered -&quot;);
+        Stream.of(4,1,6,7,19,2,3,81,64)
+                .parallel()
+                .filter(number -&gt; number&lt;65)
+                .forEachOrdered(number -&gt; System.out.println(&quot;number = &quot; + number));
+        //number = 4
+        //number = 1
+        //number = 6
+        //number = 7
+        //number = 19
+        //number = 2
+        //number = 3
+        //number = 64
+
+        /* To Array - If we need to get an array out of the stream, we can simply use toArray(). */
+                Footballer[] femaleFootballers = footballers.stream()
+                .filter(footballer -&gt; footballer.getGender().equals(Gender.FEMALE))
+                .toArray(Footballer[]::new);
+
+        System.out.println(&quot;femaleFootballers = &quot; + Arrays.asList(femaleFootballers));
+        // femaleFootballers = [{ Jennifer,29,FEMALE,[CF, CAM] }, { Jana,17,FEMALE,[CB] }, { Alexia,25,FEMALE,[CAM, RF, LF] }]
+
+        /* Min - Returns the minimum element in the stream. */
+        Integer minAge = footballers.stream()
+                .min(Comparator.comparing(Footballer::getAge))
+                .map(Footballer::getAge)
+                .get();
+        System.out.println(&quot;min age = &quot; + minAge);
+        // min age = 17
+
+        /* Max - Returns the maximum element in the stream. */
+        Integer maxAge = footballers.stream()
+                .max(Comparator.comparing(Footballer::getAge))
+                .map(Footballer::getAge)
+                .get();
+        System.out.println(&quot;max age = &quot; + maxAge);
+        // max age = 32
+
+        /* anyMatch() checks if the predicate is true for any one element in the stream. */
+        boolean anyMatch = footballers
+                .stream()
+                .anyMatch(footballer -&gt; footballer.getAge() &gt; 25);
+        System.out.println(&quot;anyMatch = &quot; + anyMatch);
+        // anyMatch = true
+
+        /* allMatch() checks if the predicate is true for all the elements in the stream. */
+        boolean allMatch = footballers.stream()
+                .allMatch(footballer -&gt; footballer.getAge() &gt; 25);
+        System.out.println(&quot;allMatch = &quot; + allMatch);
+        // allMatch = false
+
+        /* noneMatch() checks if there are no elements matching the predicate. */
+        boolean noneMatch = footballers.stream()
+                .noneMatch(footballer -&gt; footballer.getAge() &gt; 100);
+        System.out.println(&quot;noneMatch = &quot; + noneMatch);
+        // noneMatch = true
+
+        /* findFirst() returns an Optional for the first entry in the stream; the Optional can, of course, be empty. */
+        Integer findFirst = List.of(4, 1, 3, 7, 5, 6, 2, 28, 15, 29)
+                .parallelStream()
+                .filter(number -&gt; number &gt; 5)
+                .findFirst()
+                .get();
+        System.out.println(&quot;findFirst = &quot; + findFirst);
+        // findFirst = 7
+
+        /* Find Any */
+        Integer findAny = List.of(4, 1, 3, 7, 5, 6, 2, 28, 15, 29)
+                .parallelStream()
+                .filter(number -&gt; number &gt; 5)
+                .findAny()
+                .get();
+        System.out.println(&quot;findAny = &quot; + findAny);
+        // findAny = 28 ... 6
+
+        Optional&lt;Integer&gt; findAny2 = List.of(4, 1, 3, 7, 5, 6, 2, 28, 15, 29)
+                .parallelStream()
+                .filter(number -&gt; number &gt; 5)
+                .findAny();
+        System.out.println(&quot;findAny2 = &quot; + findAny2);// findAny2 = Optional[6]
+        findAny2.ifPresent(System.out::println); // 6
+
+        /* Reduce */
+        Optional&lt;String&gt; longestName = footballers.stream()
+                .map(Footballer::getName)
+                .reduce((name1, name2)
+                        -&gt; name1.length() &gt; name2.length()
+                        ? name1 : name2);
+        System.out.println(&quot;* Reduce&quot;);
+        longestName.ifPresent(System.out::println);
+        // Ter Stegen
+
+        /* Collect */
+        List&lt;Footballer&gt; collect2 = footballers.stream()
+                .filter(footballer -&gt; footballer.getGender().equals(Gender.FEMALE))
+                .filter(footballer -&gt; footballer.getAge() &gt; 23)
+                .toList();
+        System.out.println(&quot;collect2 = &quot; + collect2);
+        // collect2 = [{ Jennifer,29,FEMALE,[CF, CAM] }, { Alexia,25,FEMALE,[CAM, RF, LF] }]
+
+    }
+
+    private static List&lt;Footballer&gt; getFootballers() {
+        return List.of(
+                new Footballer(&quot;Messi&quot;, 32, Gender.MALE, List.of(&quot;CF&quot;,&quot;CAM&quot;, &quot;RF&quot;)),
+                new Footballer(&quot;Griezmann&quot;, 28, Gender.MALE, List.of(&quot;CF&quot;, &quot;CAM&quot;, &quot;LF&quot;)),
+                new Footballer(&quot;Arthur&quot;, 23, Gender.MALE, List.of(&quot;CM&quot;, &quot;CAM&quot;)),
+                new Footballer(&quot;Ter Stegen&quot;, 27, Gender.MALE, List.of(&quot;GK&quot;)),
+                new Footballer(&quot;Puig&quot;, 20, Gender.MALE, List.of(&quot;CM&quot;, &quot;CDM&quot;)),
+                new Footballer(&quot;Jennifer&quot;, 29, Gender.FEMALE, List.of(&quot;CF&quot;, &quot;CAM&quot;)),
+                new Footballer(&quot;Jana&quot;, 17, Gender.FEMALE, List.of(&quot;CB&quot;)),
+                new Footballer(&quot;Alexia&quot;, 25, Gender.FEMALE, List.of(&quot;CAM&quot;, &quot;RF&quot;, &quot;LF&quot;))
+        );
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">TestStream5.java</span>
+        <span class="path">TestStream5.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.stream;
+
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.regex.Pattern;
+import java.util.stream.*;
+
+public class TestStream5 {
+    // https://www.baeldung.com/java-8-streams
+    public static void main(String[] args) {
+
+        /* 2.1. Empty Stream
+         * We should use the empty() method in case of the creation of an empty stream:
+         */
+        Stream&lt;String&gt; streamEmpty = Stream.empty();
+        System.out.println(&quot;streamEmpty.count() = &quot; + streamEmpty.count());
+        // streamEmpty.count() = 0
+
+        // We often use the empty() method upon creation to avoid returning null for streams with no element:
+        System.out.println(&quot;streamOf(null).count() = &quot; + streamOf(null).count());
+        System.out.println(&quot;streamOf(Arrays.asList()).count() = &quot; + streamOf(Arrays.asList()).count());
+        System.out.println(&quot;streamOf(List.of()).count() = &quot; + streamOf(List.of()).count());
+        System.out.println(&quot;streamOf(null).count() = &quot; + streamOf(Arrays.asList(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;)).count());
+        // streamOf(null).count() = 0
+        // streamOf(Arrays.asList()).count() = 0
+        // streamOf(List.of()).count() = 0
+        // streamOf(null).count() = 3
+
+        /*
+         * 2.2. Stream of Collection
+         * We can also create a stream of any type of Collection (Collection, List, Set):
+         */
+        Collection&lt;String&gt; collection = Arrays.asList(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;);
+        Stream&lt;String&gt; streamOfCollection = collection.stream();
+        printStreamString(&quot;streamOfCollection&quot;, streamOfCollection);
+        // printStreamString - streamOfCollection : a,b,c
+
+        /*
+         * 2.3. Stream of Array
+         * An array can also be the source of a stream:
+         */
+        Stream&lt;String&gt; streamOfArray = Stream.of(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;);
+// System.out.println(&quot;streamOfArray = &quot; + streamOfArray);
+        printStreamString(&quot;streamOfArray&quot;, streamOfArray);
+        // printStreamString - streamOfArray : a,b,c
+
+        // We can also create a stream out of an existing array or of part of an array:
+        String[] arr = new String[]{&quot;a&quot;, &quot;b&quot;, &quot;c&quot;};
+        Stream&lt;String&gt; streamOfArrayFull = Arrays.stream(arr);
+// System.out.println(&quot;streamOfArrayFull = &quot; + streamOfArrayFull);
+        printStreamString(&quot;streamOfArrayFull&quot;, streamOfArrayFull);
+        // printStreamString - streamOfArrayFull : a,b,c
+
+        Stream&lt;String&gt; streamOfArrayPart = Arrays.stream(arr, 1, 3);
+// System.out.println(&quot;streamOfArrayPart = &quot; + streamOfArrayPart);
+        printStreamString(&quot;streamOfArrayPart&quot;, streamOfArrayPart);
+        // printStreamString - streamOfArrayPart : b,c
+
+        /*
+         * 2.4. Stream.builder()
+         * When builder is used, the desired type should be additionally specified in the right part of the statement,
+         * otherwise the build() method will create an instance of the Stream&lt;Object&gt;:
+         */
+        Stream&lt;String&gt; streamBuilder = Stream.&lt;String&gt;builder().add(&quot;a&quot;).add(&quot;b&quot;).add(&quot;c&quot;).build();
+// System.out.println(&quot;streamBuilder = &quot; + streamBuilder);
+        printStreamString(&quot;streamBuilder&quot;, streamBuilder);
+        // printStreamString - streamBuilder : a,b,c
+
+        /*
+         * 2.5. Stream.generate()
+         * The generate() method accepts a Supplier&lt;T&gt; for element generation. As the resulting stream is infinite,
+         * the developer should specify the desired size, or the generate() method will work until it reaches the memory limit:
+         */
+        Stream&lt;String&gt; streamGenerated = Stream.generate(() -&gt; &quot;element&quot;).limit(10);
+// System.out.println(&quot;streamGenerated = &quot; + streamGenerated);
+        printStreamString(&quot;streamGenerated&quot;, streamGenerated);
+        // printStreamString - streamGenerated : element,element,element,element,element,element,element,element,element,element
+        // The code above creates a sequence of ten strings with the value “element.”
+
+        /*
+         * 2.6. Stream.iterate()
+         * Another way of creating an infinite stream is by using the iterate() method:
+         */
+        Stream&lt;Integer&gt; streamIterated = Stream.iterate(40, n -&gt; n + 2).limit(20);
+        System.out.println(&quot;streamIterated = &quot; + streamIterated.toList());
+        // streamIterated = [40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 66, 68, 70, 72, 74, 76, 78]
+        // The first element of the resulting stream is the first parameter of the iterate() method.
+        // When creating every following element, the specified function is applied to the previous element.
+        // In the example above the second element will be 42.
+
+        /*
+         * 2.7. Stream of Primitives
+         * Java 8 offers the possibility to create streams out of three primitive types: int, long and double. As Stream&lt;T&gt; is a generic interface, and there is no way to use primitives as a type parameter with generics, three new special interfaces were created: IntStream, LongStream, DoubleStream.
+         *
+         * Using the new interfaces alleviates unnecessary auto-boxing, which allows for increased productivity:
+         * */
+        IntStream intStream = IntStream.range(1, 3);
+        System.out.println(&quot;intStream = &quot; + intStream.boxed().toList()); // intStream = [1, 2]
+        LongStream longStream = LongStream.rangeClosed(1, 3);
+        System.out.println(&quot;longStream = &quot; + longStream.boxed().toList()); // longStream = [1, 2, 3]
+
+        /*
+         * The range(int startInclusive, int endExclusive) method creates an ordered stream from the first parameter to the second parameter.
+         * It increments the value of subsequent elements with the step equal to 1.
+         * The result doesn’t include the last parameter, it is just an upper bound of the sequence.
+         *
+         * The rangeClosed(int startInclusive, int endInclusive) method does the same thing with only one difference,
+         the second element is included. We can use these two methods to generate any of the three types of streams of primitives.
+        */
+        Random random = new Random();
+        DoubleStream doubleStream = random.doubles(3);
+        System.out.println(&quot;doubleStream = &quot; + doubleStream.boxed().toList());
+        // doubleStream = [0.3424742460796768, 0.5735372856167104, 0.9978722447240234]
+
+        /*
+         * 2.8. Stream of String
+         *  We can also use String as a source for creating a stream with the help of the chars() method of the String class.
+         *  Since there is no interface for CharStream in JDK, we use the IntStream to represent a stream of chars instead.
+         */
+        IntStream streamOfChars = &quot;abc&quot;.chars();
+        System.out.println(&quot;streamOfChars = &quot; + streamOfChars.boxed().toList());
+        // streamOfChars = [97, 98, 99]
+
+        // The following example breaks a String into sub-strings according to specified RegEx:
+        Stream&lt;String&gt; streamOfString = Pattern.compile(&quot;, &quot;).splitAsStream(&quot;a, b, c&quot;);
+        System.out.println(&quot;streamOfString = &quot; + streamOfString.toList());
+        // streamOfString = [a, b, c]
+
+        /*
+         * 2.9. Stream of File
+         * Furthermore, Java NIO class Files allows us to generate a Stream&lt;String&gt; of a text file through the lines() method.
+         * Every line of the text becomes an element of the stream:
+         */
+        // Path path = Paths.get(&quot;C:\\file.txt&quot;);
+        Path path = Paths.get(&quot;C:\\Users\\roman\\Work\\pohovor\\projects\\java\\myjavatest\\myjavatest\\src\\file.txt&quot;);
+        try {
+            Stream&lt;String&gt; streamOfStrings = Files.lines(path);
+            System.out.println(&quot;streamOfStrings = &quot; + streamOfStrings.toList());
+            // streamOfStrings = [this is first row from file.txt, this is second row from file.txt, this is third row from file.txt]
+
+            Stream&lt;String&gt; streamWithCharset = Files.lines(path, Charset.forName(&quot;UTF-8&quot;));
+            System.out.println(&quot;streamWithCharset = &quot; + streamWithCharset.toList());
+            // streamWithCharset = [this is first row from file.txt, this is second row from file.txt, this is third row from file.txt]
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+//     System.out.println(&quot;2.9. Stream of File - throw new RuntimeException(e)&quot;);
+        }
+        // The Charset can be specified as an argument of the lines() method.
+
+        /*
+         * 3. Referencing a Stream
+         * We can instantiate a stream, and have an accessible reference to it, as long as only intermediate operations are called.
+         * Executing a terminal operation makes a stream inaccessible.
+         *
+         * To demonstrate this, we will forget for a while that the best practice is to chain the sequence of operation.
+         * Besides its unnecessary verbosity, technically the following code is valid:
+         */
+        Stream&lt;String&gt; stream = Stream.of(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;).filter(element -&gt; element.contains(&quot;b&quot;));
+        Optional&lt;String&gt; anyElement = stream.findAny();
+        System.out.println(&quot;anyElement = &quot; + anyElement); // anyElement = Optional[b]
+
+        // However, an attempt to reuse the same reference after calling the terminal operation will trigger the IllegalStateException:
+        Stream&lt;String&gt; streamb = Stream.of(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;);
+        Optional&lt;String&gt; firstElement = streamb.findFirst(); // firstElement = Optional[a]
+        System.out.println(&quot;firstElement = &quot; + firstElement);
+
+        /* As the IllegalStateException is a RuntimeException, a compiler will not signalize about a problem.
+         * So it is very important to remember that Java 8 streams can’t be reused.
+         *
+         * This kind of behavior is logical.
+         * We designed streams to apply a finite sequence of operations to the source of elements in a functional style, not to store elements.
+         *
+         * So to make the previous code work properly, some changes should be made:*/
+        List&lt;String&gt; elements = Stream.of(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;)
+                .filter(element -&gt; element.contains(&quot;b&quot;))
+                .toList();
+        Optional&lt;String&gt; anyElement2 = elements.stream().findAny();
+        System.out.println(&quot;anyElement2 = &quot; + anyElement2); // anyElement2 = Optional[b]
+        anyElement2.ifPresent(System.out::println); // b
+
+        Optional&lt;String&gt; firstElement2 = elements.stream().findFirst();
+        System.out.println(&quot;firstElement2 = &quot; + firstElement2); // firstElement2 = Optional[b]
+
+        /*
+         * 4. Stream Pipeline
+         *
+         * To perform a sequence of operations over the elements of the data source and aggregate their results, we need three parts: the source,
+         * intermediate operation(s) and a terminal operation.
+         *
+         * Intermediate operations return a new modified stream. For example, to create a new stream of the existing one without few elements,
+         * the skip() method should be used:
+         */
+        Stream&lt;String&gt; onceModifiedStream = Stream.of(&quot;abcd&quot;, &quot;bbcd&quot;, &quot;cbcd&quot;).skip(1);
+        System.out.println(&quot;onceModifiedStream = &quot; + onceModifiedStream.toList());
+        // onceModifiedStream = [bbcd, cbcd]
+
+        /* If we need more than one modification, we can chain intermediate operations.
+         * Let’s assume that we also need to substitute every element of the current Stream&lt;String&gt; with a sub-string of the first few chars.
+         *  We can do this by chaining the skip() and map() methods:*/
+        Stream&lt;String&gt; twiceModifiedStream = Stream.of(&quot;abcd&quot;, &quot;bbcd&quot;, &quot;cbcd&quot;)
+                .skip(1)
+                .map(element -&gt; element.substring(0, 3));
+        System.out.println(&quot;twiceModifiedStream = &quot; + twiceModifiedStream.toList());
+        // twiceModifiedStream = [bbc, cbc]
+
+        /*
+         * As we can see, the map() method takes a lambda expression as a parameter.
+         *
+         * If we want to learn more about lambdas, we can take a look at our tutorial Lambda Expressions and Functional Interfaces: Tips and Best Practices.
+         *
+         * A stream by itself is worthless; the user is interested in the result of the terminal operation,
+         * which can be a value of some type or an action applied to every element of the stream.
+         * We can only use one terminal operation per stream.
+         *
+         * The correct and most convenient way to use streams is by a stream pipeline, which is a chain of the stream source,
+         * intermediate operations, and a terminal operation:*/
+        List&lt;String&gt; list = Arrays.asList(&quot;abc1&quot;, &quot;abc2&quot;, &quot;abc3&quot;);
+        long size = list.stream()
+                .skip(1)
+                .map(element -&gt; element.substring(0, 3))
+                .sorted()
+                .count();
+        System.out.println(&quot;size = &quot; + size); // size = 2
+
+        Stream&lt;String&gt; listStream = list.stream()
+                .skip(1)
+                .map(element -&gt; element.substring(0, 3));
+        System.out.println(&quot;listStream.toList() = &quot; +  listStream.toList()); // listStream.toList() = [abc, abc]
+        // listStream.forEach(System.out::println);
+        // abc
+        // abc
+
+        /*
+         * 5. Lazy Invocation
+         *
+         * Intermediate operations are lazy. This means that they will be invoked only if it is necessary for the terminal operation execution.
+         *
+         * For example, let’s call the method wasCalled(), which increments an inner counter every time it’s called:
+         * private long counter;
+         *
+         * private void wasCalled() {
+         *     counter++;
+         * }
+         *
+         * Now let’s call the method wasCalled() from operation filter():
+         */
+        TestStream5 test = new TestStream5();
+        List&lt;String&gt; list2 = Arrays.asList(&quot;abc1&quot;, &quot;abc2&quot;, &quot;abc3&quot;);
+        test.counter = 0;
+        Stream&lt;String&gt; stream2a = list2.stream().filter(element -&gt; {
+            test.wasCalled();
+            return element.contains(&quot;2&quot;);
+        });
+        System.out.println(&quot;stream2a = &quot; + stream2a.toList()); // stream2a = [abc2]
+
+        /*
+         * As we have a source of three elements, we can assume that the filter() method will be called three times, and the value of the counter variable will be 3. 
+         * However, running this code doesn’t change counter at all, it is still zero, so the filter() method wasn’t even called once. 
+         * The reason why is missing of the terminal operation.
+         *
+         * Let’s rewrite this code a little bit by adding a map() operation and a terminal operation, findFirst(). We will also add the ability to track the order of method calls with the help of logging:
+         */
+        
+        Optional&lt;String&gt; stream2b = list2.stream().filter(element -&gt; {
+//     log.info(&quot;filter() was called&quot;);
+            System.out.println(&quot;filter() was called&quot;);
+            return element.contains(&quot;2&quot;);
+        }).map(element -&gt; {
+//     log.info(&quot;map() was called&quot;);
+            System.out.println(&quot;map() was called&quot;);
+            return element.toUpperCase();
+        }).findFirst();
+        System.out.println(&quot;stream2b = &quot; + stream2b.get());
+// filter() was called
+// filter() was called
+// map() was called
+// stream2b = ABC2
+
+        /*
+         * The resulting log shows that we called the filter() method twice and the map() method once. 
+         * This is because the pipeline executes vertically. 
+         * In our example, the first element of the stream didn’t satisfy the filter’s predicate. 
+         * Then we invoked the filter() method for the second element, which passed the filter. 
+         * Without calling the filter() for the third element, we went down through the pipeline to the map() method.
+         *
+         * The findFirst() operation satisfies by just one element. 
+         * So, in this particular example, the lazy invocation allowed us to avoid one method call for filter().
+         */
+
+
+        /*
+         * 6. Order of Execution
+         * From the performance point of view, the right order is one of the most important aspects of chaining operations in the stream pipeline:
+         */
+        long size2 = list.stream().map(element -&gt; {
+            test.wasCalled();
+            return element.substring(0, 3);
+        }).skip(2).count();
+        System.out.println(&quot;size2 = &quot; + size2); // size2 = 1
+
+        /*
+         * Execution of this code will increase the value of the counter by three. 
+         * This means that we called the map() method of the stream three times, but the value of the size is one. 
+         * So the resulting stream has just one element, and we executed the expensive map() operations for no reason two out of the three times.
+         *
+         * If we change the order of the skip() and the map() methods, the counter will increase by only one. So we will call the map() method only once:
+         */ 
+        long size3 = list.stream().skip(2).map(element -&gt; {
+            test.wasCalled();
+            return element.substring(0, 3);
+        }).count();
+        System.out.println(&quot;size3 = &quot; + size3); // size3 = 1
+
+        //This brings us to the following rule: intermediate operations which reduce the size of the stream should be placed before operations which are applying to each element. 
+        // So we need to keep methods such as skip(), filter(), and distinct() at the top of our stream pipeline.
+
+        /*
+         * 7. Stream Reduction
+         *
+         * The API has many terminal operations which aggregate a stream to a type or to a primitive: count(), max(), min(), and sum(). 
+         * However, these operations work according to the predefined implementation. 
+         * So what if a developer needs to customize a Stream’s reduction mechanism? 
+         * There are two methods which allow us to do this, the reduce() and the collect() methods.
+         * 
+         * 7.1. The reduce() Method
+         *
+         * There are three variations of this method, which differ by their signatures and returning types. They can have the following parameters:
+         *
+         * identity – the initial value for an accumulator, or a default value if a stream is empty and there is nothing to accumulate
+         *
+         * accumulator – a function which specifies the logic of the aggregation of elements. As the accumulator creates a new value for every step of reducing, the quantity of new values equals the stream’s size and only the last value is useful. This is not very good for the performance.
+         *
+         * combiner – a function which aggregates the results of the accumulator. We only call combiner in a parallel mode to reduce the results of accumulators from different threads.
+         *
+         * Now let’s look at these three methods in action:
+         */
+        OptionalInt reduced = IntStream.range(1, 4).reduce((a, b) -&gt; a + b);
+        OptionalInt reduced2 = IntStream.range(1, 4).reduce(Integer::sum);
+        System.out.println(&quot;reduced = &quot; + reduced); // reduced = OptionalInt[6]
+        reduced2.ifPresent(System.out::println); // 6
+        // reduced = 6 (1 + 2 + 3)
+
+        int reducedTwoParams = IntStream.range(1, 4).reduce(10, (a, b) -&gt; a + b);
+        System.out.println(&quot;reducedTwoParams = &quot; + reducedTwoParams); // reducedTwoParams = 16
+        // reducedTwoParams = 16 (10 + 1 + 2 + 3)
+
+        int reducedParams = Stream.of(1, 2, 3)
+                .reduce(10, (a, b) -&gt; a + b, (a, b) -&gt; {
+                    System.out.println(&quot;combiner was called&quot;);
+                    return a + b;
+                });
+        System.out.println(&quot;reducedParams = &quot; + reducedParams);
+        // The result will be the same as in the previous example (16), and there will be no login, which means that combiner wasn’t called. 
+        // To make a combiner work, a stream should be parallel:
+        int reducedParallel = Arrays.asList(1, 2, 3).parallelStream()
+                .reduce(10, (a, b) -&gt; a + b, (a, b) -&gt; {
+                    System.out.println(&quot;combiner was called&quot;);
+                    return a + b;
+                });
+        System.out.println(&quot;reducedParallel = &quot; + reducedParallel);
+        // reducedParams = 16
+        // combiner was called
+        // combiner was called
+        // reducedParallel = 36
+
+        // The result here is different (36), and the combiner was called twice. 
+        // Here the reduction works by the following algorithm: the accumulator ran three times by adding every element of the stream to identity. 
+        // These actions are being done in parallel. As a result, they have (10 + 1 = 11; 10 + 2 = 12; 10 + 3 = 13;). 
+        // Now combiner can merge these three results. It needs two iterations for that (12 + 13 = 25; 25 + 11 = 36).
+
+        /*
+         * 7.2. The collect() Method
+         * The reduction of a stream can also be executed by another terminal operation, the collect() method. It accepts an argument of the type Collector, which specifies the mechanism of reduction. There are already created, predefined collectors for most common operations. They can be accessed with the help of the Collectors type.
+         *
+         * In this section, we will use the following List as a source for all streams:
+         */
+        List&lt;Product&gt; productList = Arrays.asList(new Product(23, &quot;potatoes&quot;),
+                new Product(14, &quot;orange&quot;), new Product(13, &quot;lemon&quot;),
+                new Product(23, &quot;bread&quot;), new Product(13, &quot;sugar&quot;));
+
+        // Converting a stream to the Collection (Collection, List or Set):
+        List&lt;String&gt; collectorCollection = productList.stream().map(Product::getName).toList();
+        System.out.println(&quot;collectorCollection = &quot; + collectorCollection);
+        // collectorCollection = [potatoes, orange, lemon, bread, sugar]
+
+        // Reducing to String:
+        String listToString = productList.stream()
+                .map(Product::getName)
+                .collect(Collectors.joining(&quot;, &quot;, &quot;[&quot;, &quot;]&quot;));
+        System.out.println(&quot;listToString = &quot; + listToString);
+        // listToString = [potatoes, orange, lemon, bread, sugar]
+
+        /*
+         * The joining() method can have from one to three parameters (delimiter, prefix, suffix). The most convenient thing about using joining() is that the developer doesn’t need to check if the stream reaches its end to apply the suffix and not to apply a delimiter. Collector will take care of that.
+         *
+         * Processing the average value of all numeric elements of the stream:
+         */ 
+        double averagePrice = productList.stream()
+                .collect(Collectors.averagingInt(Product::getPrice));
+        System.out.println(&quot;averagePrice = &quot; + averagePrice); // averagePrice = 17.2
+
+        // Processing the sum of all numeric elements of the stream:
+        int summingPrice = productList.stream()
+                .collect(Collectors.summingInt(Product::getPrice));
+        System.out.println(&quot;summingPrice = &quot; + summingPrice); // summingPrice = 86
+
+        int summingPrice2 = productList.stream().mapToInt(Product::getPrice).sum();
+        System.out.println(&quot;summingPrice2 = &quot; + summingPrice2); // summingPrice2 = 86
+
+        /*
+         * The methods averagingXX(), summingXX() and summarizingXX() can work with primitives (int, long, double) and with their wrapper classes (Integer, Long, Double). 
+         * One more powerful feature of these methods is providing the mapping. 
+         * As a result, the developer doesn’t need to use an additional map() operation before the collect() method.
+         *
+         * Collecting statistical information about stream’s elements:
+         */
+        IntSummaryStatistics statistics = productList.stream()
+                .collect(Collectors.summarizingInt(Product::getPrice));
+        System.out.println(&quot;statistics = &quot; + statistics);
+        // statistics = IntSummaryStatistics{count=5, sum=86, min=13, average=17,200000, max=23}
+
+        /*
+         * By using the resulting instance of type IntSummaryStatistics, the developer can create a statistical report by applying the toString() method. The result will be a String common to this one “IntSummaryStatistics{count=5, sum=86, min=13, average=17,200000, max=23}.”
+         *
+         * It is also easy to extract from this object separate values for count, sum, min, average, and max by applying the methods getCount(), getSum(), getMin(), getAverage(), and getMax(). All of these values can be extracted from a single pipeline.
+         *
+         * Grouping of stream’s elements according to the specified function:
+         */ 
+        Map&lt;Integer, List&lt;Product&gt;&gt; collectorMapOfLists = productList.stream()
+                .collect(Collectors.groupingBy(Product::getPrice));
+        System.out.println(&quot;collectorMapOfLists = &quot; + collectorMapOfLists);
+        // collectorMapOfLists = {
+        // 23=[Product{price=23, name=&#x27;potatoes&#x27;}, Product{price=23, name=&#x27;bread&#x27;}],
+        // 13=[Product{price=13, name=&#x27;lemon&#x27;}, Product{price=13, name=&#x27;sugar&#x27;}],
+        // 14=[Product{price=14, name=&#x27;orange&#x27;}]}
+        // In the example above, the stream was reduced to the Map, which groups all products by their price.
+
+        // Dividing stream’s elements into groups according to some predicate:
+        Map&lt;Boolean, List&lt;Product&gt;&gt; mapPartioned = productList.stream()
+                .collect(Collectors.partitioningBy(element -&gt; element.getPrice() &gt; 15));
+        System.out.println(&quot;mapPartioned = &quot; + mapPartioned);
+        // mapPartioned = {
+        // false=[Product{price=14, name=&#x27;orange&#x27;}, Product{price=13, name=&#x27;lemon&#x27;}, Product{price=13, name=&#x27;sugar&#x27;}],
+        // true=[Product{price=23, name=&#x27;potatoes&#x27;}, Product{price=23, name=&#x27;bread&#x27;}]}
+
+        // Pushing the collector to perform additional transformation:
+        Set&lt;Product&gt; unmodifiableSet = productList.stream()
+                .collect(Collectors.collectingAndThen(Collectors.toSet(),
+                        Collections::unmodifiableSet));
+        System.out.println(&quot;unmodifiableSet = &quot; + unmodifiableSet);
+        // unmodifiableSet = [
+        // Product{price=23, name=&#x27;bread&#x27;},
+        // Product{price=23, name=&#x27;potatoes&#x27;},
+        // Product{price=13, name=&#x27;sugar&#x27;},
+        // Product{price=14, name=&#x27;orange&#x27;},
+        // Product{price=13, name=&#x27;lemon&#x27;}]
+        // In this particular case, the collector has converted a stream to a Set, and then created the unchangeable Set out of it.
+
+        /*
+         * Custom collector:
+         *
+         * If for some reason a custom collector should be created, 
+         * the easiest and least verbose way of doing so is to use the method of() of the type Collector.
+         */ 
+        Collector&lt;Product, ?, LinkedList&lt;Product&gt;&gt; toLinkedList =
+                Collector.of(LinkedList::new, LinkedList::add,
+                        (first, second) -&gt; {
+                            first.addAll(second);
+                            return first;
+                        });
+
+        LinkedList&lt;Product&gt; linkedListOfProduct =
+                productList.stream().collect(toLinkedList);
+        System.out.println(&quot;linkedListOfProducts = &quot; + linkedListOfProduct);
+        // linkedListOfPersons = [
+        // Product{price=23, name=&#x27;potatoes&#x27;},
+        // Product{price=14, name=&#x27;orange&#x27;},
+        // Product{price=13, name=&#x27;lemon&#x27;},
+        // Product{price=23, name=&#x27;bread&#x27;},
+        // Product{price=13, name=&#x27;sugar&#x27;}]
+        // In this example, an instance of the Collector got reduced to the LinkedList&lt;Product&gt;.
+
+        /*
+         * 8. Parallel Streams
+         *
+         * Before Java 8, parallelization was complex. The emergence of the ExecutorService and the ForkJoin simplified a developer’s life a little bit, 
+         * but it was still worth remembering how to create a specific executor, how to run it, and so on. 
+         * Java 8 introduced a way of accomplishing parallelism in a functional style.
+         *
+         * The API allows us to create parallel streams, which perform operations in a parallel mode. 
+         * When the source of a stream is a Collection or an array, it can be achieved with the help of the parallelStream() method:
+         */        
+        Stream&lt;Product&gt; streamOfCollection2 = productList.parallelStream();
+        boolean isParallel = streamOfCollection2.isParallel();
+        System.out.println(&quot;isParallel = &quot; + isParallel); // isParallel = true
+
+        boolean bigPrice = streamOfCollection2
+                .map(product -&gt; product.getPrice() * 12)
+                .anyMatch(price -&gt; price &gt; 200);
+        System.out.println(&quot;bigPrice = &quot; + bigPrice); // bigPrice = true
+
+        // If the source of a stream is something other than a Collection or an array, the parallel() method should be used:
+        IntStream intStreamParallel = IntStream.range(1, 150).parallel();
+        boolean isParallel2 = intStreamParallel.isParallel();
+        System.out.println(&quot;isParallel2 = &quot; + isParallel2); // isParallel2 = true
+
+        /*
+         * Under the hood, Stream API automatically uses the ForkJoin framework to execute operations in parallel. By default, the common thread pool will be used and there is no way (at least for now) to assign some custom thread pool to it. This can be overcome by using a custom set of parallel collectors.
+         *
+         * When using streams in parallel mode, avoid blocking operations. It is also best to use parallel mode when tasks need a similar amount of time to execute. If one task lasts much longer than the other, it can slow down the complete app’s workflow.
+         *
+         * The stream in parallel mode can be converted back to the sequential mode by using the sequential() method:
+         */
+        IntStream intStreamSequential = intStreamParallel.sequential();
+        boolean isParallel3 = intStreamSequential.isParallel();
+        System.out.println(&quot;isParallel3 = &quot; + isParallel3); // isParallel3 = false
+
+        /*
+         * 9. Stream API Enhancements in Java 9
+         *
+         * Java 9 introduces a few notable improvements to the Stream API that make working with streams even more expressive and efficient. 
+         * In this section, we’ll cover the takeWhile(), dropWhile(), iterate(), and ofNullable() methods, exploring how they simplify various operations compared to Java 8.
+         * 9.1. takeWhile() and dropWhile()
+         *
+         * The new takeWhile() and dropWhile() methods use a Predicate to specify a condition for including or excluding elements in the stream. 
+         * These methods are particularly useful for ordered streams, as they allow us to process elements based on a condition applied sequentially.
+         *
+         * With takeWhile(), we can collect elements from the start of a stream until a given condition is no longer met. 
+         * As soon as an element fails this condition, takeWhile() stops collecting further elements:
+         */        
+        Stream&lt;String&gt; stream2 = Stream.iterate(&quot;&quot;, s -&gt; s + &quot;s&quot;)
+                .takeWhile(s -&gt; s.length() &lt; 10);
+        System.out.println(&quot;stream2 = &quot; + stream2.toList());
+        // stream2 = [, s, ss, sss, ssss, sssss, ssssss, sssssss, ssssssss, sssssssss]
+
+        Stream&lt;String&gt; stream2c = Stream.iterate(&quot;&quot;, s -&gt; s.length() &lt; 10, s -&gt; s + &quot;s&quot;);
+        System.out.println(&quot;stream2c = &quot; + stream2c.toList());
+        // stream2c = [, s, ss, sss, ssss, sssss, ssssss, sssssss, ssssssss, sssssssss]
+
+        /*
+         * Here, takeWhile() applies the predicate “s -&gt; s.length() &lt; 10“, which means it will keep adding elements to the stream as long as the 
+         * string length is less than 10. 
+         * The collection stops collecting elements as soon as an element no longer meets the condition.
+         *
+         * In contrast, dropWhile() discards elements from the start of the stream as long as they satisfy the given Predicate. 
+         * It stops dropping elements the moment an element fails the condition, at which point it includes the remaining elements in the stream:
+         */        
+        Stream&lt;String&gt; stream3 = Stream.of(&quot;a&quot;, &quot;aa&quot;, &quot;aaa&quot;, &quot;aaaaa&quot;)
+                .dropWhile(s -&gt; s.length() &lt; 5);
+        System.out.println(&quot;stream3 = &quot; + stream3.toList()); // stream3 = [aaaaa]
+
+        // In this case, dropWhile() will skip over elements until it encounters a string with a length of 5 or greater, at which point it stops dropping elements.
+
+        /*
+         * 9.2. Enhanced iterate() Method
+         *
+         * Java 9 adds a variant of the iterate() method that allows us to specify a condition under which the stream will stop generating elements, 
+         * effectively creating a finite stream. 
+         * This enhanced iterate() function can specify a stopping condition when needed:
+         */
+        
+        Stream.iterate(0, i -&gt; i &lt; 10, i -&gt; i + 1)
+                .forEach(System.out::println);
+        // This example generates numbers from 0 to 9, directly integrating the stopping condition within the iterate() method itself, making it simpler and clearer than Java 8’s infinite streams.
+        // 0
+        // 1
+        // 2
+        // 3
+        // 4
+        // 5
+        // 6
+        // 7
+        // 8
+        // 9
+        
+        /*
+         * 9.3. ofNullable() for Optional Elements
+         *
+         * Often, we may need to create a stream with a single element that might be null.
+         * Java 9’s ofNullable() method addresses this by returning an empty stream if the provided element is null,
+         * avoiding the need for complex conditional logic:
+         */
+// collection.stream()
+//         .flatMap(s -&gt; Stream.ofNullable(map.get(s)))
+//         .collect(Collectors.toList());
+
+        // This ofNullable() method removes the need for ternary expressions or null checks, streamlining the code where conditional element addition is necessary.
+
+    }
+
+    static Stream&lt;String&gt; streamOf(List&lt;String&gt; list) {
+        return list == null || list.isEmpty() ? Stream.empty() : list.stream();
+    }
+
+    static void printStreamString(String label, Stream&lt;String&gt; stream) {
+        System.out.println(&quot;printStreamString - &quot; + label + &quot; : &quot; + String.join(&quot;,&quot;, stream.toList()));
+    }
+
+    long counter;
+    void wasCalled() {
+        counter++;
+    }
+
+}
+</code></pre>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      hljs.highlightAll();
+    });
+
+    // ── per-card toggle ──────────────────────────────────────────────
+    function toggleCard(header) {
+      const body = header.nextElementSibling;
+      const btn  = header.querySelector('.toggle-btn');
+      const collapsed = body.classList.toggle('collapsed');
+      btn.textContent = collapsed ? '\u25b6 Show' : '\u25bc Hide';
+    }
+
+    // ── show / collapse all ──────────────────────────────────────────
+    function showAll() {
+      document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+        b.classList.remove('collapsed');
+        b.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+      });
+    }
+    function collapseAll() {
+      document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+        b.classList.add('collapsed');
+        b.closest('.card').querySelector('.toggle-btn').textContent = '\u25b6 Show';
+      });
+    }
+
+    // ── card-level filter (show/hide cards by match) ─────────────────
+    function applyCardFilter(term) {
+      const lower = term.trim().toLowerCase();
+      let shown = 0;
+      document.querySelectorAll('.card').forEach(card => {
+        const has = !lower || card.querySelector('code').textContent.toLowerCase().includes(lower);
+        card.classList.toggle('hidden-by-search', !has);
+        if (has) shown++;
+      });
+      const info = document.getElementById('match-info');
+      info.textContent = lower
+        ? (shown === 0 ? 'No files match' : shown + ' file' + (shown > 1 ? 's' : '') + ' match')
+        : '';
+    }
+
+    // ── in-page text search ──────────────────────────────────────────
+    let marks = [];
+    let currentIdx = -1;
+    const psbInput = document.getElementById('psb-input');
+    const psbCount = document.getElementById('psb-count');
+
+    function clearMarks() {
+      document.querySelectorAll('mark.sh, mark.sh-current').forEach(m => {
+        m.outerHTML = m.textContent
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      });
+      // normalize() re-merges adjacent text nodes
+      document.querySelectorAll('.card-body code').forEach(c => c.normalize());
+      marks = [];
+      currentIdx = -1;
+    }
+
+    function findAll(term) {
+      clearMarks();
+      if (!term) { updateCount(); return; }
+      const lower = term.toLowerCase();
+
+      document.querySelectorAll('.card-body code').forEach(code => {
+        const walker = document.createTreeWalker(code, NodeFilter.SHOW_TEXT);
+        const nodes = [];
+        let n;
+        while ((n = walker.nextNode())) nodes.push(n);
+
+        nodes.forEach(node => {
+          const text = node.textContent;
+          const ltxt = text.toLowerCase();
+          let pos = 0, start;
+          const frags = [];
+          while ((start = ltxt.indexOf(lower, pos)) !== -1) {
+            if (start > pos) frags.push(document.createTextNode(text.slice(pos, start)));
+            const m = document.createElement('mark');
+            m.className = 'sh';
+            m.textContent = text.slice(start, start + term.length);
+            frags.push(m);
+            marks.push(m);
+            pos = start + term.length;
+          }
+          if (frags.length) {
+            if (pos < text.length) frags.push(document.createTextNode(text.slice(pos)));
+            node.replaceWith(...frags);
+          }
+        });
+      });
+      updateCount();
+    }
+
+    function goTo(idx) {
+      if (!marks.length) return;
+      if (currentIdx >= 0) {
+        marks[currentIdx].className = 'sh';
+      }
+      currentIdx = ((idx % marks.length) + marks.length) % marks.length;
+      const m = marks[currentIdx];
+      m.className = 'sh-current';
+      // expand card if collapsed
+      const body = m.closest('.card-body');
+      if (body && body.classList.contains('collapsed')) {
+        body.classList.remove('collapsed');
+        body.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+      }
+      m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      updateCount();
+    }
+
+    function updateCount() {
+      if (!psbInput.value.trim()) { psbCount.textContent = ''; return; }
+      psbCount.textContent = marks.length === 0
+        ? '0 matches'
+        : (currentIdx + 1) + ' / ' + marks.length;
+      document.getElementById('psb-prev').disabled = marks.length === 0;
+      document.getElementById('psb-next').disabled = marks.length === 0;
+    }
+
+    function runPageSearch() {
+      const term = psbInput.value;
+      applyCardFilter(term);
+      findAll(term);
+      if (marks.length) goTo(0);
+    }
+
+    function prevMatch() { if (marks.length) goTo(currentIdx - 1); }
+    function nextMatch() { if (marks.length) goTo(currentIdx + 1); }
+
+    function clearPageSearch() {
+      psbInput.value = '';
+      clearMarks();
+      applyCardFilter('');
+      updateCount();
+    }
+
+    psbInput.addEventListener('input', runPageSearch);
+    psbInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.shiftKey ? prevMatch() : nextMatch(); }
+      if (e.key === 'Escape') clearPageSearch();
+    });
+
+    // ── messages from sidebar ────────────────────────────────────────
+    window.addEventListener('message', function (e) {
+      if (!e.data) return;
+      if (e.data.type === 'page-search') {
+        psbInput.value = e.data.term || '';
+        runPageSearch();
+      }
+    });
+  </script>
+</body>
+</html>

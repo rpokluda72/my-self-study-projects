@@ -1,0 +1,3470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java Versions Features</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: #1e1e2e;
+                font-family: 'Segoe UI', system-ui, sans-serif; color: #cdd6f4; }
+
+  /* ── Layout ── */
+  #layout { display: flex; height: 100vh; }
+  #sidebar {
+    width: 270px; min-width: 270px;
+    background: #181825;
+    border-right: 1px solid #313244;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  #content-area { flex: 1; display: flex; overflow: hidden; }
+  #frame { flex: 1; border: none; width: 100%; height: 100%; }
+
+  /* ── Sidebar header ── */
+  #sidebar h2 {
+    padding: 16px 14px 10px;
+    font-size: 15px; font-weight: 700; color: #cba6f7;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    border-bottom: 1px solid #313244; flex-shrink: 0;
+  }
+
+  /* ── Search ── */
+  .search-wrap {
+    padding: 10px 10px 4px; flex-shrink: 0; position: relative;
+  }
+  #search {
+    width: 100%; background: #313244; border: 1px solid #45475a;
+    color: #cdd6f4; border-radius: 5px; padding: 6px 28px 6px 10px;
+    font-size: 13px; outline: none;
+  }
+  #search:focus { border-color: #89b4fa; box-shadow: 0 0 0 2px rgba(137,180,250,.2); }
+  #search::placeholder { color: #6c7086; }
+  .search-clear {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: #6c7086; cursor: pointer;
+    font-size: 14px; line-height: 1; display: none; padding: 2px 4px;
+  }
+  .search-clear:hover { color: #f38ba8; }
+  #search:not(:placeholder-shown) + .search-clear { display: block; }
+
+  /* ── Show All / Collapse All buttons ── */
+  .menu-btn-row {
+    display: flex; gap: 6px; padding: 6px 10px 4px; flex-shrink: 0;
+  }
+  .menu-btn {
+    flex: 1; padding: 5px 6px;
+    background: #313244; border: 1px solid #45475a; border-radius: 5px;
+    color: #a6adc8; font-size: 12px; cursor: pointer;
+    text-align: center; transition: background .15s;
+  }
+  .menu-btn:hover { background: #45475a; color: #cdd6f4; }
+
+  /* ── Version list (scrollable) ── */
+  #version-list {
+    flex: 1; overflow-y: auto; list-style: none;
+    padding: 4px 0 12px; margin: 0;
+    scrollbar-width: thin; scrollbar-color: #45475a #181825;
+  }
+  #version-list::-webkit-scrollbar { width: 6px; }
+  #version-list::-webkit-scrollbar-track { background: #181825; }
+  #version-list::-webkit-scrollbar-thumb { background: #45475a; border-radius: 3px; }
+
+  /* ── Version group ── */
+  .version-group { border-bottom: 1px solid #232336; }
+  .version-group.no-match { display: none; }
+  .version-group.collapsed .class-list { display: none; }
+
+  .version-header {
+    display: flex; align-items: center; gap: 7px;
+    padding: 8px 12px; cursor: pointer; user-select: none;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #89b4fa;
+    transition: background .15s;
+  }
+  .version-header:hover { background: #232336; color: #b4d0ff; }
+  .chevron { font-size: 9px; color: #585b70; transition: color .15s; }
+  .version-header:hover .chevron { color: #89b4fa; }
+
+  /* ── Class list ── */
+  .class-list { list-style: none; padding: 0 0 4px 0; margin: 0; }
+  .class-list li.no-match { display: none; }
+  .class-list li.has-match > a { color: #cdd6f4 !important; }
+  .class-list a {
+    display: block; padding: 5px 12px 5px 26px;
+    color: #9399b2; text-decoration: none; font-size: 13px;
+    transition: background .1s, color .1s; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .class-list a:hover {
+    background: #232336; color: #cdd6f4; border-left-color: #585b70;
+  }
+  .class-list a.active {
+    background: #2a2a40; color: #89b4fa; border-left-color: #89b4fa;
+    font-weight: 600;
+  }
+
+  /* ── No-match message ── */
+  #no-match-msg {
+    padding: 10px 14px; font-size: 12px; color: #6c7086;
+    display: none; flex-shrink: 0;
+  }
+  #no-match-msg.visible { display: block; }
+
+  /* ── Footer ── */
+  #sidebar-footer {
+    padding: 8px 14px; font-size: 11px; color: #45475a;
+    border-top: 1px solid #313244; flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+<div id="layout">
+  <nav id="sidebar">
+    <h2>&#9749; Java Features</h2>
+    <div class="search-wrap">
+      <input id="search" type="search" placeholder="Search in code&#x2026;" autocomplete="off" spellcheck="false" />
+      <button class="search-clear" title="Clear search">&#10005;</button>
+    </div>
+    <div class="menu-btn-row">
+      <button class="menu-btn" id="show-all-btn">&#9660; Show All</button>
+      <button class="menu-btn" id="collapse-all-btn">&#9654; Collapse All</button>
+    </div>
+    <ul id="version-list">
+    <li class="version-group" data-pkg="java8">
+      <div class="version-header" onclick="toggleVersion('java8')">
+        <span class="chevron">&#x25bc;</span> Java 8
+      </div>
+      <ul class="class-list">
+      <li data-pkg="java8" data-cls="LambdaExpressions">
+        <a href="java8.html#LambdaExpressions" target="content" onclick="setActive(this)">LambdaExpressions</a>
+      </li>
+      <li data-pkg="java8" data-cls="StreamApi">
+        <a href="java8.html#StreamApi" target="content" onclick="setActive(this)">StreamApi</a>
+      </li>
+      <li data-pkg="java8" data-cls="FunctionalInterfaces">
+        <a href="java8.html#FunctionalInterfaces" target="content" onclick="setActive(this)">FunctionalInterfaces</a>
+      </li>
+      <li data-pkg="java8" data-cls="MethodReferences">
+        <a href="java8.html#MethodReferences" target="content" onclick="setActive(this)">MethodReferences</a>
+      </li>
+      <li data-pkg="java8" data-cls="DefaultMethods">
+        <a href="java8.html#DefaultMethods" target="content" onclick="setActive(this)">DefaultMethods</a>
+      </li>
+      <li data-pkg="java8" data-cls="OptionalClass">
+        <a href="java8.html#OptionalClass" target="content" onclick="setActive(this)">OptionalClass</a>
+      </li>
+      </ul>
+    </li>
+    <li class="version-group" data-pkg="java9">
+      <div class="version-header" onclick="toggleVersion('java9')">
+        <span class="chevron">&#x25bc;</span> Java 9
+      </div>
+      <ul class="class-list">
+      <li data-pkg="java9" data-cls="CollectionFactoryMethods">
+        <a href="java9.html#CollectionFactoryMethods" target="content" onclick="setActive(this)">CollectionFactoryMethods</a>
+      </li>
+      <li data-pkg="java9" data-cls="TryWithResourcesEnhancement">
+        <a href="java9.html#TryWithResourcesEnhancement" target="content" onclick="setActive(this)">TryWithResourcesEnhancement</a>
+      </li>
+      </ul>
+    </li>
+    <li class="version-group" data-pkg="java10">
+      <div class="version-header" onclick="toggleVersion('java10')">
+        <span class="chevron">&#x25bc;</span> Java 10
+      </div>
+      <ul class="class-list">
+      <li data-pkg="java10" data-cls="LocalVariableTypeInference">
+        <a href="java10.html#LocalVariableTypeInference" target="content" onclick="setActive(this)">LocalVariableTypeInference</a>
+      </li>
+      </ul>
+    </li>
+    <li class="version-group" data-pkg="java11">
+      <div class="version-header" onclick="toggleVersion('java11')">
+        <span class="chevron">&#x25bc;</span> Java 11
+      </div>
+      <ul class="class-list">
+      <li data-pkg="java11" data-cls="StringMethods">
+        <a href="java11.html#StringMethods" target="content" onclick="setActive(this)">StringMethods</a>
+      </li>
+      <li data-pkg="java11" data-cls="HttpClientApi">
+        <a href="java11.html#HttpClientApi" target="content" onclick="setActive(this)">HttpClientApi</a>
+      </li>
+      <li data-pkg="java11" data-cls="FileMethods">
+        <a href="java11.html#FileMethods" target="content" onclick="setActive(this)">FileMethods</a>
+      </li>
+      </ul>
+    </li>
+    <li class="version-group" data-pkg="java14">
+      <div class="version-header" onclick="toggleVersion('java14')">
+        <span class="chevron">&#x25bc;</span> Java 14
+      </div>
+      <ul class="class-list">
+      <li data-pkg="java14" data-cls="SwitchExpressions">
+        <a href="java14.html#SwitchExpressions" target="content" onclick="setActive(this)">SwitchExpressions</a>
+      </li>
+      </ul>
+    </li>
+    <li class="version-group" data-pkg="java15">
+      <div class="version-header" onclick="toggleVersion('java15')">
+        <span class="chevron">&#x25bc;</span> Java 15
+      </div>
+      <ul class="class-list">
+      <li data-pkg="java15" data-cls="TextBlocks">
+        <a href="java15.html#TextBlocks" target="content" onclick="setActive(this)">TextBlocks</a>
+      </li>
+      </ul>
+    </li>
+    <li class="version-group" data-pkg="java16">
+      <div class="version-header" onclick="toggleVersion('java16')">
+        <span class="chevron">&#x25bc;</span> Java 16
+      </div>
+      <ul class="class-list">
+      <li data-pkg="java16" data-cls="Records">
+        <a href="java16.html#Records" target="content" onclick="setActive(this)">Records</a>
+      </li>
+      <li data-pkg="java16" data-cls="PatternMatchingInstanceof">
+        <a href="java16.html#PatternMatchingInstanceof" target="content" onclick="setActive(this)">PatternMatchingInstanceof</a>
+      </li>
+      <li data-pkg="java16" data-cls="StreamToList">
+        <a href="java16.html#StreamToList" target="content" onclick="setActive(this)">StreamToList</a>
+      </li>
+      </ul>
+    </li>
+    <li class="version-group" data-pkg="java17">
+      <div class="version-header" onclick="toggleVersion('java17')">
+        <span class="chevron">&#x25bc;</span> Java 17
+      </div>
+      <ul class="class-list">
+      <li data-pkg="java17" data-cls="SealedClasses">
+        <a href="java17.html#SealedClasses" target="content" onclick="setActive(this)">SealedClasses</a>
+      </li>
+      </ul>
+    </li>
+    <li class="version-group" data-pkg="java21">
+      <div class="version-header" onclick="toggleVersion('java21')">
+        <span class="chevron">&#x25bc;</span> Java 21
+      </div>
+      <ul class="class-list">
+      <li data-pkg="java21" data-cls="VirtualThreads">
+        <a href="java21.html#VirtualThreads" target="content" onclick="setActive(this)">VirtualThreads</a>
+      </li>
+      <li data-pkg="java21" data-cls="RecordPatterns">
+        <a href="java21.html#RecordPatterns" target="content" onclick="setActive(this)">RecordPatterns</a>
+      </li>
+      <li data-pkg="java21" data-cls="PatternMatchingSwitch">
+        <a href="java21.html#PatternMatchingSwitch" target="content" onclick="setActive(this)">PatternMatchingSwitch</a>
+      </li>
+      <li data-pkg="java21" data-cls="SequencedCollections">
+        <a href="java21.html#SequencedCollections" target="content" onclick="setActive(this)">SequencedCollections</a>
+      </li>
+      </ul>
+    </li>
+    <li class="version-group" data-pkg="java23">
+      <div class="version-header" onclick="toggleVersion('java23')">
+        <span class="chevron">&#x25bc;</span> Java 23
+      </div>
+      <ul class="class-list">
+      <li data-pkg="java23" data-cls="UnnamedVariables">
+        <a href="java23.html#UnnamedVariables" target="content" onclick="setActive(this)">UnnamedVariables</a>
+      </li>
+      </ul>
+    </li>
+    <li class="version-group" data-pkg="java24">
+      <div class="version-header" onclick="toggleVersion('java24')">
+        <span class="chevron">&#x25bc;</span> Java 24
+      </div>
+      <ul class="class-list">
+      <li data-pkg="java24" data-cls="StreamGatherers">
+        <a href="java24.html#StreamGatherers" target="content" onclick="setActive(this)">StreamGatherers</a>
+      </li>
+      </ul>
+    </li>
+    </ul>
+    <p id="no-match-msg">No results match</p>
+    <div id="sidebar-footer">src/main/java/ &mdash; Java 8&ndash;24</div>
+  </nav>
+  <div id="content-area">
+    <iframe id="frame" name="content" src="java8.html"></iframe>
+  </div>
+</div>
+<script>
+const PKG_CODE = {
+  java8: `package java8;
+
+import java.util.arraylist;
+import java.util.arrays;
+import java.util.collections;
+import java.util.comparator;
+import java.util.list;
+import java.util.function.bifunction;
+import java.util.function.function;
+
+/**
+ * <b>lambda expressions</b>
+ * <p>
+ * lambda expressions allow writing anonymous functions inline as {@code (parameters) -> body},
+ * replacing verbose anonymous class syntax. they are the foundation of java's functional
+ * programming support and work wherever a functional interface is expected.
+ * introduced in java 8.
+ *
+ * @see <a href="https://openjdk.org/projects/lambda/">project lambda</a>
+ */
+public class lambdaexpressions {
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 8: anonymous classes ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 8: lambda expressions ===");
+        demonstrateafter();
+    }
+
+    /** before java 8: anonymous classes for single-method interfaces */
+    static void demonstratebefore() {
+        list<string> names = new arraylist<>(arrays.aslist("banana", "apple", "cherry"));
+
+        // comparator as anonymous class
+        comparator<string> comparator = new comparator<string>() {
+            @override
+            public int compare(string a, string b) {
+                return a.compareto(b);
+            }
+        };
+        collections.sort(names, comparator);
+        system.out.println("sorted: " + names); // output: [apple, banana, cherry]
+
+        // runnable as anonymous class
+        runnable task = new runnable() {
+            @override
+            public void run() {
+                system.out.println("running with anonymous class");
+            }
+        };
+        task.run(); // output: running with anonymous class
+    }
+
+    /** java 8: same behaviour expressed with lambda expressions */
+    static void demonstrateafter() {
+        list<string> names = new arraylist<>(arrays.aslist("banana", "apple", "cherry"));
+
+        // comparator as lambda
+        comparator<string> comparator = (a, b) -> a.compareto(b);
+        collections.sort(names, comparator);
+        system.out.println("sorted: " + names); // output: [apple, banana, cherry]
+
+        // runnable as lambda
+        runnable task = () -> system.out.println("running with lambda");
+        task.run(); // output: running with lambda
+
+        // block-body lambda (multiple statements)
+        bifunction<integer, integer, integer> add = (x, y) -> {
+            int sum = x + y;
+            system.out.println("sum = " + sum); // output: sum = 7
+            return sum;
+        };
+        add.apply(3, 4);
+
+        // expression lambda returning a value
+        function<integer, integer> square = x -> x * x;
+        system.out.println("square(9) = " + square.apply(9)); // output: square(9) = 81
+
+        // lambda passed directly as argument (inline)
+        names.sort((a, b) -> b.compareto(a)); // reverse sort
+        system.out.println("reverse sorted: " + names); // output: [cherry, banana, apple]
+    }
+}
+
+// console output:
+// === before java 8: anonymous classes ===
+// sorted: [apple, banana, cherry]
+// running with anonymous class
+//
+// === java 8: lambda expressions ===
+// sorted: [apple, banana, cherry]
+// running with lambda
+// sum = 7
+// square(9) = 81
+// reverse sorted: [cherry, banana, apple]
+ package java8;
+
+import java.util.arraylist;
+import java.util.arrays;
+import java.util.list;
+import java.util.optional;
+import java.util.stream.collectors;
+
+/**
+ * <b>stream api</b>
+ * <p>
+ * the stream api provides a declarative pipeline model for processing sequences of elements
+ * using operations like {@code filter}, {@code map}, {@code reduce}, and {@code collect},
+ * without explicit loops. streams are lazy — intermediate operations execute only when a
+ * terminal operation is invoked. introduced in java 8 as {@code java.util.stream}.
+ *
+ * @see <a href="https://docs.oracle.com/en/java/se/8/docs/api/java/util/stream/package-summary.html">java.util.stream package</a>
+ */
+public class streamapi {
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 8: explicit loops ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 8: stream api ===");
+        demonstrateafter();
+    }
+
+    /** before java 8: imperative loops for filtering and transforming collections */
+    static void demonstratebefore() {
+        list<string> names = arrays.aslist("alice", "bob", "diana", "elena", "ed");
+
+        // filter names longer than 4 chars, convert to uppercase
+        list<string> result = new arraylist<>();
+        for (string name : names) {
+            if (name.length() > 4) {
+                result.add(name.touppercase());
+            }
+        }
+        system.out.println("filtered names: " + result); // output: [alice, diana, elena]
+
+        // count even numbers
+        list<integer> numbers = arrays.aslist(1, 2, 3, 4, 5, 6);
+        int evencount = 0;
+        for (int n : numbers) {
+            if (n % 2 == 0) evencount++;
+        }
+        system.out.println("even count: " + evencount); // output: even count: 3
+
+        // sum all numbers
+        int sum = 0;
+        for (int n : numbers) sum += n;
+        system.out.println("sum: " + sum); // output: sum: 21
+    }
+
+    /** java 8: same operations expressed as stream pipelines */
+    static void demonstrateafter() {
+        list<string> names = arrays.aslist("alice", "bob", "diana", "elena", "ed");
+        list<integer> numbers = arrays.aslist(1, 2, 3, 4, 5, 6);
+
+        // filter + map + collect
+        list<string> result = names.stream()
+                .filter(s -> s.length() > 4)
+                .map(string::touppercase)
+                .collect(collectors.tolist());
+        system.out.println("filtered names: " + result); // output: [alice, diana, elena]
+
+        // count terminal operation
+        long evencount = numbers.stream()
+                .filter(n -> n % 2 == 0)
+                .count();
+        system.out.println("even count: " + evencount); // output: even count: 3
+
+        // reduce
+        int sum = numbers.stream()
+                .reduce(0, integer::sum);
+        system.out.println("sum: " + sum); // output: sum: 21
+
+        // sorted + distinct
+        list<integer> dupes = arrays.aslist(3, 1, 4, 1, 5, 9, 2, 6, 5);
+        list<integer> sortedunique = dupes.stream()
+                .distinct()
+                .sorted()
+                .collect(collectors.tolist());
+        system.out.println("sorted unique: " + sortedunique); // output: [1, 2, 3, 4, 5, 6, 9]
+
+        // foreach
+        system.out.print("foreach: ");
+        names.stream()
+                .filter(s -> s.length() <= 3)
+                .foreach(s -> system.out.print(s + " ")); // output: bob ed
+        system.out.println();
+
+        // anymatch / allmatch / nonematch
+        boolean anyshort = names.stream().anymatch(s -> s.length() <= 2);
+        boolean allshort = names.stream().allmatch(s -> s.length() <= 5);
+        system.out.println("anymatch length<=2: " + anyshort); // output: false
+        system.out.println("allmatch length<=5: " + allshort); // output: false
+
+        // findfirst returns optional
+        optional<string> first = names.stream()
+                .filter(s -> s.startswith("d"))
+                .findfirst();
+        first.ifpresent(s -> system.out.println("first starting with d: " + s)); // output: diana
+    }
+}
+
+// console output:
+// === before java 8: explicit loops ===
+// filtered names: [alice, diana, elena]
+// even count: 3
+// sum: 21
+//
+// === java 8: stream api ===
+// filtered names: [alice, diana, elena]
+// even count: 3
+// sum: 21
+// sorted unique: [1, 2, 3, 4, 5, 6, 9]
+// foreach: bob ed
+// anymatch length<=2: true
+// allmatch length<=5: true
+// first starting with d: diana
+ package java8;
+
+import java.util.function.bifunction;
+import java.util.function.consumer;
+import java.util.function.function;
+import java.util.function.predicate;
+import java.util.function.supplier;
+
+/**
+ * <b>functional interfaces</b>
+ * <p>
+ * a functional interface has exactly one abstract method, making it compatible with lambda
+ * expressions. the {@code java.util.function} package provides a standard vocabulary of
+ * ready-made functional interfaces: {@code predicate} (test), {@code function} (transform),
+ * {@code consumer} (consume), {@code supplier} (produce), and {@code bifunction} (combine two
+ * inputs). they compose via {@code and}, {@code or}, {@code negate}, {@code andthen}, and
+ * {@code compose}. introduced in java 8.
+ *
+ * @see <a href="https://docs.oracle.com/javase/8/docs/api/java/util/function/package-summary.html">java.util.function package</a>
+ */
+public class functionalinterfaces {
+
+    // custom functional interface
+    @functionalinterface
+    interface transformer<t> {
+        t transform(t input);
+        // only one abstract method allowed; default/static methods are permitted
+        default transformer<t> andthen(transformer<t> next) {
+            return input -> next.transform(this.transform(input));
+        }
+    }
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 8: custom single-method interfaces ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 8: java.util.function interfaces ===");
+        demonstrateafter();
+    }
+
+    /** before java 8: manual single-method interface + anonymous class */
+    static void demonstratebefore() {
+        // had to define a custom interface for every operation
+        interface stringchecker {
+            boolean check(string s);
+        }
+
+        stringchecker islong = new stringchecker() {
+            @override
+            public boolean check(string s) {
+                return s.length() > 5;
+            }
+        };
+        system.out.println("islong(\\"hello\\"): " + islong.check("hello"));       // output: false
+        system.out.println("islong(\\"helloworld\\"): " + islong.check("helloworld")); // output: true
+    }
+
+    /** java 8: standard functional interfaces from java.util.function */
+    static void demonstrateafter() {
+        // predicate<t> — boolean test(t t)
+        predicate<string> islong = s -> s.length() > 5;
+        system.out.println("islong(\\"hello\\"): " + islong.test("hello"));       // output: false
+        system.out.println("islong(\\"helloworld\\"): " + islong.test("helloworld")); // output: true
+
+        // predicate composition: and, or, negate
+        predicate<string> startswithh = s -> s.startswith("h");
+        predicate<string> longandh = islong.and(startswithh);
+        predicate<string> longorh = islong.or(startswithh);
+        system.out.println("long and starts with h (\\"helloworld\\"): " + longandh.test("helloworld")); // output: true
+        system.out.println("long or  starts with h (\\"hi\\"): " + longorh.test("hi"));                 // output: true
+        system.out.println("not islong (\\"hello\\"): " + islong.negate().test("hello"));               // output: true
+
+        // function<t,r> — r apply(t t)
+        function<string, integer> length = string::length;
+        system.out.println("length(\\"hello\\"): " + length.apply("hello")); // output: 5
+
+        // function composition: andthen (f then g), compose (g then f)
+        function<integer, string> inttostr = n -> "number=" + n;
+        function<string, string> lengththenstr = length.andthen(inttostr);
+        system.out.println("andthen: " + lengththenstr.apply("hello")); // output: number=5
+
+        // consumer<t> — void accept(t t)
+        consumer<string> printer = system.out::println;
+        printer.accept("consumer prints: hello"); // output: consumer prints: hello
+
+        // consumer chaining with andthen
+        consumer<string> upperprinter = s -> system.out.println("upper: " + s.touppercase());
+        printer.andthen(upperprinter).accept("world");
+        // output: world
+        // output: upper: world
+
+        // supplier<t> — t get()
+        supplier<string> greeting = () -> "hello, world!";
+        system.out.println("supplier: " + greeting.get()); // output: hello, world!
+
+        // bifunction<t,u,r> — r apply(t t, u u)
+        bifunction<integer, integer, integer> multiply = (a, b) -> a * b;
+        system.out.println("3 * 4 = " + multiply.apply(3, 4)); // output: 3 * 4 = 12
+
+        // custom @functionalinterface with default method
+        transformer<string> upper = string::touppercase;
+        transformer<string> exclaim = s -> s + "!";
+        transformer<string> shout = upper.andthen(exclaim);
+        system.out.println("shout(\\"hello\\"): " + shout.transform("hello")); // output: hello!
+    }
+}
+
+// console output:
+// === before java 8: custom single-method interfaces ===
+// islong("hello"): false
+// islong("helloworld"): true
+//
+// === java 8: java.util.function interfaces ===
+// islong("hello"): false
+// islong("helloworld"): true
+// long and starts with h ("helloworld"): true
+// long or  starts with h ("hi"): true
+// not islong ("hello"): true
+// length("hello"): 5
+// andthen: number=5
+// consumer prints: hello
+// world
+// upper: world
+// supplier: hello, world!
+// 3 * 4 = 12
+// shout("hello"): hello!
+ package java8;
+
+import java.util.arrays;
+import java.util.comparator;
+import java.util.list;
+import java.util.function.function;
+import java.util.function.supplier;
+import java.util.stream.collectors;
+
+/**
+ * <b>method references</b>
+ * <p>
+ * method references are shorthand lambda expressions that delegate to an existing method using
+ * the {@code ::} operator. there are four forms:
+ * <ul>
+ *   <li><b>static:</b> {@code classname::staticmethod} — e.g. {@code integer::parseint}</li>
+ *   <li><b>bound instance:</b> {@code instance::method} — e.g. {@code system.out::println}</li>
+ *   <li><b>unbound instance:</b> {@code classname::instancemethod} — e.g. {@code string::touppercase}</li>
+ *   <li><b>constructor:</b> {@code classname::new} — e.g. {@code stringbuilder::new}</li>
+ * </ul>
+ * introduced in java 8.
+ *
+ * @see <a href="https://docs.oracle.com/javase/tutorial/java/javaoo/methodreferences.html">method references tutorial</a>
+ */
+public class methodreferences {
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 8: explicit lambdas ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 8: method references ===");
+        demonstrateafter();
+    }
+
+    /** before java 8: explicit lambda expressions for every method delegation */
+    static void demonstratebefore() {
+        list<string> words = arrays.aslist("hello", "world", "java");
+
+        // explicit lambda instead of unbound instance reference
+        list<string> upper = words.stream()
+                .map(s -> s.touppercase())
+                .collect(collectors.tolist());
+        system.out.println("uppercase: " + upper); // output: [hello, world, java]
+
+        // explicit lambda instead of bound instance reference
+        words.foreach(s -> system.out.println(s));
+        // output: hello / world / java
+
+        // explicit lambda instead of static reference
+        list<string> numstrs = arrays.aslist("1", "2", "3");
+        list<integer> nums = numstrs.stream()
+                .map(s -> integer.parseint(s))
+                .collect(collectors.tolist());
+        system.out.println("parsed: " + nums); // output: [1, 2, 3]
+    }
+
+    /** java 8: method references — more readable than equivalent lambdas */
+    static void demonstrateafter() {
+        list<string> words = arrays.aslist("hello", "world", "java");
+
+        // unbound instance reference: classname::instancemethod
+        // equivalent lambda: s -> s.touppercase()
+        list<string> upper = words.stream()
+                .map(string::touppercase)
+                .collect(collectors.tolist());
+        system.out.println("uppercase: " + upper); // output: [hello, world, java]
+
+        // bound instance reference: instance::method
+        // equivalent lambda: s -> system.out.println(s)
+        words.foreach(system.out::println);
+        // output: hello / world / java
+
+        // static reference: classname::staticmethod
+        // equivalent lambda: s -> integer.parseint(s)
+        list<string> numstrs = arrays.aslist("1", "2", "3");
+        list<integer> nums = numstrs.stream()
+                .map(integer::parseint)
+                .collect(collectors.tolist());
+        system.out.println("parsed: " + nums); // output: [1, 2, 3]
+
+        // static reference: string::valueof converts int to string
+        list<integer> numbers = arrays.aslist(10, 20, 30);
+        list<string> asstrings = numbers.stream()
+                .map(string::valueof)
+                .collect(collectors.tolist());
+        system.out.println("as strings: " + asstrings); // output: [10, 20, 30]
+
+        // constructor reference: classname::new
+        // equivalent lambda: s -> new stringbuilder(s)
+        function<string, stringbuilder> sbfactory = stringbuilder::new;
+        stringbuilder sb = sbfactory.apply("hello");
+        system.out.println("stringbuilder: " + sb); // output: hello
+
+        // supplier constructor reference (no-arg constructor)
+        supplier<stringbuilder> sbsupplier = stringbuilder::new;
+        system.out.println("empty sb: '" + sbsupplier.get() + "'"); // output: ''
+
+        // used with comparator.comparing — sort by string length
+        list<string> sorted = words.stream()
+                .sorted(comparator.comparing(string::length))
+                .collect(collectors.tolist());
+        system.out.println("sorted by length: " + sorted); // output: [java, hello, world]
+    }
+}
+
+// console output:
+// === before java 8: explicit lambdas ===
+// uppercase: [hello, world, java]
+// hello
+// world
+// java
+// parsed: [1, 2, 3]
+//
+// === java 8: method references ===
+// uppercase: [hello, world, java]
+// hello
+// world
+// java
+// parsed: [1, 2, 3]
+// as strings: [10, 20, 30]
+// stringbuilder: hello
+// empty sb: ''
+// sorted by length: [java, hello, world]
+ package java8;
+
+/**
+ * <b>default and static methods in interfaces</b>
+ * <p>
+ * java 8 allowed interfaces to declare {@code default} methods with a full implementation and
+ * {@code static} methods. this lets library authors add new methods to existing interfaces
+ * without breaking all implementing classes. default methods can be overridden; when two
+ * interfaces provide the same default method, the implementing class must resolve the conflict
+ * explicitly using {@code interfacea.super.method()}. introduced in java 8.
+ *
+ * @see <a href="https://docs.oracle.com/javase/tutorial/java/iandi/defaultmethods.html">default methods tutorial</a>
+ */
+public class defaultmethods {
+
+    // ── before: shared logic required an external utility class ─────────────
+
+    interface oldvehicle {
+        string getbrand();
+        // no default methods — every implementor must handle startengine separately,
+        // or rely on an external utility class like vehicleutils.
+    }
+
+    static class vehicleutils {
+        static void startengine(oldvehicle v) {
+            system.out.println("[util] " + v.getbrand() + " engine started");
+        }
+    }
+
+    // ── after: default and static methods on the interface ──────────────────
+
+    interface vehicle {
+        string getbrand();
+
+        /** default method — provided by the interface, can be overridden */
+        default void startengine() {
+            system.out.println(getbrand() + " engine started");
+        }
+
+        default void stopengine() {
+            system.out.println(getbrand() + " engine stopped");
+        }
+
+        /** static factory on the interface — available without an instance */
+        static vehicle of(string brand) {
+            return () -> brand; // lambda satisfies the single abstract method
+        }
+    }
+
+    // diamond problem: two interfaces both define the same default method
+    interface a {
+        default string describe() { return "interface a"; }
+    }
+
+    interface b {
+        default string describe() { return "interface b"; }
+    }
+
+    // implementing class must override and disambiguate
+    static class ab implements a, b {
+        @override
+        public string describe() {
+            return a.super.describe(); // explicitly choose a's implementation
+        }
+    }
+
+    // a class that overrides the default method
+    static class electriccar implements vehicle {
+        private final string brand;
+        electriccar(string brand) { this.brand = brand; }
+
+        @override
+        public string getbrand() { return brand; }
+
+        @override
+        public void startengine() {
+            // electric cars are silent — override the default behaviour
+            system.out.println(brand + " motor engaged (no engine noise)");
+        }
+    }
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 8: utility class for shared behaviour ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 8: default and static interface methods ===");
+        demonstrateafter();
+    }
+
+    /** before java 8: shared logic lives in a separate utility class */
+    static void demonstratebefore() {
+        oldvehicle car = () -> "toyota";
+        vehicleutils.startengine(car); // output: [util] toyota engine started
+    }
+
+    /** java 8: default methods provide shared behaviour directly on the interface */
+    static void demonstrateafter() {
+        // static factory method on the interface
+        vehicle toyota = vehicle.of("toyota");
+        toyota.startengine(); // output: toyota engine started
+        toyota.stopengine();  // output: toyota engine stopped
+
+        // subclass overrides the default
+        vehicle tesla = new electriccar("tesla");
+        tesla.startengine(); // output: tesla motor engaged (no engine noise)
+        tesla.stopengine();  // output: tesla engine stopped  (uses default)
+
+        // diamond problem resolution
+        ab ab = new ab();
+        system.out.println("diamond resolved: " + ab.describe()); // output: interface a
+    }
+}
+
+// console output:
+// === before java 8: utility class for shared behaviour ===
+// [util] toyota engine started
+//
+// === java 8: default and static interface methods ===
+// toyota engine started
+// toyota engine stopped
+// tesla motor engaged (no engine noise)
+// tesla engine stopped
+// diamond resolved: interface a
+ package java8;
+
+import java.util.optional;
+
+/**
+ * <b>optional&lt;t&gt;</b>
+ * <p>
+ * {@code optional<t>} is a container that either holds a non-null value or is explicitly empty.
+ * it forces callers to handle the absent case, replacing {@code null} returns that silently
+ * cause {@code nullpointerexception}. use it as a return type for methods that may produce no
+ * result; avoid it as a field or parameter type. introduced in java 8.
+ *
+ * @see <a href="https://docs.oracle.com/javase/8/docs/api/java/util/optional.html">optional javadoc</a>
+ */
+public class optionalclass {
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 8: nullable return values ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 8: optional<t> ===");
+        demonstrateafter();
+    }
+
+    // ── simulated repository ─────────────────────────────────────────────────
+
+    /** pre-java-8 style: returns null when not found */
+    static string finduserold(string name) {
+        if ("alice".equals(name)) return "alice (age 30)";
+        return null; // caller must remember to check!
+    }
+
+    /** java 8 style: optional makes absence explicit in the signature */
+    static optional<string> finduser(string name) {
+        if ("alice".equals(name)) return optional.of("alice (age 30)");
+        return optional.empty();
+    }
+
+    /** before java 8: manual null checks everywhere */
+    static void demonstratebefore() {
+        string user = finduserold("alice");
+        if (user != null) {
+            system.out.println("found: " + user); // output: found: alice (age 30)
+        }
+
+        string missing = finduserold("bob");
+        if (missing != null) {
+            system.out.println(missing.touppercase());
+        } else {
+            system.out.println("user not found"); // output: user not found
+        }
+
+        // easy to forget the null check — nullpointerexception risk:
+        // string danger = finduserold("bob").touppercase(); // would throw npe
+    }
+
+    /** java 8: optional api for safe, readable absent-value handling */
+    static void demonstrateafter() {
+        // creating optionals
+        optional<string> present = optional.of("alice");
+        optional<string> empty   = optional.empty();
+        optional<string> nullable = optional.ofnullable(null); // same as empty()
+
+        system.out.println("present: " + present);   // output: optional[alice]
+        system.out.println("empty: "   + empty);     // output: optional.empty
+
+        // checking presence
+        system.out.println("ispresent: " + present.ispresent()); // output: true
+        system.out.println("isempty:   " + empty.isempty());     // output: true
+
+        // safe extraction
+        system.out.println("orelse: " + empty.orelse("default"));          // output: default
+        system.out.println("orelseget: " + empty.orelseget(() -> "lazy")); // output: lazy
+
+        try {
+            empty.orelsethrow(() -> new illegalstateexception("not found"));
+        } catch (illegalstateexception e) {
+            system.out.println("orelsethrow: " + e.getmessage()); // output: not found
+        }
+
+        // transformations — do nothing when empty, no npe
+        optional<string> upper = present.map(string::touppercase);
+        system.out.println("map: " + upper); // output: optional[alice]
+
+        optional<string> filtered = present.filter(s -> s.length() > 10);
+        system.out.println("filter (len>10): " + filtered); // output: optional.empty
+
+        // flatmap — avoids optional<optional<t>>
+        optional<optional<string>> nested = present.map(s -> optional.of(s + "!"));
+        optional<string> flat = present.flatmap(s -> optional.of(s + "!"));
+        system.out.println("nested: " + nested); // output: optional[optional[alice!]]
+        system.out.println("flat:   " + flat);   // output: optional[alice!]
+
+        // ifpresent — consume only when value exists
+        present.ifpresent(s -> system.out.println("ifpresent: " + s)); // output: ifpresent: alice
+        empty.ifpresent(s -> system.out.println("never printed"));
+
+        // full example: safe lookup chain
+        finduser("alice")
+                .map(string::touppercase)
+                .ifpresent(s -> system.out.println("found: " + s)); // output: found: alice (age 30)
+
+        finduser("bob")
+                .map(string::touppercase)
+                .ifpresentorelse(
+                        s -> system.out.println("found: " + s),
+                        () -> system.out.println("bob not found") // output: bob not found
+                );
+    }
+}
+
+// console output:
+// === before java 8: nullable return values ===
+// found: alice (age 30)
+// user not found
+//
+// === java 8: optional<t> ===
+// present: optional[alice]
+// empty: optional.empty
+// ispresent: true
+// isempty:   true
+// orelse: default
+// orelseget: lazy
+// orelsethrow: not found
+// map: optional[alice]
+// filter (len>10): optional.empty
+// nested: optional[optional[alice!]]
+// flat:   optional[alice!]
+// ifpresent: alice
+// found: alice (age 30)
+// bob not found
+`,
+  java9: `package java9;
+
+import java.util.arraylist;
+import java.util.arrays;
+import java.util.collections;
+import java.util.hashmap;
+import java.util.hashset;
+import java.util.list;
+import java.util.map;
+import java.util.set;
+
+/**
+ * <b>collection factory methods</b>
+ * <p>
+ * java 9 added static factory methods {@code list.of()}, {@code set.of()}, {@code map.of()},
+ * and {@code map.ofentries()} that create compact, unmodifiable collections in a single
+ * expression. the resulting collections reject {@code null} elements and throw
+ * {@code unsupportedoperationexception} on any mutation attempt. introduced in java 9 (jep 269).
+ *
+ * @see <a href="https://openjdk.org/jeps/269">jep 269 – convenience factory methods for collections</a>
+ */
+public class collectionfactorymethods {
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 9: verbose unmodifiable collections ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 9: collection factory methods ===");
+        demonstrateafter();
+    }
+
+    /** before java 9: multiple steps to create an unmodifiable collection */
+    static void demonstratebefore() {
+        // unmodifiable list — two steps
+        list<string> list = collections.unmodifiablelist(
+                new arraylist<>(arrays.aslist("apple", "banana", "cherry")));
+        system.out.println("list: " + list); // output: [apple, banana, cherry]
+
+        // unmodifiable set — two steps + extra constructor
+        set<integer> set = collections.unmodifiableset(
+                new hashset<>(arrays.aslist(1, 2, 3)));
+        system.out.println("set contains 2: " + set.contains(2)); // output: true
+
+        // unmodifiable map — three steps: create, populate, wrap
+        map<string, integer> map = new hashmap<>();
+        map.put("one", 1);
+        map.put("two", 2);
+        map = collections.unmodifiablemap(map);
+        system.out.println("map: " + map); // output: {one=1, two=2}
+    }
+
+    /** java 9: one-line factory methods returning unmodifiable collections */
+    static void demonstrateafter() {
+        // list.of() — ordered, unmodifiable
+        list<string> list = list.of("apple", "banana", "cherry");
+        system.out.println("list: " + list); // output: [apple, banana, cherry]
+
+        // set.of() — unordered, unmodifiable, no duplicates allowed
+        set<integer> set = set.of(1, 2, 3);
+        system.out.println("set contains 2: " + set.contains(2)); // output: true
+
+        // map.of() — up to 10 key-value pairs inline
+        map<string, integer> map = map.of("one", 1, "two", 2, "three", 3);
+        system.out.println("map get 'two': " + map.get("two")); // output: 2
+
+        // map.ofentries() — for more than 10 pairs or improved readability
+        map<string, string> capitals = map.ofentries(
+                map.entry("france", "paris"),
+                map.entry("germany", "berlin"),
+                map.entry("japan", "tokyo")
+        );
+        system.out.println("capital of japan: " + capitals.get("japan")); // output: tokyo
+
+        // mutation throws unsupportedoperationexception
+        try {
+            list.add("durian");
+        } catch (unsupportedoperationexception e) {
+            system.out.println("add() threw: " + e.getclass().getsimplename()); // output: unsupportedoperationexception
+        }
+
+        // null elements are rejected with nullpointerexception
+        try {
+            list.of("a", null, "b");
+        } catch (nullpointerexception e) {
+            system.out.println("null element threw: nullpointerexception"); // output: nullpointerexception
+        }
+
+        // tip: to get a mutable copy of a factory-created collection, wrap it:
+        list<string> mutable = new arraylist<>(list.of("x", "y"));
+        mutable.add("z");
+        system.out.println("mutable copy: " + mutable); // output: [x, y, z]
+    }
+}
+
+// console output:
+// === before java 9: verbose unmodifiable collections ===
+// list: [apple, banana, cherry]
+// set contains 2: true
+// map: {one=1, two=2}
+//
+// === java 9: collection factory methods ===
+// list: [apple, banana, cherry]
+// set contains 2: true
+// map get 'two': 2
+// capital of japan: tokyo
+// add() threw: unsupportedoperationexception
+// null element threw: nullpointerexception
+// mutable copy: [x, y, z]
+ package java9;
+
+/**
+ * <b>try-with-resources enhancement</b>
+ * <p>
+ * in java 7/8, the variable declared in a {@code try}-with-resources header had to be introduced
+ * inside the {@code try(...)} parentheses. java 9 relaxed this: any <em>effectively final</em>
+ * {@code autocloseable} variable already in scope can be listed directly in the header without
+ * re-declaring it. multiple variables are separated by {@code ;}. closing order is reversed
+ * (last-opened, first-closed). introduced in java 9.
+ *
+ * @see <a href="https://docs.oracle.com/javase/9/language/effective-final-variables-try-resources.htm">effectively final variables in try-with-resources</a>
+ */
+public class trywithresourcesenhancement {
+
+    /** simple autocloseable to illustrate resource lifecycle */
+    static class resource implements autocloseable {
+        private final string name;
+
+        resource(string name) {
+            this.name = name;
+            system.out.println(name + " opened");
+        }
+
+        void use() {
+            system.out.println(name + " in use");
+        }
+
+        @override
+        public void close() {
+            system.out.println(name + " closed");
+        }
+    }
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 9: must re-declare variable in try header ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 9: effectively-final variable used directly ===");
+        demonstrateafter();
+    }
+
+    /** before java 9: existing variable must be re-assigned to a new variable inside try(...) */
+    static void demonstratebefore() {
+        resource r1 = new resource("r1");
+        // must declare a new variable 'res' even though r1 is the same object
+        try (resource res = r1) {
+            res.use();
+        }
+        // output:
+        // r1 opened
+        // r1 in use
+        // r1 closed
+    }
+
+    /** java 9: effectively-final variables used directly in try-with-resources */
+    static void demonstrateafter() {
+        resource r1 = new resource("r1");
+        resource r2 = new resource("r2");
+
+        // r1 and r2 are effectively final (never reassigned) — use them directly
+        // multiple resources separated by ; — closed in reverse order: r2, then r1
+        try (r1; r2) {
+            r1.use();
+            r2.use();
+        }
+        // output:
+        // r1 opened
+        // r2 opened
+        // r1 in use
+        // r2 in use
+        // r2 closed   ← reversed closing order
+        // r1 closed
+
+        system.out.println("--- single effectively-final variable ---");
+        resource r3 = new resource("r3");
+        try (r3) {
+            r3.use();
+        }
+        // output:
+        // r3 opened
+        // r3 in use
+        // r3 closed
+    }
+}
+
+// console output:
+// === before java 9: must re-declare variable in try header ===
+// r1 opened
+// r1 in use
+// r1 closed
+//
+// === java 9: effectively-final variable used directly ===
+// r1 opened
+// r2 opened
+// r1 in use
+// r2 in use
+// r2 closed
+// r1 closed
+// --- single effectively-final variable ---
+// r3 opened
+// r3 in use
+// r3 closed
+`,
+  java10: `package java10;
+
+import java.util.arraylist;
+import java.util.hashmap;
+import java.util.list;
+import java.util.map;
+
+/**
+ * <b>local variable type inference ({@code var})</b>
+ * <p>
+ * the {@code var} keyword lets the compiler infer the type of a local variable from its
+ * initializer, reducing repetition in declarations. java remains statically typed — the
+ * inferred type is fixed at compile time. {@code var} works in local variable declarations,
+ * enhanced {@code for} loops, and {@code try}-with-resources. it cannot be used for fields,
+ * method parameters, return types, or where the initializer is {@code null} or an array
+ * literal without a type. introduced in java 10 (jep 286).
+ *
+ * @see <a href="https://openjdk.org/jeps/286">jep 286 – local-variable type inference</a>
+ */
+public class localvariabletypeinference {
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 10: explicit type declarations ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 10: var keyword ===");
+        demonstrateafter();
+    }
+
+    /** before java 10: type is repeated on both sides of the declaration */
+    static void demonstratebefore() {
+        arraylist<string> list = new arraylist<string>();
+        list.add("hello");
+        list.add("world");
+        system.out.println("list: " + list); // output: [hello, world]
+
+        map<string, list<integer>> map = new hashmap<string, list<integer>>();
+        map.put("primes", new arraylist<>(list.of(2, 3, 5)));
+        system.out.println("map: " + map); // output: {primes=[2, 3, 5]}
+
+        for (string item : list) {
+            system.out.println("  item: " + item);
+        }
+    }
+
+    /** java 10: var — type inferred from the right-hand side */
+    static void demonstrateafter() {
+        // simple types
+        var number = 42;           // inferred: int
+        var text   = "hello";      // inferred: string
+        var pi     = 3.14;         // inferred: double
+
+        system.out.println("number: " + number + " (" + ((object) number).getclass().getsimplename() + ")"); // output: number: 42 (integer)
+        system.out.println("text: "   + text);  // output: text: hello
+        system.out.println("pi: "     + pi);    // output: pi: 3.14
+
+        // collection declaration — right side still explicit, left side clean
+        var list = new arraylist<string>();
+        list.add("hello");
+        list.add("world");
+        system.out.println("list type: " + list.getclass().getsimplename()); // output: arraylist
+
+        // nested generics — var especially helpful
+        var map = new hashmap<string, list<integer>>();
+        map.put("primes", new arraylist<>(list.of(2, 3, 5)));
+        system.out.println("map: " + map); // output: {primes=[2, 3, 5]}
+
+        // var in enhanced for loop
+        for (var item : list) {
+            system.out.println("  item: " + item); // output: hello / world
+        }
+
+        // anonymous type capture — var exposes the anonymous class's members
+        // (not possible with an explicit declared type)
+        var anon = new object() {
+            string name  = "claude";
+            int    version = 4;
+        };
+        system.out.println("anon.name: "    + anon.name);    // output: claude
+        system.out.println("anon.version: " + anon.version); // output: 4
+
+        // limitations (shown as comments — these would not compile):
+        // var field = "nope";          // ← not allowed for instance/static fields
+        // var nothing;                 // ← no initializer
+        // var x = null;               // ← null gives no type info
+        // void method(var param) {}    // ← not allowed for method parameters
+        system.out.println("(var limitations shown in comments above)");
+    }
+}
+
+// console output:
+// === before java 10: explicit type declarations ===
+// list: [hello, world]
+// map: {primes=[2, 3, 5]}
+//   item: hello
+//   item: world
+//
+// === java 10: var keyword ===
+// number: 42 (integer)
+// text: hello
+// pi: 3.14
+// list type: arraylist
+// map: {primes=[2, 3, 5]}
+//   item: hello
+//   item: world
+// anon.name: claude
+// anon.version: 4
+// (var limitations shown in comments above)
+`,
+  java11: `package java11;
+
+import java.util.arrays;
+import java.util.stream.collectors;
+
+/**
+ * <b>new string methods</b>
+ * <p>
+ * java 11 added several convenience methods to {@code string}:
+ * <ul>
+ *   <li>{@code isblank()} — true if the string is empty or contains only whitespace</li>
+ *   <li>{@code strip()} / {@code stripleading()} / {@code striptrailing()} — unicode-aware whitespace removal (unlike {@code trim()} which only handles ascii ≤ u+0020)</li>
+ *   <li>{@code lines()} — lazily splits on line terminators, returning a {@code stream<string>}</li>
+ *   <li>{@code repeat(n)} — concatenates the string with itself {@code n} times</li>
+ * </ul>
+ * introduced in java 11.
+ *
+ * @see <a href="https://docs.oracle.com/en/java/se/11/docs/api/java.base/java/lang/string.html">string javadoc (java 11)</a>
+ */
+public class stringmethods {
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 11: workarounds ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 11: new string methods ===");
+        demonstrateafter();
+    }
+
+    /** before java 11: verbose equivalents of the new methods */
+    static void demonstratebefore() {
+        // isblank — using trim().isempty()
+        string blank = "   ";
+        system.out.println("blank check (trim): " + blank.trim().isempty()); // output: true
+
+        // strip — trim() removes only ascii whitespace (chars ≤ '\\u0020')
+        // the unicode en-quad space u+2000 is not removed by trim()
+        string withunicode = "\\u2000hello\\u2000";
+        system.out.println("trim keeps unicode space: '" + withunicode.trim() + "'"); // output: ' hello ' (spaces remain)
+
+        // lines — splitting manually
+        string multiline = "line1\\nline2\\nline3";
+        string[] linearray = multiline.split("\\\\r");
+        system.out.println("lines via split: " + arrays.aslist(linearray)); // output: [line1, line2, line3]
+
+        // repeat — stringbuilder loop
+        stringbuilder sb = new stringbuilder();
+        for (int i = 0; i < 3; i++) sb.append("ha");
+        system.out.println("repeat via loop: " + sb); // output: hahaha
+    }
+
+    /** java 11: clean, expressive string utility methods */
+    static void demonstrateafter() {
+        // isblank()
+        system.out.println("\\"   \\".isblank(): "  + "   ".isblank());  // output: true
+        system.out.println("\\"hi \\".isblank(): "  + "hi ".isblank());  // output: false
+        system.out.println("\\"\\".isblank(): "      + "".isblank());     // output: true
+
+        // strip() — unicode-aware (also removes u+2000, u+00a0, etc.)
+        string padded = "  hello  ";
+        system.out.println("strip:         '" + padded.strip()         + "'"); // output: 'hello'
+        system.out.println("stripleading:  '" + padded.stripleading()  + "'"); // output: 'hello  '
+        system.out.println("striptrailing: '" + padded.striptrailing() + "'"); // output: '  hello'
+
+        // unicode whitespace — strip() removes it, trim() does not
+        string withunicode = "\\u2000hello\\u2000";
+        system.out.println("trim  unicode: '" + withunicode.trim()  + "'"); // output: 'hello' on some jvms, or with spaces
+        system.out.println("strip unicode: '" + withunicode.strip() + "'"); // output: 'hello'
+
+        // lines() — returns stream<string>, handles \\n, \\r\\n, \\r
+        string text = "first\\nsecond\\nthird";
+        text.lines().foreach(system.out::println);
+        // output:
+        // first
+        // second
+        // third
+
+        // collect lines into a list
+        var linelist = text.lines().collect(collectors.tolist());
+        system.out.println("line count: " + linelist.size()); // output: 3
+
+        // repeat(n)
+        system.out.println("ha".repeat(3));   // output: hahaha
+        system.out.println("-".repeat(20));   // output: --------------------
+        system.out.println("ab".repeat(0));   // output: (empty string)
+    }
+}
+
+// console output:
+// === before java 11: workarounds ===
+// blank check (trim): true
+// trim keeps unicode space: '?hello?'
+// lines via split: [line1, line2, line3]
+// repeat via loop: hahaha
+//
+// === java 11: new string methods ===
+// "   ".isblank(): true
+// "hi ".isblank(): false
+// "".isblank(): true
+// strip:         'hello'
+// stripleading:  'hello  '
+// striptrailing: '  hello'
+// trim  unicode: '?hello?'
+// strip unicode: 'hello'
+// first
+// second
+// third
+// line count: 3
+// hahaha
+// --------------------
+ package java11;
+
+import java.io.bufferedreader;
+import java.io.inputstreamreader;
+import java.net.httpurlconnection;
+import java.net.uri;
+import java.net.url;
+import java.net.http.httpclient;
+import java.net.http.httprequest;
+import java.net.http.httpresponse;
+import java.time.duration;
+
+/**
+ * <b>http client api</b>
+ * <p>
+ * java 11 standardised the {@code java.net.http.httpclient} api (incubated in java 9 under
+ * {@code jdk.incubator.http}). it provides a fluent builder for requests, supports http/1.1
+ * and http/2, and offers both synchronous ({@code send}) and asynchronous
+ * ({@code sendasync}) calls. it replaces the verbose {@code httpurlconnection} api.
+ * finalized in java 11 (jep 321).
+ *
+ * @see <a href="https://openjdk.org/jeps/321">jep 321 – http client (standard)</a>
+ */
+public class httpclientapi {
+
+    private static final string url_str = "https://httpbin.org/get";
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 11: httpurlconnection ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 11: httpclient api ===");
+        demonstrateafter();
+    }
+
+    /** before java 11: verbose httpurlconnection approach */
+    static void demonstratebefore() {
+        try {
+            url url = new url(url_str);
+            httpurlconnection conn = (httpurlconnection) url.openconnection();
+            conn.setrequestmethod("get");
+            conn.setconnecttimeout(3000);
+            conn.setreadtimeout(3000);
+
+            int status = conn.getresponsecode();
+            system.out.println("status (old api): " + status); // output: 200
+
+            stringbuilder response = new stringbuilder();
+            try (bufferedreader reader = new bufferedreader(
+                    new inputstreamreader(conn.getinputstream()))) {
+                string line;
+                while ((line = reader.readline()) != null) {
+                    response.append(line).append('\\n');
+                }
+            }
+            system.out.println("body (first 60 chars): " + response.substring(0, math.min(60, response.length())));
+            conn.disconnect();
+        } catch (exception e) {
+            system.out.println("(offline — httpurlconnection demo skipped: " + e.getmessage() + ")");
+            system.out.println("old api requires: url, openconnection(), setrequestmethod(), getresponsecode(), bufferedreader loop");
+        }
+    }
+
+    /** java 11: fluent httpclient with sync and async requests */
+    static void demonstrateafter() {
+        httpclient client = httpclient.newbuilder()
+                .connecttimeout(duration.ofseconds(3))
+                .version(httpclient.version.http_2)
+                .build();
+
+        httprequest request = httprequest.newbuilder()
+                .uri(uri.create(url_str))
+                .get()
+                .header("accept", "application/json")
+                .timeout(duration.ofseconds(3))
+                .build();
+
+        // synchronous send
+        try {
+            httpresponse<string> response = client.send(request, httpresponse.bodyhandlers.ofstring());
+            system.out.println("status (new api): " + response.statuscode()); // output: 200
+            system.out.println("http version: " + response.version());
+            string body = response.body();
+            system.out.println("body (first 60 chars): " + body.substring(0, math.min(60, body.length())));
+        } catch (exception e) {
+            system.out.println("(offline — sync demo skipped: " + e.getmessage() + ")");
+        }
+
+        // asynchronous send — returns completablefuture
+        system.out.println("--- async request ---");
+        try {
+            client.sendasync(request, httpresponse.bodyhandlers.ofstring())
+                    .thenapply(httpresponse::statuscode)
+                    .thenaccept(code -> system.out.println("async status: " + code)) // output: async status: 200
+                    .join(); // wait for completion in this demo
+        } catch (exception e) {
+            system.out.println("(offline — async demo skipped: " + e.getmessage() + ")");
+        }
+
+        // post example (body not sent to httpbin in this demo)
+        httprequest postrequest = httprequest.newbuilder()
+                .uri(uri.create("https://httpbin.org/post"))
+                .post(httprequest.bodypublishers.ofstring("{\\"key\\":\\"value\\"}"))
+                .header("content-type", "application/json")
+                .build();
+        system.out.println("post request built: " + postrequest.method() + " " + postrequest.uri());
+        // output: post request built: post https://httpbin.org/post
+    }
+}
+
+// console output:
+// === before java 11: httpurlconnection ===
+// status (old api): 200
+// body (first 60 chars): {
+//   "args": {},
+//   "headers": {
+//     "accept": "*/*",   "h
+//
+// === java 11: httpclient api ===
+// status (new api): 200
+// http version: http_2
+// body (first 60 chars): {
+//   "args": {},
+//   "headers": {
+//     "accept": "application/j
+// --- async request ---
+// async status: 200
+// post request built: post https://httpbin.org/post
+ package java11;
+
+import java.io.bufferedwriter;
+import java.io.ioexception;
+import java.nio.charset.standardcharsets;
+import java.nio.file.files;
+import java.nio.file.path;
+
+/**
+ * <b>files.readstring and files.writestring</b>
+ * <p>
+ * java 11 added {@code files.readstring(path)} and {@code files.writestring(path, charsequence)}
+ * as concise alternatives to reading/writing text files. both use utf-8 by default and accept
+ * an optional {@code charset} parameter. they replace multi-step approaches involving byte
+ * arrays or {@code bufferedwriter}. introduced in java 11.
+ *
+ * @see <a href="https://docs.oracle.com/en/java/se/11/docs/api/java.base/java/nio/file/files.html">files javadoc (java 11)</a>
+ */
+public class filemethods {
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 11: verbose file i/o ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 11: files.readstring / writestring ===");
+        demonstrateafter();
+    }
+
+    /** before java 11: reading and writing files required multiple steps */
+    static void demonstratebefore() {
+        path tmp = null;
+        try {
+            tmp = files.createtempfile("demo_before", ".txt");
+
+            // write: convert string to bytes manually
+            string content = "hello, java!\\nsecond line.";
+            files.write(tmp, content.getbytes(standardcharsets.utf_8));
+
+            // read: load bytes and convert back to string
+            byte[] bytes = files.readallbytes(tmp);
+            string read = new string(bytes, standardcharsets.utf_8);
+            system.out.println("read (old): " + read); // output: hello, java!\\nsecond line.
+
+            // alternative write using bufferedwriter
+            try (bufferedwriter writer = files.newbufferedwriter(tmp, standardcharsets.utf_8)) {
+                writer.write("overwritten content");
+            }
+            system.out.println("written via bufferedwriter");
+        } catch (ioexception e) {
+            system.out.println("error: " + e.getmessage());
+        } finally {
+            if (tmp != null) {
+                try { files.deleteifexists(tmp); } catch (ioexception ignored) {}
+            }
+        }
+    }
+
+    /** java 11: single-method read/write with files.readstring / writestring */
+    static void demonstrateafter() {
+        path tmp = null;
+        try {
+            tmp = files.createtempfile("demo_java11", ".txt");
+
+            // write — one line, utf-8 by default
+            string content = "hello, java 11!\\nsecond line.\\nthird line.";
+            files.writestring(tmp, content);
+            system.out.println("file written to: " + tmp.getfilename());
+
+            // read — one line, utf-8 by default
+            string read = files.readstring(tmp);
+            system.out.println("read content:\\n" + read);
+            // output:
+            // hello, java 11!
+            // second line.
+            // third line.
+
+            // line count using the java 11 string.lines() method
+            long linecount = read.lines().count();
+            system.out.println("line count: " + linecount); // output: 3
+
+            // explicit charset
+            files.writestring(tmp, "café", standardcharsets.utf_8);
+            string withaccent = files.readstring(tmp, standardcharsets.utf_8);
+            system.out.println("with accent: " + withaccent); // output: café
+
+            // append using standardopenoption
+            files.writestring(tmp, "\\nappended line",
+                    java.nio.file.standardopenoption.append);
+            system.out.println("after append lines: " + files.readstring(tmp).lines().count()); // output: 2
+
+        } catch (ioexception e) {
+            system.out.println("error: " + e.getmessage());
+        } finally {
+            if (tmp != null) {
+                try { files.deleteifexists(tmp); } catch (ioexception ignored) {}
+            }
+        }
+    }
+}
+
+// console output:
+// === before java 11: verbose file i/o ===
+// read (old): hello, java!
+// second line.
+// written via bufferedwriter
+//
+// === java 11: files.readstring / writestring ===
+// file written to: demo_java11<tmpid>.txt
+// read content:
+// hello, java 11!
+// second line.
+// third line.
+// line count: 3
+// with accent: café
+// after append lines: 2
+`,
+  java14: `package java14;
+
+/**
+ * <b>switch expressions</b>
+ * <p>
+ * switch expressions turn the {@code switch} construct from a statement into an expression
+ * that returns a value. key improvements:
+ * <ul>
+ *   <li>arrow ({@code ->}) syntax eliminates fall-through and the need for {@code break}</li>
+ *   <li>multiple labels share one arm: {@code case "mon", "fri" ->}</li>
+ *   <li>{@code yield} returns a value from a block-body case arm</li>
+ *   <li>the compiler enforces exhaustiveness (all cases must be covered)</li>
+ * </ul>
+ * previewed in java 12 (jep 325) and java 13 (jep 354); finalized in java 14 (jep 361).
+ *
+ * @see <a href="https://openjdk.org/jeps/361">jep 361 – switch expressions</a>
+ */
+public class switchexpressions {
+
+    private enum day { mon, tue, wed, thu, fri, sat, sun }
+    private enum season { spring, summer, autumn, winter }
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 14: switch statement ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 14: switch expression ===");
+        demonstrateafter();
+    }
+
+    /** before java 14: switch statement — fall-through risk, mutable result variable */
+    static void demonstratebefore() {
+        day day = day.wed;
+
+        // result must be assigned before the switch, then mutated inside it
+        int numletters;
+        switch (day) {
+            case mon:
+            case fri:
+            case sun:
+                numletters = 6;
+                break;
+            case tue:
+                numletters = 7;
+                break;
+            case thu:
+            case sat:
+                numletters = 8;
+                break;
+            default:
+                numletters = 9; // wed, etc.
+                break;
+        }
+        system.out.println(day + " has " + numletters + " letters"); // output: wed has 9 letters
+
+        // classic fall-through (intentional but error-prone):
+        string type;
+        switch (day) {
+            case sat:
+            case sun:
+                type = "weekend";
+                break;
+            default:
+                type = "weekday";
+        }
+        system.out.println(day + " is a " + type); // output: wed is a weekday
+    }
+
+    /** java 14: switch expression — compact, safe, returns a value */
+    static void demonstrateafter() {
+        day day = day.wed;
+
+        // arrow syntax — no fall-through, no break, multiple labels share one arm
+        int numletters = switch (day) {
+            case mon, fri, sun -> 6;
+            case tue            -> 7;
+            case thu, sat       -> 8;
+            case wed            -> 9;
+        };
+        system.out.println(day + " has " + numletters + " letters"); // output: wed has 9 letters
+
+        // block body with yield — used when multiple statements are needed
+        string description = switch (day) {
+            case mon -> "start of the work week";
+            case fri -> "end of the work week";
+            case sat, sun -> "weekend!";
+            default -> {
+                string msg = day.name().charat(0) + day.name().substring(1).tolowercase();
+                yield "midweek: " + msg; // yield returns from the block
+            }
+        };
+        system.out.println(description); // output: midweek: wed
+
+        // switch expression with string selector
+        string command = "start";
+        int code = switch (command) {
+            case "start"  -> 1;
+            case "stop"   -> 2;
+            case "pause"  -> 3;
+            default       -> -1;
+        };
+        system.out.println("command '" + command + "' code: " + code); // output: 1
+
+        // used inline as an argument
+        system.out.println("season: " + getseason(day.fri)); // output: season: (based on mapping)
+
+        // exhaustiveness: switch over enum without default is ok if all values are listed
+        for (season s : season.values()) {
+            string months = switch (s) {
+                case spring -> "mar–may";
+                case summer -> "jun–aug";
+                case autumn -> "sep–nov";
+                case winter -> "dec–feb";
+            };
+            system.out.println(s + ": " + months);
+        }
+        // output:
+        // spring: mar-may
+        // summer: jun-aug
+        // autumn: sep-nov
+        // winter: dec-feb
+    }
+
+    static string getseason(day day) {
+        return switch (day) {
+            case mon, tue, wed -> "winter month (example)";
+            case thu, fri      -> "spring month (example)";
+            case sat, sun      -> "weekend — season varies";
+        };
+    }
+}
+
+// console output:
+// === before java 14: switch statement ===
+// wed has 9 letters
+// wed is a weekday
+//
+// === java 14: switch expression ===
+// wed has 9 letters
+// midweek: wed
+// command 'start' code: 1
+// season: spring month (example)
+// spring: mar-may
+// summer: jun-aug
+// autumn: sep-nov
+// winter: dec-feb
+`,
+  java15: `package java15;
+
+/**
+ * <b>text blocks</b>
+ * <p>
+ * text blocks are multi-line string literals delimited by {@code """} that automatically handle:
+ * <ul>
+ *   <li>indentation stripping — common leading whitespace is removed based on the closing {@code """} position</li>
+ *   <li>line-ending normalisation — always {@code \\n}, regardless of platform</li>
+ *   <li>elimination of most escape sequences for html, json, sql, etc.</li>
+ * </ul>
+ * new escape sequences: {@code \\} suppresses a newline (line continuation);
+ * {@code \\s} preserves a trailing space. previewed in java 13 (jep 355) and java 14 (jep 368);
+ * finalized in java 15 (jep 378).
+ *
+ * @see <a href="https://openjdk.org/jeps/378">jep 378 – text blocks</a>
+ */
+public class textblocks {
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 15: escape-heavy string literals ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 15: text blocks ===");
+        demonstrateafter();
+    }
+
+    /** before java 15: json/html/sql as single-line strings with many escapes */
+    static void demonstratebefore() {
+        // json — every quote must be escaped, newlines explicit
+        string json = "{\\n" +
+                "  \\"name\\": \\"alice\\",\\n" +
+                "  \\"age\\": 30,\\n" +
+                "  \\"active\\": true\\n" +
+                "}";
+        system.out.println("json:\\n" + json);
+
+        // html — long concatenation chain
+        string html = "<html>\\n" +
+                "    <body>\\n" +
+                "        <p>hello, world!</p>\\n" +
+                "    </body>\\n" +
+                "</html>";
+        system.out.println("html:\\n" + html);
+
+        // sql — fragile string joining
+        string sql = "select id, name, email\\n" +
+                "from   users\\n" +
+                "where  active = true\\n" +
+                "order  by name";
+        system.out.println("sql:\\n" + sql);
+    }
+
+    /** java 15: text blocks — readable, indentation-stripped multi-line strings */
+    static void demonstrateafter() {
+        // json text block — closing """ at column 8 strips 8 spaces of leading indent
+        string json = """
+                {
+                  "name": "alice",
+                  "age": 30,
+                  "active": true
+                }
+                """;
+        system.out.println("json:\\n" + json);
+        // output:
+        // {
+        //   "name": "alice",
+        //   "age": 30,
+        //   "active": true
+        // }
+
+        // html text block
+        string html = """
+                <html>
+                    <body>
+                        <p>hello, world!</p>
+                    </body>
+                </html>
+                """;
+        system.out.println("html:\\n" + html);
+
+        // sql text block
+        string sql = """
+                select id, name, email
+                from   users
+                where  active = true
+                order  by name
+                """;
+        system.out.println("sql:\\n" + sql);
+
+        // string.formatted() with text blocks — clean interpolation before string templates
+        string name = "bob";
+        int    age  = 25;
+        string greeting = """
+                hello, %s!
+                you are %d years old.
+                """.formatted(name, age);
+        system.out.println("formatted:\\n" + greeting);
+        // output:
+        // hello, bob!
+        // you are 25 years old.
+
+        // line continuation escape \\  — suppresses the newline
+        string oneline = """
+                this is \\
+                all one line.
+                """;
+        system.out.println("one line: " + oneline); // output: this is all one line.
+
+        // \\s escape — forces a trailing space (otherwise stripped by the compiler)
+        string withtrailing = """
+                "first" \\s
+                "second"
+                """;
+        system.out.println("trailing space after first: " + (withtrailing.indexof("first\\"  ") >= 0));
+
+        // indentation control: closing """ on its own line controls stripping
+        // moving """ to column 0 would preserve all indentation
+        string indented = """
+                line1
+                    line2 (4 extra spaces)
+                line3
+                """;
+        system.out.println("indented block:\\n" + indented);
+        // output:
+        // line1
+        //     line2 (4 extra spaces)
+        // line3
+    }
+}
+
+// console output:
+// === before java 15: escape-heavy string literals ===
+// json:
+// {
+//   "name": "alice",
+//   "age": 30,
+//   "active": true
+// }
+// html:
+// <html>
+//     <body>
+//         <p>hello, world!</p>
+//     </body>
+// </html>
+// sql:
+// select id, name, email
+// from   users
+// where  active = true
+// order  by name
+//
+// === java 15: text blocks ===
+// json:
+// {
+//   "name": "alice",
+//   "age": 30,
+//   "active": true
+// }
+//
+// html:
+// <html>
+//     <body>
+//         <p>hello, world!</p>
+//     </body>
+// </html>
+//
+// sql:
+// select id, name, email
+// from   users
+// where  active = true
+// order  by name
+//
+// formatted:
+// hello, bob!
+// you are 25 years old.
+//
+// one line: this is all one line.
+//
+// trailing space after first: true
+// indented block:
+// line1
+//     line2 (4 extra spaces)
+// line3
+`,
+  java16: `package java16;
+
+import java.util.objects;
+
+/**
+ * <b>records</b>
+ * <p>
+ * records are a concise syntax for declaring immutable data-carrier classes. the compiler
+ * auto-generates a canonical constructor, accessor methods (named after the components,
+ * not {@code getx()}), and {@code tostring}, {@code equals}, and {@code hashcode}
+ * implementations. records are implicitly {@code final} and cannot extend other classes.
+ * custom methods, compact constructors (for validation), and interface implementations are
+ * all supported. previewed in java 14 (jep 359) and java 15 (jep 384); finalized in
+ * java 16 (jep 395).
+ *
+ * @see <a href="https://openjdk.org/jeps/395">jep 395 – records</a>
+ */
+public class records {
+
+    // ── before: full pojo boilerplate ────────────────────────────────────────
+
+    static final class pointold {
+        private final int x;
+        private final int y;
+
+        pointold(int x, int y) { this.x = x; this.y = y; }
+
+        public int getx() { return x; }
+        public int gety() { return y; }
+
+        @override
+        public boolean equals(object o) {
+            if (this == o) return true;
+            if (!(o instanceof pointold that)) return false;
+            return x == that.x && y == that.y;
+        }
+
+        @override
+        public int hashcode() { return objects.hash(x, y); }
+
+        @override
+        public string tostring() { return "pointold{x=" + x + ", y=" + y + "}"; }
+    }
+
+    // ── after: records ────────────────────────────────────────────────────────
+
+    /** basic record — one line replaces ~30 lines of pojo */
+    record point(int x, int y) {
+        /** custom instance method */
+        double distance() {
+            return math.sqrt((double) x * x + (double) y * y);
+        }
+    }
+
+    /** compact constructor — validation logic without repeating field assignments */
+    record positivepoint(int x, int y) {
+        positivepoint {
+            // in a compact constructor, fields are assigned automatically after this block
+            if (x < 0 || y < 0) throw new illegalargumentexception(
+                    "coordinates must be non-negative, got (" + x + ", " + y + ")");
+        }
+    }
+
+    /** record implementing an interface */
+    interface shape {
+        double area();
+    }
+
+    record circle(double radius) implements shape {
+        // compact constructor for validation
+        circle {
+            if (radius <= 0) throw new illegalargumentexception("radius must be positive");
+        }
+
+        @override
+        public double area() { return math.pi * radius * radius; }
+    }
+
+    /** generic record */
+    record pair<a, b>(a first, b second) {}
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 16: verbose pojo ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 16: records ===");
+        demonstrateafter();
+    }
+
+    /** before java 16: manual boilerplate for a simple data class */
+    static void demonstratebefore() {
+        pointold p1 = new pointold(3, 4);
+        pointold p2 = new pointold(3, 4);
+        system.out.println("p1: " + p1);                    // output: pointold{x=3, y=4}
+        system.out.println("p1.equals(p2): " + p1.equals(p2)); // output: true
+        system.out.println("p1.getx(): " + p1.getx());      // output: 3
+    }
+
+    /** java 16: records — auto-generated constructor, accessors, equals, hashcode, tostring */
+    static void demonstrateafter() {
+        // canonical constructor and auto-generated tostring
+        point p1 = new point(3, 4);
+        system.out.println("p1: " + p1); // output: point[x=3, y=4]
+
+        // accessor methods — named after components (no "get" prefix)
+        system.out.println("p1.x(): " + p1.x()); // output: 3
+        system.out.println("p1.y(): " + p1.y()); // output: 4
+
+        // auto-generated equals and hashcode
+        point p2 = new point(3, 4);
+        point p3 = new point(1, 2);
+        system.out.println("p1.equals(p2): " + p1.equals(p2)); // output: true
+        system.out.println("p1.equals(p3): " + p1.equals(p3)); // output: false
+        system.out.println("same hash: " + (p1.hashcode() == p2.hashcode())); // output: true
+
+        // custom method
+        system.out.printf("distance(3,4): %.1f%n", p1.distance()); // output: 5.0
+
+        // compact constructor validates input
+        try {
+            new positivepoint(-1, 5);
+        } catch (illegalargumentexception e) {
+            system.out.println("validation: " + e.getmessage()); // output: coordinates must be non-negative...
+        }
+        positivepoint pp = new positivepoint(2, 3);
+        system.out.println("positivepoint: " + pp); // output: positivepoint[x=2, y=3]
+
+        // record implementing an interface
+        circle c = new circle(5.0);
+        system.out.printf("circle area: %.2f%n", c.area()); // output: 78.54
+
+        // generic record
+        pair<string, integer> pair = new pair<>("hello", 42);
+        system.out.println("pair: " + pair); // output: pair[first=hello, second=42]
+        system.out.println("first: " + pair.first() + ", second: " + pair.second());
+
+        // records are final — cannot be subclassed (compiler error if attempted):
+        // class subpoint extends point {} // ← compile error
+    }
+}
+
+// console output:
+// === before java 16: verbose pojo ===
+// p1: pointold{x=3, y=4}
+// p1.equals(p2): true
+// p1.getx(): 3
+//
+// === java 16: records ===
+// p1: point[x=3, y=4]
+// p1.x(): 3
+// p1.y(): 4
+// p1.equals(p2): true
+// p1.equals(p3): false
+// same hash: true
+// distance(3,4): 5,0
+// validation: coordinates must be non-negative, got (-1, 5)
+// positivepoint: positivepoint[x=2, y=3]
+// circle area: 78,54
+// pair: pair[first=hello, second=42]
+// first: hello, second: 42
+ package java16;
+
+import java.util.arrays;
+import java.util.list;
+
+/**
+ * <b>pattern matching for {@code instanceof}</b>
+ * <p>
+ * pattern matching for {@code instanceof} combines the type test and the cast into a single
+ * expression. when the test succeeds, a <em>pattern variable</em> is bound to the value
+ * (already cast) and is in scope where the condition is known to be true.
+ * this eliminates the redundant explicit cast that always follows {@code instanceof}.
+ * previewed in java 14 (jep 305) and java 15 (jep 375); finalized in java 16 (jep 394).
+ *
+ * @see <a href="https://openjdk.org/jeps/394">jep 394 – pattern matching for instanceof</a>
+ */
+public class patternmatchinginstanceof {
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 16: explicit cast after instanceof ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 16: pattern matching instanceof ===");
+        demonstrateafter();
+    }
+
+    /** before java 16: three separate operations — test, cast, use */
+    static void demonstratebefore() {
+        object obj = "hello";
+
+        // test, then cast separately — redundant and verbose
+        if (obj instanceof string) {
+            string s = (string) obj; // explicit cast required
+            system.out.println("length: " + s.length()); // output: 5
+        }
+
+        // multi-type dispatch
+        list<object> mixed = arrays.aslist("text", 42, 3.14, true);
+        for (object o : mixed) {
+            if (o instanceof string) {
+                string s = (string) o;
+                system.out.println("string: " + s.touppercase());
+            } else if (o instanceof integer) {
+                integer i = (integer) o;
+                system.out.println("integer doubled: " + (i * 2));
+            } else {
+                system.out.println("other: " + o);
+            }
+        }
+        // output:
+        // string: text
+        // integer doubled: 84
+        // other: 3.14
+        // other: true
+    }
+
+    /** java 16: pattern variable bound in the instanceof expression */
+    static void demonstrateafter() {
+        object obj = "hello";
+
+        // test + bind in one expression — 's' is in scope inside the if block
+        if (obj instanceof string s) {
+            system.out.println("length: " + s.length()); // output: 5
+        }
+
+        // guard condition with && — 's' only bound when both conditions are true
+        if (obj instanceof string s && s.length() > 3) {
+            system.out.println("long string: " + s.touppercase()); // output: hello
+        }
+
+        // multi-type dispatch — cleaner, no explicit casts
+        list<object> mixed = arrays.aslist("text", 42, 3.14, true);
+        for (object o : mixed) {
+            if (o instanceof string s) {
+                system.out.println("string: " + s.touppercase());
+            } else if (o instanceof integer i) {
+                system.out.println("integer doubled: " + (i * 2));
+            } else if (o instanceof double d) {
+                system.out.println("double: " + d);
+            } else {
+                system.out.println("other: " + o);
+            }
+        }
+        // output:
+        // string: text
+        // integer doubled: 84
+        // double: 3.14
+        // other: true
+
+        // scope: 's' is not in scope in the else branch
+        object maybestring = 99;
+        if (maybestring instanceof string s) {
+            system.out.println("is string: " + s);
+        } else {
+            // 's' is not accessible here — the compiler knows the test failed
+            system.out.println("not a string: " + maybestring); // output: not a string: 99
+        }
+
+        // negation + early return — 's' flows into the rest of the method
+        printupperifstring("world");
+        printupperifstring(123);
+    }
+
+    static void printupperifstring(object obj) {
+        if (!(obj instanceof string s)) {
+            system.out.println("not a string — returning");
+            return;
+        }
+        // 's' is in scope here because we know the non-string case returned
+        system.out.println("upper: " + s.touppercase()); // output: world
+    }
+}
+
+// console output:
+// === before java 16: explicit cast after instanceof ===
+// length: 5
+// string: text
+// integer doubled: 84
+// other: 3.14
+// other: true
+//
+// === java 16: pattern matching instanceof ===
+// length: 5
+// long string: hello
+// string: text
+// integer doubled: 84
+// double: 3.14
+// other: true
+// not a string: 99
+// upper: world
+// not a string — returning
+ package java16;
+
+import java.util.list;
+import java.util.stream.collectors;
+import java.util.stream.stream;
+
+/**
+ * <b>stream.tolist()</b>
+ * <p>
+ * {@code stream.tolist()} is a concise terminal operation added in java 16 that collects
+ * stream elements into an <em>unmodifiable</em> {@code list}, replacing the verbose
+ * {@code collect(collectors.tolist())} call. unlike {@code collectors.tolist()} (which returns
+ * a mutable {@code arraylist}), {@code tolist()} always returns an unmodifiable list.
+ * introduced in java 16.
+ *
+ * @see <a href="https://docs.oracle.com/en/java/se/16/docs/api/java.base/java/util/stream/stream.html#tolist()">stream.tolist() javadoc</a>
+ */
+public class streamtolist {
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 16: collectors.tolist() ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 16: stream.tolist() ===");
+        demonstrateafter();
+    }
+
+    /** before java 16: verbose collect() calls */
+    static void demonstratebefore() {
+        list<string> names = stream.of("alice", "bob", "charlie")
+                .filter(s -> s.length() > 3)
+                .collect(collectors.tolist()); // mutable arraylist returned
+        system.out.println("names: " + names); // output: [alice, charlie]
+
+        // mutable — add() succeeds
+        names.add("diana");
+        system.out.println("after add: " + names); // output: [alice, charlie, diana]
+
+        // to get an unmodifiable list was even more verbose
+        list<string> unmod = stream.of("x", "y", "z")
+                .collect(collectors.tounmodifiablelist());
+        system.out.println("unmodifiable: " + unmod); // output: [x, y, z]
+        try {
+            unmod.add("w");
+        } catch (unsupportedoperationexception e) {
+            system.out.println("unmod add threw: unsupportedoperationexception");
+        }
+    }
+
+    /** java 16: stream.tolist() — concise and always unmodifiable */
+    static void demonstrateafter() {
+        list<string> names = stream.of("alice", "bob", "charlie")
+                .filter(s -> s.length() > 3)
+                .tolist(); // shorter, and unmodifiable
+        system.out.println("names: " + names); // output: [alice, charlie]
+
+        // tolist() result is unmodifiable
+        try {
+            names.add("diana");
+        } catch (unsupportedoperationexception e) {
+            system.out.println("tolist() add threw: unsupportedoperationexception"); // output: ...
+        }
+
+        // full pipeline example
+        record person(string name, int age) {}
+        list<person> people = list.of(
+                new person("alice", 30),
+                new person("bob", 17),
+                new person("charlie", 25)
+        );
+
+        list<string> adults = people.stream()
+                .filter(p -> p.age() >= 18)
+                .map(person::name)
+                .sorted()
+                .tolist();
+        system.out.println("adults: " + adults); // output: [alice, charlie]
+
+        // contrast: collect(tolist()) is still mutable
+        list<string> mutable = stream.of("a", "b")
+                .collect(collectors.tolist());
+        mutable.add("c");
+        system.out.println("mutable after add: " + mutable); // output: [a, b, c]
+
+        system.out.println("tolist() vs collect(tolist()): tolist() is always unmodifiable");
+    }
+}
+
+// console output:
+// === before java 16: collectors.tolist() ===
+// names: [alice, charlie]
+// after add: [alice, charlie, diana]
+// unmodifiable: [x, y, z]
+// unmod add threw: unsupportedoperationexception
+//
+// === java 16: stream.tolist() ===
+// names: [alice, charlie]
+// tolist() add threw: unsupportedoperationexception
+// adults: [alice, charlie]
+// mutable after add: [a, b, c]
+// tolist() vs collect(tolist()): tolist() is always unmodifiable
+`,
+  java17: `package java17;
+
+/**
+ * <b>sealed classes and interfaces</b>
+ * <p>
+ * sealed classes restrict which classes may extend or implement them via the {@code permits}
+ * clause. each permitted subtype must be declared {@code final} (no further subclassing),
+ * {@code sealed} (further restricted), or {@code non-sealed} (open for anyone to extend).
+ * sealed hierarchies enable exhaustive pattern matching and give library authors tight control
+ * over type hierarchies. previewed in java 15 (jep 360) and java 16 (jep 397);
+ * finalized in java 17 (jep 409).
+ *
+ * @see <a href="https://openjdk.org/jeps/409">jep 409 – sealed classes</a>
+ */
+public class sealedclasses {
+
+    // ── before: open abstract class — any code can subclass it ───────────────
+
+    static abstract class openshape {
+        abstract double area();
+    }
+    // anyone can add: class hexagon extends openshape { ... }
+    // a switch over openshape subtypes always needs a defensive default clause.
+
+    // ── after: sealed hierarchy — only permitted subtypes allowed ────────────
+
+    sealed interface shape permits circle, rectangle, triangle {}
+
+    /** final — cannot be subclassed further */
+    static final class circle implements shape {
+        private final double radius;
+        circle(double radius) { this.radius = radius; }
+        double area() { return math.pi * radius * radius; }
+        double radius() { return radius; }
+        @override public string tostring() { return "circle(r=" + radius + ")"; }
+    }
+
+    /** final — cannot be subclassed further */
+    static final class rectangle implements shape {
+        private final double width, height;
+        rectangle(double width, double height) { this.width = width; this.height = height; }
+        double area() { return width * height; }
+        @override public string tostring() { return "rectangle(" + width + "x" + height + ")"; }
+    }
+
+    /**
+     * non-sealed — opens triangle for arbitrary subclassing.
+     * this is an escape hatch when a permitted type must remain extensible.
+     */
+    static non-sealed class triangle implements shape {
+        private final double base, height;
+        triangle(double base, double height) { this.base = base; this.height = height; }
+        double area() { return 0.5 * base * height; }
+        @override public string tostring() { return "triangle(b=" + base + ", h=" + height + ")"; }
+    }
+
+    /** allowed because triangle is non-sealed */
+    static class righttriangle extends triangle {
+        righttriangle(double base, double height) { super(base, height); }
+        @override public string tostring() { return "righttriangle(super=" + super.tostring() + ")"; }
+    }
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 17: open abstract class ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 17: sealed interface ===");
+        demonstrateafter();
+    }
+
+    /** before java 17: open hierarchy — defensive default always needed */
+    static void demonstratebefore() {
+        openshape shape = new openshape() {
+            @override double area() { return 42.0; }
+        };
+        // must handle unknown subtypes with a defensive else/default
+        string desc;
+        if (shape instanceof openshape s) {
+            desc = "some shape with area " + s.area();
+        } else {
+            desc = "unknown"; // required even though logically unreachable
+        }
+        system.out.println(desc); // output: some shape with area 42.0
+    }
+
+    /** java 17: sealed hierarchy — the compiler knows all permitted subtypes */
+    static void demonstrateafter() {
+        shape[] shapes = {
+                new circle(5),
+                new rectangle(4, 5),
+                new triangle(6, 8),
+                new righttriangle(3, 4) // non-sealed subtype works fine
+        };
+
+        for (shape shape : shapes) {
+            // pattern matching instanceof — no default needed when handling all sealed subtypes
+            // (exhaustive switch is available from java 21; here we use if/else)
+            string desc;
+            if (shape instanceof circle c) {
+                desc = c + " → area = " + string.format("%.2f", c.area());
+            } else if (shape instanceof rectangle r) {
+                desc = r + " → area = " + string.format("%.2f", r.area());
+            } else if (shape instanceof triangle t) {
+                // covers triangle and its non-sealed subclass righttriangle
+                desc = t + " → area = " + string.format("%.2f", t.area());
+            } else {
+                // this branch is logically unreachable for the sealed interface,
+                // but the compiler still requires it in if/else chains (not in switch).
+                desc = "unknown shape";
+            }
+            system.out.println(desc);
+        }
+        // output:
+        // circle(r=5.0) → area = 78.54
+        // rectangle(4.0x5.0) → area = 20.00
+        // triangle(b=6.0, h=8.0) → area = 24.00
+        // righttriangle(super=triangle(b=3.0, h=4.0)) → area = 6.00
+
+        // compiler prevents unknown subtypes — this would not compile:
+        // class hexagon implements shape {} // error: not listed in permits
+    }
+}
+
+// console output:
+// === before java 17: open abstract class ===
+// some shape with area 42.0
+//
+// === java 17: sealed interface ===
+// circle(r=5.0) → area = 78,54
+// rectangle(4.0x5.0) → area = 20,00
+// triangle(b=6.0, h=8.0) → area = 24,00
+// righttriangle(super=triangle(b=3.0, h=4.0)) → area = 6,00
+`,
+  java21: `package java21;
+
+import java.time.duration;
+import java.time.instant;
+import java.util.concurrent.countdownlatch;
+import java.util.concurrent.executorservice;
+import java.util.concurrent.executors;
+import java.util.concurrent.timeunit;
+import java.util.concurrent.atomic.atomicinteger;
+
+/**
+ * <b>virtual threads</b>
+ * <p>
+ * virtual threads are lightweight threads managed by the jvm rather than the os.
+ * a platform thread consumes ~1 mb of stack memory; a virtual thread uses only the heap
+ * memory needed for its current stack frame, allowing millions of concurrent threads.
+ * they use the same {@code java.lang.thread} api and are ideal for <em>blocking i/o</em>
+ * tasks in high-throughput servers. anti-pattern: do not pool virtual threads —
+ * create one per task and let the jvm schedule them. previewed in java 19 (jep 425)
+ * and java 20 (jep 436); finalized in java 21 (jep 444).
+ *
+ * @see <a href="https://openjdk.org/jeps/444">jep 444 – virtual threads</a>
+ */
+public class virtualthreads {
+
+    public static void main(string[] args) throws interruptedexception {
+        system.out.println("=== before java 21: platform threads ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 21: virtual threads ===");
+        demonstrateafter();
+    }
+
+    /** before java 21: platform threads — expensive, limited concurrency */
+    static void demonstratebefore() throws interruptedexception {
+        int taskcount = 10;
+        countdownlatch latch = new countdownlatch(taskcount);
+
+        // fixed thread pool — os threads, limited by memory (~1mb stack each)
+        try (executorservice pool = executors.newfixedthreadpool(4)) {
+            instant start = instant.now();
+            for (int i = 0; i < taskcount; i++) {
+                final int id = i;
+                pool.submit(() -> {
+                    try {
+                        thread.sleep(100); // simulated blocking i/o
+                        system.out.println("  platform task " + id + " on " + thread.currentthread().getname());
+                    } catch (interruptedexception e) {
+                        thread.currentthread().interrupt();
+                    } finally {
+                        latch.countdown();
+                    }
+                });
+            }
+            latch.await(5, timeunit.seconds);
+            system.out.println("platform threads done in ~" + duration.between(start, instant.now()).tomillis() + " ms");
+            // 10 tasks, 4 threads, 100ms each → ~300ms (tasks queued, not parallel)
+        }
+    }
+
+    /** java 21: virtual threads — one thread per task, scheduled by the jvm */
+    static void demonstrateafter() throws interruptedexception {
+        // 1. single virtual thread
+        thread vthread = thread.ofvirtual()
+                .name("my-vthread")
+                .start(() -> {
+                    system.out.println("  running on: " + thread.currentthread());
+                    system.out.println("  isvirtual: " + thread.currentthread().isvirtual()); // output: true
+                });
+        vthread.join();
+
+        // 2. named virtual thread with a counter
+        atomicinteger counter = new atomicinteger();
+        thread named = thread.ofvirtual()
+                .name("counter-thread")
+                .start(() -> counter.incrementandget());
+        named.join();
+        system.out.println("  counter: " + counter.get()); // output: 1
+
+        // 3. one virtual thread per task — scale to 1000 tasks easily
+        int taskcount = 1000;
+        countdownlatch latch = new countdownlatch(taskcount);
+        atomicinteger completed = new atomicinteger();
+
+        instant start = instant.now();
+        try (executorservice exec = executors.newvirtualthreadpertaskexecutor()) {
+            for (int i = 0; i < taskcount; i++) {
+                exec.submit(() -> {
+                    try {
+                        thread.sleep(100); // simulated blocking i/o
+                        completed.incrementandget();
+                    } catch (interruptedexception e) {
+                        thread.currentthread().interrupt();
+                    } finally {
+                        latch.countdown();
+                    }
+                });
+            }
+        } // executorservice.close() waits for all tasks (java 19+ autocloseable)
+
+        latch.await(10, timeunit.seconds);
+        long ms = duration.between(start, instant.now()).tomillis();
+        system.out.println("  1000 virtual-thread tasks done in ~" + ms + " ms");
+        // all 1000 tasks run concurrently → ~100 ms total (not 100000 ms)
+        system.out.println("  completed: " + completed.get()); // output: 1000
+
+        // 4. threadfactory for frameworks / executors
+        var factory = thread.ofvirtual().name("vt-", 0).factory();
+        thread t = factory.newthread(() -> system.out.println("  factory thread: " + thread.currentthread().getname()));
+        t.start();
+        t.join();
+        // output: vt-0
+
+        // anti-pattern note:
+        system.out.println("  anti-pattern: do not pool virtual threads (executors.newfixedthreadpool with virtual threads).");
+        system.out.println("  use newvirtualthreadpertaskexecutor() instead.");
+    }
+}
+
+// console output (thread names/ids vary per run):
+// === before java 21: platform threads ===
+//   platform task 2 on pool-1-thread-3
+//   platform task 3 on pool-1-thread-4
+//   platform task 1 on pool-1-thread-2
+//   platform task 0 on pool-1-thread-1
+//   platform task 5 on pool-1-thread-4
+//   platform task 4 on pool-1-thread-3
+//   platform task 6 on pool-1-thread-2
+//   platform task 7 on pool-1-thread-1
+//   platform task 8 on pool-1-thread-4
+//   platform task 9 on pool-1-thread-3
+// platform threads done in ~307 ms
+//
+// === java 21: virtual threads ===
+//   running on: virtualthread[#55,my-vthread]/runnable@forkjoinpool-1-worker-1
+//   isvirtual: true
+//   counter: 1
+//   1000 virtual-thread tasks done in ~118 ms
+//   completed: 1000
+//   factory thread: vt-0
+//   anti-pattern: do not pool virtual threads (executors.newfixedthreadpool with virtual threads).
+//   use newvirtualthreadpertaskexecutor() instead.
+ package java21;
+
+/**
+ * <b>record patterns</b>
+ * <p>
+ * record patterns extend {@code instanceof} and {@code switch} pattern matching to
+ * destructure record values inline. instead of extracting components via accessor calls
+ * after an {@code instanceof} check, the components are bound directly in the pattern:
+ * {@code instanceof point(int x, int y)}. nested records can be destructured recursively.
+ * {@code var} can be used in place of explicit types for inferred component binding.
+ * previewed in java 19 (jep 405) and java 20 (jep 432); finalized in java 21 (jep 440).
+ *
+ * @see <a href="https://openjdk.org/jeps/440">jep 440 – record patterns</a>
+ */
+public class recordpatterns {
+
+    // supporting records
+    record point(int x, int y) {}
+    record line(point start, point end) {}
+    record box<t>(t value) {}
+    record coloredpoint(point point, string color) {}
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 21: accessor calls after instanceof ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 21: record patterns ===");
+        demonstrateafter();
+    }
+
+    /** before java 21: must use accessor methods after the instanceof check */
+    static void demonstratebefore() {
+        object obj = new point(3, 4);
+
+        // test type, then call accessors manually
+        if (obj instanceof point p) {
+            int x = p.x();
+            int y = p.y();
+            system.out.println("point x=" + x + ", y=" + y); // output: point x=3, y=4
+        }
+
+        // nested record — deeply verbose accessor chain
+        object line = new line(new point(0, 0), new point(5, 5));
+        if (line instanceof line l) {
+            int x1 = l.start().x();
+            int y1 = l.start().y();
+            int x2 = l.end().x();
+            int y2 = l.end().y();
+            system.out.println("line from (" + x1 + "," + y1 + ") to (" + x2 + "," + y2 + ")");
+            // output: line from (0,0) to (5,5)
+        }
+    }
+
+    /** java 21: record patterns — destructure components directly in the pattern */
+    static void demonstrateafter() {
+        object obj = new point(3, 4);
+
+        // record pattern: binds x and y directly — no accessor calls
+        if (obj instanceof point(int x, int y)) {
+            system.out.println("point x=" + x + ", y=" + y); // output: point x=3, y=4
+        }
+
+        // var in record patterns — type is inferred
+        if (obj instanceof point(var x, var y)) {
+            system.out.println("via var: x=" + x + ", y=" + y); // output: via var: x=3, y=4
+        }
+
+        // nested record pattern — destructures recursively in one expression
+        object line = new line(new point(0, 0), new point(5, 5));
+        if (line instanceof line(point(int x1, int y1), point(int x2, int y2))) {
+            system.out.println("line from (" + x1 + "," + y1 + ") to (" + x2 + "," + y2 + ")");
+            // output: line from (0,0) to (5,5)
+        }
+
+        // record pattern in switch (java 21 pattern matching switch)
+        object[] objects = {
+                new point(1, 1),
+                new line(new point(0, 0), new point(3, 4)),
+                new box<>("hello"),
+                new coloredpoint(new point(2, 3), "red")
+        };
+
+        for (object o : objects) {
+            string description = switch (o) {
+                case point(int x, int y)                         -> "point at (" + x + "," + y + ")";
+                case line(point(int x1, int y1), point(int x2, int y2))
+                                                                 -> "line (" + x1 + "," + y1 + ")→(" + x2 + "," + y2 + ")";
+                case box<?>  (var v)                             -> "box containing: " + v;
+                case coloredpoint(point(int x, int y), var color)-> color + " point at (" + x + "," + y + ")";
+                default                                          -> "unknown: " + o;
+            };
+            system.out.println(description);
+        }
+        // output:
+        // point at (1,1)
+        // line (0,0)→(3,4)
+        // box containing: hello
+        // red point at (2,3)
+
+        // guarded record pattern — extra condition on destructured components
+        object p = new point(5, 5);
+        if (p instanceof point(int x, int y) && x == y) {
+            system.out.println("diagonal point: (" + x + "," + y + ")"); // output: diagonal point: (5,5)
+        }
+    }
+}
+
+// console output:
+// === before java 21: accessor calls after instanceof ===
+// point x=3, y=4
+// line from (0,0) to (5,5)
+//
+// === java 21: record patterns ===
+// point x=3, y=4
+// via var: x=3, y=4
+// line from (0,0) to (5,5)
+// point at (1,1)
+// line (0,0)→(3,4)
+// box containing: hello
+// red point at (2,3)
+// diagonal point: (5,5)
+ package java21;
+
+/**
+ * <b>pattern matching for switch</b>
+ * <p>
+ * pattern matching in {@code switch} allows switching on the <em>type</em> of the selector,
+ * with each case arm specifying a type pattern. key capabilities:
+ * <ul>
+ *   <li>type patterns: {@code case string s ->}</li>
+ *   <li>guarded patterns: {@code case string s when s.length() > 5 ->}</li>
+ *   <li>null handling: {@code case null ->} (avoids {@code nullpointerexception})</li>
+ *   <li>exhaustive switch over sealed hierarchies — no {@code default} needed</li>
+ *   <li>record patterns inside switch: {@code case point(int x, int y) ->}</li>
+ * </ul>
+ * previewed in java 17–20; finalized in java 21 (jep 441).
+ *
+ * @see <a href="https://openjdk.org/jeps/441">jep 441 – pattern matching for switch</a>
+ */
+public class patternmatchingswitch {
+
+    // sealed hierarchy for exhaustiveness demonstration
+    sealed interface shape permits patternmatchingswitch.circle,
+            patternmatchingswitch.rectangle, patternmatchingswitch.triangle {}
+    record circle(double radius) implements shape {}
+    record rectangle(double width, double height) implements shape {}
+    record point(int x, int y) {}
+
+    // non-sealed to keep the example self-contained
+    static non-sealed class triangle implements shape {
+        final double base, height;
+        triangle(double base, double height) { this.base = base; this.height = height; }
+    }
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 21: if/else instanceof chain ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 21: pattern matching switch ===");
+        demonstrateafter();
+    }
+
+    /** before java 21: multi-branch if/else for type dispatch */
+    static void demonstratebefore() {
+        object obj = "helloworld";
+
+        string result;
+        if (obj instanceof integer i) {
+            result = "int: " + i;
+        } else if (obj instanceof long l) {
+            result = "long: " + l;
+        } else if (obj instanceof double d) {
+            result = "double: " + d;
+        } else if (obj instanceof string s && s.length() > 5) {
+            result = "long string: " + s;
+        } else if (obj instanceof string s) {
+            result = "short string: " + s;
+        } else {
+            result = "other: " + obj;
+        }
+        system.out.println(result); // output: long string: helloworld
+    }
+
+    /** java 21: switch with type patterns, guards, null, and record patterns */
+    static void demonstrateafter() {
+        // type pattern switch
+        for (object obj : new object[]{42, 3.14, "hi", "helloworld", true}) {
+            string result = switch (obj) {
+                case integer i              -> "int: " + i;
+                case double  d              -> "double: " + d;
+                case string  s when s.length() > 5 -> "long string: " + s;
+                case string  s              -> "short string: " + s;
+                default                     -> "other: " + obj;
+            };
+            system.out.println(result);
+        }
+        // output:
+        // int: 42
+        // double: 3.14
+        // short string: hi
+        // long string: helloworld
+        // other: true
+
+        // null handling in switch — avoids nullpointerexception
+        system.out.println("--- null handling ---");
+        for (string s : new string[]{"hello", null, ""}) {
+            string desc = switch (s) {
+                case null    -> "null value!";
+                case ""      -> "empty string";
+                default      -> "string: " + s;
+            };
+            system.out.println(desc);
+        }
+        // output:
+        // string: hello
+        // null value!
+        // empty string
+
+        // exhaustive switch over sealed hierarchy — no default needed
+        system.out.println("--- sealed shape areas ---");
+        shape[] shapes = {new circle(5), new rectangle(4, 6), new triangle(3, 8)};
+        for (shape shape : shapes) {
+            double area = switch (shape) {
+                case circle(double r)         -> math.pi * r * r;
+                case rectangle(double w, double h) -> w * h;
+                case triangle t               -> 0.5 * t.base * t.height;
+                // no default needed — compiler knows all sealed subtypes
+            };
+            system.out.printf("%s area = %.2f%n", shape.getclass().getsimplename(), area);
+        }
+        // output:
+        // circle area = 78.54
+        // rectangle area = 24.00
+        // triangle area = 12.00
+
+        // record pattern in switch with guard
+        system.out.println("--- record pattern with guard ---");
+        object[] points = {new point(0, 0), new point(3, 3), new point(1, 5)};
+        for (object obj : points) {
+            string desc = switch (obj) {
+                case point(int x, int y) when x == 0 && y == 0 -> "origin";
+                case point(int x, int y) when x == y            -> "diagonal (" + x + "," + y + ")";
+                case point(int x, int y)                        -> "point (" + x + "," + y + ")";
+                default                                         -> "not a point";
+            };
+            system.out.println(desc);
+        }
+        // output:
+        // origin
+        // diagonal (3,3)
+        // point (1,5)
+    }
+}
+
+// console output:
+// === before java 21: if/else instanceof chain ===
+// long string: helloworld
+//
+// === java 21: pattern matching switch ===
+// int: 42
+// double: 3.14
+// short string: hi
+// long string: helloworld
+// other: true
+// --- null handling ---
+// string: hello
+// null value!
+// empty string
+// --- sealed shape areas ---
+// circle area = 78,54
+// rectangle area = 24,00
+// triangle area = 12,00
+// --- record pattern with guard ---
+// origin
+// diagonal (3,3)
+// point (1,5)
+ package java21;
+
+import java.util.arraylist;
+import java.util.linkedhashmap;
+import java.util.linkedlist;
+import java.util.list;
+import java.util.sequencedcollection;
+
+/**
+ * <b>sequenced collections</b>
+ * <p>
+ * java 21 introduced three new interfaces — {@code sequencedcollection}, {@code sequencedset},
+ * and {@code sequencedmap} — that give all ordered collections a <em>uniform api</em> for
+ * accessing first/last elements, adding at head or tail, and obtaining a reversed view.
+ * before java 21, every collection type used different method names for the same concept
+ * ({@code get(0)} vs {@code peekfirst()} vs {@code first()}). introduced in java 21 (jep 431).
+ *
+ * @see <a href="https://openjdk.org/jeps/431">jep 431 – sequenced collections</a>
+ */
+public class sequencedcollections {
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 21: inconsistent first/last apis ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 21: sequencedcollection uniform api ===");
+        demonstrateafter();
+    }
+
+    /** before java 21: every collection type had its own way to access first/last */
+    static void demonstratebefore() {
+        // list — index-based, verbose and error-prone
+        list<string> list = new arraylist<>(list.of("a", "b", "c", "d"));
+        system.out.println("first (list):   " + list.get(0));                    // output: a
+        system.out.println("last  (list):   " + list.get(list.size() - 1));      // output: d
+
+        // linkedlist (deque) — different method names
+        var deque = new linkedlist<>(list.of("x", "y", "z"));
+        system.out.println("first (deque):  " + deque.peekfirst());              // output: x
+        system.out.println("last  (deque):  " + deque.peeklast());               // output: z
+
+        // sortedset — yet another naming convention
+        var sorted = new java.util.treeset<>(list.of(3, 1, 2));
+        system.out.println("first (sortedset): " + sorted.first());              // output: 1
+        system.out.println("last  (sortedset): " + sorted.last());               // output: 3
+
+        // no reversed() — had to create a copy or iterate manually
+        list<string> reversed = new arraylist<>(list);
+        java.util.collections.reverse(reversed);
+        system.out.println("reversed (copy): " + reversed);                      // output: [d, c, b, a]
+    }
+
+    /** java 21: uniform sequencedcollection api across all ordered collections */
+    static void demonstrateafter() {
+        // arraylist implements sequencedcollection
+        list<string> list = new arraylist<>(list.of("a", "b", "c", "d"));
+
+        system.out.println("getfirst(): " + list.getfirst()); // output: a
+        system.out.println("getlast():  " + list.getlast());  // output: d
+
+        // addfirst / addlast
+        list.addfirst("z");
+        list.addlast("x");
+        system.out.println("after addfirst(z) + addlast(x): " + list); // output: [z, a, b, c, d, x]
+
+        // removefirst / removelast
+        string removedfirst = list.removefirst();
+        string removedlast  = list.removelast();
+        system.out.println("removed first: " + removedfirst + ", last: " + removedlast); // output: z, x
+        system.out.println("after removes: " + list); // output: [a, b, c, d]
+
+        // reversed() — returns a live reversed view (not a copy)
+        sequencedcollection<string> rev = list.reversed();
+        system.out.println("reversed view: " + rev); // output: [d, c, b, a]
+
+        // mutations on the reversed view affect the original
+        rev.addfirst("last"); // addfirst on reversed view = addlast on original
+        system.out.println("original after rev.addfirst(last): " + list); // output: [a, b, c, d, last]
+        list.removelast(); // cleanup
+
+        // linkedlist — same uniform api
+        linkedlist<integer> linked = new linkedlist<>(list.of(10, 20, 30));
+        system.out.println("\\nlinkedlist getfirst(): " + linked.getfirst()); // output: 10
+        system.out.println("linkedlist getlast():  " + linked.getlast());   // output: 30
+        linked.addfirst(5);
+        system.out.println("linkedlist after addfirst(5): " + linked); // output: [5, 10, 20, 30]
+        system.out.println("linkedlist reversed: " + linked.reversed()); // output: [30, 20, 10, 5]
+
+        // linkedhashmap — sequencedmap
+        var map = new linkedhashmap<string, integer>();
+        map.put("one", 1);
+        map.put("two", 2);
+        map.put("three", 3);
+
+        system.out.println("\\nlinkedhashmap firstentry(): " + map.firstentry()); // output: one=1
+        system.out.println("linkedhashmap lastentry():  " + map.lastentry());   // output: three=3
+        system.out.println("sequenced keys: " + map.sequencedkeyset());         // output: [one, two, three]
+        system.out.println("reversed keys:  " + map.reversed().sequencedkeyset()); // output: [three, two, one]
+    }
+}
+
+// console output:
+// === before java 21: inconsistent first/last apis ===
+// first (list):   a
+// last  (list):   d
+// first (deque):  x
+// last  (deque):  z
+// first (sortedset): 1
+// last  (sortedset): 3
+// reversed (copy): [d, c, b, a]
+//
+// === java 21: sequencedcollection uniform api ===
+// getfirst(): a
+// getlast():  d
+// after addfirst(z) + addlast(x): [z, a, b, c, d, x]
+// removed first: z, last: x
+// after removes: [a, b, c, d]
+// reversed view: [d, c, b, a]
+// original after rev.addfirst(last): [a, b, c, d, last]
+//
+// linkedlist getfirst(): 10
+// linkedlist getlast():  30
+// linkedlist after addfirst(5): [5, 10, 20, 30]
+// linkedlist reversed: [30, 20, 10, 5]
+//
+// linkedhashmap firstentry(): one=1
+// linkedhashmap lastentry():  three=3
+// sequenced keys: [one, two, three]
+// reversed keys:  [three, two, one]
+`,
+  java23: `package java23;
+
+import java.util.list;
+import java.util.concurrent.atomic.atomicinteger;
+
+/**
+ * <b>unnamed variables and patterns ({@code _})</b>
+ * <p>
+ * the underscore {@code _} marks a variable that is intentionally unused, signalling to
+ * readers and tools that the value is deliberately discarded. it can be used in:
+ * <ul>
+ *   <li>catch clauses: {@code catch (ioexception _)}</li>
+ *   <li>enhanced for loops: {@code for (var _ : list)}</li>
+ *   <li>lambda parameters: {@code list.foreach(_ -> count++)}</li>
+ *   <li>pattern matching: {@code case integer _} or {@code instanceof point(int x, _)}</li>
+ * </ul>
+ * multiple {@code _} declarations are allowed in the same scope (unlike named variables).
+ * history: {@code _} was deprecated as an identifier in java 8, made a compile error in
+ * java 9, previewed as unnamed variable in java 21 (jep 443) and java 22; finalized in
+ * java 23 (jep 456).
+ *
+ * @see <a href="https://openjdk.org/jeps/456">jep 456 – unnamed variables and patterns</a>
+ */
+public class unnamedvariables {
+
+    record point(int x, int y) {}
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 23: unused variable warnings ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 23: unnamed variable _ ===");
+        demonstrateafter();
+    }
+
+    /** before java 23: must name variables even when intentionally unused */
+    static void demonstratebefore() {
+        // catch clause — 'e' is unused but must be named; linters warn about it
+        try {
+            int result = integer.parseint("abc");
+        } catch (numberformatexception e) {
+            // 'e' is ignored — but we had to give it a name
+            system.out.println("parse failed (exception details ignored)");
+        }
+
+        // for-each — element is unused, we only want to count iterations
+        list<string> items = list.of("a", "b", "c");
+        int count = 0;
+        for (string ignored : items) { // 'ignored' is a common naming convention
+            count++;
+        }
+        system.out.println("count: " + count); // output: 3
+
+        // lambda — parameter unused
+        atomicinteger lambdacount = new atomicinteger();
+        items.foreach(element -> lambdacount.incrementandget()); // 'element' unused
+        system.out.println("lambda count: " + lambdacount.get()); // output: 3
+    }
+
+    /** java 23: _ communicates "intentionally unused" to readers and tools */
+    static void demonstrateafter() {
+        // catch clause — _ makes the intent explicit: the exception details don't matter
+        try {
+            int result = integer.parseint("abc");
+        } catch (numberformatexception _) {
+            system.out.println("parse failed (exception details ignored)"); // output: parse failed
+        }
+
+        // multiple catch — each _ is independent (same scope, multiple declarations allowed)
+        try {
+            string s = null;
+            s.length();
+        } catch (nullpointerexception _) {
+            system.out.println("nullpointerexception caught and ignored");
+        } catch (exception _) {
+            system.out.println("other exception caught and ignored");
+        }
+
+        // for-each — only counting, element value not needed
+        list<string> items = list.of("a", "b", "c");
+        int count = 0;
+        for (var _ : items) {
+            count++;
+        }
+        system.out.println("count: " + count); // output: 3
+
+        // lambda — parameter not used
+        atomicinteger lambdacount = new atomicinteger();
+        items.foreach(_ -> lambdacount.incrementandget());
+        system.out.println("lambda count: " + lambdacount.get()); // output: 3
+
+        // switch — case binds a type but the value is unused
+        object obj = 42;
+        string desc = switch (obj) {
+            case integer _ -> "an integer (value not needed)";
+            case string  _ -> "a string (value not needed)";
+            default        -> "something else";
+        };
+        system.out.println(desc); // output: an integer (value not needed)
+
+        // record pattern — extract only x, ignore y
+        object point = new point(3, 7);
+        if (point instanceof point(int x, int _)) {
+            system.out.println("x = " + x + " (y ignored)"); // output: x = 3 (y ignored)
+        }
+
+        // multiple _ declarations in same scope (not possible with named variables)
+        int _ = 1; // unnamed local variable — valid
+        string _ = "hello"; // second _ in same scope — also valid
+        system.out.println("multiple _ declarations in same scope: ok");
+        // named variables cannot be re-declared in the same scope, but _ is special.
+    }
+}
+
+// console output:
+// === before java 23: unused variable warnings ===
+// parse failed (exception details ignored)
+// count: 3
+// lambda count: 3
+//
+// === java 23: unnamed variable _ ===
+// parse failed (exception details ignored)
+// nullpointerexception caught and ignored
+// count: 3
+// lambda count: 3
+// an integer (value not needed)
+// x = 3 (y ignored)
+// multiple _ declarations in same scope: ok
+`,
+  java24: `package java24;
+
+import java.util.list;
+import java.util.optional;
+import java.util.stream.gatherer;
+import java.util.stream.gatherers;
+import java.util.stream.stream;
+
+/**
+ * <b>stream gatherers</b>
+ * <p>
+ * {@code stream.gather(gatherer)} is a new intermediate operation that allows building
+ * custom, composable stream transformations — filling the gap between built-in operations
+ * like {@code map} and {@code filter} and fully custom {@code collector}s.
+ * <p>
+ * the jdk ships four built-in gatherers in {@code java.util.stream.gatherers}:
+ * <ul>
+ *   <li>{@code windowfixed(n)} — groups elements into non-overlapping lists of size n</li>
+ *   <li>{@code windowsliding(n)} — groups elements into overlapping sliding windows of size n</li>
+ *   <li>{@code fold(init, fn)} — stateful left-fold (like reduce, but keeps intermediate state for mapping)</li>
+ *   <li>{@code scan(init, fn)} — running totals: emits the accumulated value after each element</li>
+ *   <li>{@code mapconcurrent(n, fn)} — concurrent map with at most n in-flight virtual threads</li>
+ * </ul>
+ * gatherers can also be composed with {@code andthen()} and implemented from scratch.
+ * previewed in java 22 (jep 461) and java 23 (jep 473); finalized in java 24 (jep 485).
+ *
+ * @see <a href="https://openjdk.org/jeps/485">jep 485 – stream gatherers</a>
+ */
+public class streamgatherers {
+
+    public static void main(string[] args) {
+        system.out.println("=== before java 24: custom intermediate ops require workarounds ===");
+        demonstratebefore();
+        system.out.println();
+        system.out.println("=== java 24: stream gatherers ===");
+        demonstrateafter();
+    }
+
+    /** before java 24: windowing and running totals required external loops or collectors */
+    static void demonstratebefore() {
+        list<integer> numbers = list.of(1, 2, 3, 4, 5, 6, 7, 8);
+
+        // fixed windows — no built-in: must collect then batch manually
+        system.out.println("fixed windows (manual):");
+        list<integer> list = numbers.stream().tolist();
+        int windowsize = 3;
+        for (int i = 0; i < list.size(); i += windowsize) {
+            int end = math.min(i + windowsize, list.size());
+            system.out.println("  " + list.sublist(i, end));
+        }
+        // output: [1, 2, 3] / [4, 5, 6] / [7, 8]
+
+        // running total (scan) — must collect to list first, then iterate with index
+        system.out.println("running total (manual):");
+        int[] runningtotal = {0};
+        numbers.foreach(n -> {
+            runningtotal[0] += n;
+            system.out.print(runningtotal[0] + " ");
+        });
+        system.out.println();
+        // output: 1 3 6 10 15 21 28 36
+    }
+
+    /** java 24: built-in and custom gatherers as composable stream operations */
+    static void demonstrateafter() {
+        list<integer> numbers = list.of(1, 2, 3, 4, 5, 6, 7, 8);
+
+        // windowfixed(n) — non-overlapping windows, last window may be smaller
+        system.out.println("windowfixed(3):");
+        numbers.stream()
+                .gather(gatherers.windowfixed(3))
+                .foreach(w -> system.out.println("  " + w));
+        // output: [1, 2, 3] / [4, 5, 6] / [7, 8]
+
+        // windowsliding(n) — overlapping windows, one new element shifts the window
+        system.out.println("windowsliding(3):");
+        numbers.stream()
+                .gather(gatherers.windowsliding(3))
+                .foreach(w -> system.out.println("  " + w));
+        // output: [1,2,3] / [2,3,4] / [3,4,5] / [4,5,6] / [5,6,7] / [6,7,8]
+
+        // scan(identity, accumulator) — running total, emits state after each element
+        system.out.println("scan (running total):");
+        list<integer> runningtotals = numbers.stream()
+                .gather(gatherers.scan(() -> 0, integer::sum))
+                .tolist();
+        system.out.println("  " + runningtotals);
+        // output: [1, 3, 6, 10, 15, 21, 28, 36]
+
+        // fold(identity, accumulator) — like reduce but as an intermediate gatherer;
+        // emits a single optional with the final accumulated value
+        system.out.println("fold (sum):");
+        optional<integer> total = numbers.stream()
+                .gather(gatherers.fold(() -> 0, integer::sum))
+                .findfirst();
+        system.out.println("  sum = " + total.orelse(0));
+        // output: sum = 36
+
+        // composing gatherers with andthen()
+        system.out.println("windowfixed(2).andthen(map to sum):");
+        numbers.stream()
+                .gather(gatherers.windowfixed(2))           // group into pairs
+                .map(w -> w.stream().maptoint(integer::intvalue).sum()) // sum each pair
+                .foreach(s -> system.out.print(s + " "));  // output: 3 7 11 15
+        system.out.println();
+
+        // custom gatherer — "takewhileincreasing": emit elements while each is > previous
+        system.out.println("custom gatherer — takewhileincreasing:");
+        gatherer<integer, int[], integer> takewhileincreasing = gatherer.ofsequential(
+                () -> new int[]{integer.min_value},          // initializer: prev = min_value
+                (state, element, downstream) -> {            // integrator
+                    if (element > state[0]) {
+                        state[0] = element;
+                        return downstream.push(element);     // emit and continue
+                    }
+                    return false;                            // stop the stream
+                }
+        );
+
+        list<integer> increasing = stream.of(1, 3, 5, 4, 6, 2, 7)
+                .gather(takewhileincreasing)
+                .tolist();
+        system.out.println("  " + increasing); // output: [1, 3, 5]
+
+        // mapconcurrent(n, fn) — maps elements using virtual threads, at most n in flight
+        // useful for i/o-bound transformations (e.g., http calls, db lookups)
+        system.out.println("mapconcurrent(3, slow fn):");
+        list<string> results = stream.of("a", "b", "c", "d", "e")
+                .gather(gatherers.mapconcurrent(3, s -> {
+                    // simulate latency (e.g. http call)
+                    try { thread.sleep(10); } catch (interruptedexception e) { thread.currentthread().interrupt(); }
+                    return s.touppercase();
+                }))
+                .tolist();
+        system.out.println("  " + results); // output: [a, b, c, d, e] (order preserved)
+    }
+}
+
+// console output:
+// === before java 24: custom intermediate ops require workarounds ===
+// fixed windows (manual):
+//   [1, 2, 3]
+//   [4, 5, 6]
+//   [7, 8]
+// running total (manual):
+// 1 3 6 10 15 21 28 36
+//
+// === java 24: stream gatherers ===
+// windowfixed(3):
+//   [1, 2, 3]
+//   [4, 5, 6]
+//   [7, 8]
+// windowsliding(3):
+//   [1, 2, 3]
+//   [2, 3, 4]
+//   [3, 4, 5]
+//   [4, 5, 6]
+//   [5, 6, 7]
+//   [6, 7, 8]
+// scan (running total):
+//   [1, 3, 6, 10, 15, 21, 28, 36]
+// fold (sum):
+//   sum = 36
+// windowfixed(2).andthen(map to sum):
+// 3 7 11 15
+// custom gatherer — takewhileincreasing:
+//   [1, 3, 5]
+// mapconcurrent(3, slow fn):
+//   [a, b, c, d, e]
+`
+};
+
+const searchInput = document.getElementById('search');
+const clearBtn    = document.querySelector('.search-clear');
+
+function setActive(el) {
+  document.querySelectorAll('#version-list a').forEach(a => a.classList.remove('active'));
+  el.classList.add('active');
+  const group = el.closest('.version-group');
+  group.classList.remove('collapsed');
+  group.querySelector('.chevron').textContent = '\u25bc';
+}
+
+function toggleVersion(pkg) {
+  const group = document.querySelector(`.version-group[data-pkg="${pkg}"]`);
+  const c = group.classList.toggle('collapsed');
+  group.querySelector('.chevron').textContent = c ? '\u25b6' : '\u25bc';
+}
+
+document.getElementById('show-all-btn').addEventListener('click', function() {
+  document.querySelectorAll('.version-group').forEach(g => {
+    g.classList.remove('collapsed');
+    g.querySelector('.chevron').textContent = '\u25bc';
+  });
+});
+document.getElementById('collapse-all-btn').addEventListener('click', function() {
+  document.querySelectorAll('.version-group').forEach(g => {
+    g.classList.add('collapsed');
+    g.querySelector('.chevron').textContent = '\u25b6';
+  });
+});
+
+function filterMenu(term) {
+  const lower = term.trim().toLowerCase();
+  let anyVisible = false;
+  document.querySelectorAll('.version-group').forEach(function(group) {
+    const pkg = group.dataset.pkg;
+    let anyClassMatch = false;
+    group.querySelectorAll('.class-list li').forEach(function(li) {
+      const cls   = (li.dataset.cls || '').toLowerCase();
+      const match = !lower || cls.includes(lower) || (PKG_CODE[pkg] && PKG_CODE[pkg].includes(lower));
+      li.classList.toggle('no-match',   !match);
+      li.classList.toggle('has-match',  !!lower && match);
+      if (match) anyClassMatch = true;
+    });
+    group.classList.toggle('no-match', !anyClassMatch);
+    if (anyClassMatch) {
+      anyVisible = true;
+      if (lower) {
+        group.classList.remove('collapsed');
+        group.querySelector('.chevron').textContent = '\u25bc';
+      }
+    }
+  });
+  document.getElementById('no-match-msg').classList.toggle('visible', !!lower && !anyVisible);
+}
+
+function sendSearch(term) {
+  const frame = document.getElementById('frame');
+  if (frame.contentWindow) {
+    frame.contentWindow.postMessage({ type: 'page-search', term: term }, '*');
+  }
+}
+
+searchInput.addEventListener('input', function() {
+  filterMenu(this.value);
+  sendSearch(this.value);
+});
+clearBtn.addEventListener('click', function() {
+  searchInput.value = ''; filterMenu(''); sendSearch(''); searchInput.focus();
+});
+document.getElementById('frame').addEventListener('load', function() {
+  if (searchInput.value) sendSearch(searchInput.value);
+});
+</script>
+</body>
+</html>

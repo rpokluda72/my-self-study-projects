@@ -1,0 +1,2286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mkyong - Java Preview</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── sticky header panel ── */
+    #page-header {
+      flex-shrink: 0;
+      background: #f0f2f5;
+      padding: 16px 20px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    h1 { color: #2d3748; margin-bottom: 10px; font-size: 1.3rem; }
+
+    /* ── toolbar (show/collapse all) ── */
+    .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .toolbar button {
+      padding: 5px 13px; border: none; border-radius: 5px; cursor: pointer;
+      font-size: 0.82rem; font-weight: 600; transition: background 0.15s;
+    }
+    .btn-show { background: #3182ce; color: #fff; }
+    .btn-show:hover { background: #2b6cb0; }
+    .btn-hide { background: #718096; color: #fff; }
+    .btn-hide:hover { background: #4a5568; }
+    .match-info { font-size: 0.82rem; color: #718096; margin-left: 4px; }
+
+    /* ── page search bar ── */
+    .page-search-bar {
+      display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+      background: #fff; border: 1px solid #cbd5e0; border-radius: 7px;
+      padding: 6px 12px;
+    }
+    .page-search-bar input {
+      flex: 1; min-width: 160px; padding: 5px 8px;
+      border: 1px solid #cbd5e0; border-radius: 5px;
+      font-size: 0.85rem; outline: none; color: #2d3748;
+    }
+    .page-search-bar input:focus { border-color: #63b3ed; }
+    .psb-btn {
+      padding: 5px 11px; border: 1px solid #cbd5e0; border-radius: 5px;
+      background: #f7fafc; cursor: pointer; font-size: 0.8rem;
+      color: #4a5568; transition: background 0.12s;
+    }
+    .psb-btn:hover { background: #e2e8f0; }
+    .psb-btn:disabled { opacity: 0.4; cursor: default; }
+    .psb-clear {
+      padding: 5px 9px; border: 1px solid #cbd5e0; border-radius: 5px;
+      background: #f7fafc; cursor: pointer; font-size: 0.85rem;
+      color: #718096; transition: background 0.12s;
+    }
+    .psb-clear:hover { background: #fed7d7; color: #c53030; border-color: #fc8181; }
+    .psb-count { font-size: 0.8rem; color: #718096; white-space: nowrap; min-width: 60px; }
+
+    /* ── highlight marks ── */
+    mark.sh { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 1px; }
+    mark.sh-current { background: #f97316; color: #fff; border-radius: 2px; padding: 0 1px; }
+
+    /* ── scrollable cards area ── */
+    #cards-container {
+      flex: 1; overflow-y: auto;
+      padding: 20px;
+    }
+
+    .card { background: #fff; border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: hidden; }
+    .card.hidden-by-search { display: none; }
+
+    .card-header {
+      background: #2d3748; color: #e2e8f0;
+      padding: 9px 14px;
+      display: flex; align-items: center; gap: 10px; cursor: pointer;
+      user-select: none;
+    }
+    .card-header:hover { background: #3a4a5c; }
+    .card-header .filename { font-size: 0.9rem; font-weight: 700; flex: 1; }
+    .card-header .path { color: #a0aec0; font-size: 0.78rem; }
+    .card-header .toggle-btn {
+      background: none; border: 1px solid #4a5568; border-radius: 4px;
+      color: #a0aec0; font-size: 0.75rem; padding: 2px 8px; cursor: pointer;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .card-header .toggle-btn:hover { border-color: #63b3ed; color: #63b3ed; }
+
+    .card-body { display: block; }
+    .card-body.collapsed { display: none; }
+
+    pre { margin: 0; overflow-x: auto; }
+    pre code.hljs { font-size: 13px; line-height: 1.5; padding: 16px !important; }
+  </style>
+</head>
+<body>
+  <div id="page-header">
+    <h1>Mkyong</h1>
+    <div class="toolbar">
+      <button class="btn-show" onclick="showAll()">&#9660; Show all</button>
+      <button class="btn-hide" onclick="collapseAll()">&#9654; Collapse all</button>
+      <span class="match-info" id="match-info"></span>
+    </div>
+    <div class="page-search-bar">
+      <input id="psb-input" type="text" placeholder="&#128269; Search in code&hellip;" autocomplete="off">
+      <button class="psb-btn" id="psb-prev" onclick="prevMatch()" disabled title="Previous (Shift+Enter)">&#9650; Prev</button>
+      <button class="psb-btn" id="psb-next" onclick="nextMatch()" disabled title="Next (Enter)">&#9660; Next</button>
+      <button class="psb-clear" onclick="clearPageSearch()" title="Clear (Esc)">&#x2715;</button>
+      <span class="psb-count" id="psb-count"></span>
+    </div>
+  </div>
+  <div id="cards-container">
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Employee.java</span>
+        <span class="path">Employee.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.mkyong;
+
+import java.math.BigDecimal;
+
+public class Employee {
+    String name;
+    Integer age;
+    BigDecimal salary;
+
+    public Employee(String name, Integer age, BigDecimal salary) {
+        this.name = name;
+        this.age = age;
+        this.salary = salary;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
+    public BigDecimal getSalary() {
+        return salary;
+    }
+
+    public void setSalary(BigDecimal salary) {
+        this.salary = salary;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;Employee{&quot; +
+                &quot;name=&#x27;&quot; + name + &#x27;\&#x27;&#x27; +
+                &quot;, age=&quot; + age +
+                &quot;, salary=&quot; + salary +
+                &#x27;}&#x27;;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">GPS.java</span>
+        <span class="path">GPS.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.mkyong;
+
+public class GPS {
+    String Latitude;
+    String Longitude;
+
+    public GPS(String latitude, String longitude) {
+        Latitude = latitude;
+        Longitude = longitude;
+    }
+
+    public String getLatitude() {
+        return Latitude;
+    }
+
+    public void setLatitude(String latitude) {
+        Latitude = latitude;
+    }
+
+    public String getLongitude() {
+        return Longitude;
+    }
+
+    public void setLongitude(String longitude) {
+        Longitude = longitude;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;GPS{&quot; +
+                &quot;Latitude=&#x27;&quot; + Latitude + &#x27;\&#x27;&#x27; +
+                &quot;, Longitude=&#x27;&quot; + Longitude + &#x27;\&#x27;&#x27; +
+                &#x27;}&#x27;;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Hosting.java</span>
+        <span class="path">Hosting.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.mkyong;
+
+public class Hosting {
+    private int Id;
+    private String name;
+    private long websites;
+
+    public Hosting(int id, String name, long websites) {
+        Id = id;
+        this.name = name;
+        this.websites = websites;
+    }
+
+    public int getId() {
+        return Id;
+    }
+
+    public void setId(int id) {
+        Id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public long getWebsites() {
+        return websites;
+    }
+
+    public void setWebsites(long websites) {
+        this.websites = websites;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;Hosting{&quot; +
+                &quot;Id=&quot; + Id +
+                &quot;, name=&#x27;&quot; + name + &#x27;\&#x27;&#x27; +
+                &quot;, websites=&quot; + websites +
+                &#x27;}&#x27;;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Invoice.java</span>
+        <span class="path">Invoice.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.mkyong;
+
+import java.math.BigDecimal;
+
+public class Invoice {
+    String invoiceNo;
+    BigDecimal price;
+    BigDecimal qty;
+
+    public Invoice(String invoiceNo, BigDecimal price, BigDecimal qty) {
+        this.invoiceNo = invoiceNo;
+        this.price = price;
+        this.qty = qty;
+    }
+
+    public String getInvoiceNo() {
+        return invoiceNo;
+    }
+
+    public void setInvoiceNo(String invoiceNo) {
+        this.invoiceNo = invoiceNo;
+    }
+
+    public BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
+    }
+
+    public BigDecimal getQty() {
+        return qty;
+    }
+
+    public void setQty(BigDecimal qty) {
+        this.qty = qty;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;Invoice{&quot; +
+                &quot;invoiceNo=&#x27;&quot; + invoiceNo + &#x27;\&#x27;&#x27; +
+                &quot;, price=&quot; + price +
+                &quot;, qty=&quot; + qty +
+                &#x27;}&#x27;;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Invoice2.java</span>
+        <span class="path">Invoice2.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.mkyong;
+
+import java.math.BigDecimal;
+
+public class Invoice2 {
+    String no;
+    BigDecimal unitPrice;
+    Integer qty;
+
+    public Invoice2(String no, BigDecimal unitPrice, Integer qty) {
+        this.no = no;
+        this.unitPrice = unitPrice;
+        this.qty = qty;
+    }
+
+    public Invoice2() {
+
+    }
+
+    public Invoice2(BigDecimal unitPrice) {
+        this.unitPrice = unitPrice;
+    }
+
+    public String getNo() {
+        return no;
+    }
+
+    public void setNo(String no) {
+        this.no = no;
+    }
+
+    public BigDecimal getUnitPrice() {
+        return unitPrice;
+    }
+
+    public void setUnitPrice(BigDecimal unitPrice) {
+        this.unitPrice = unitPrice;
+    }
+
+    public Integer getQty() {
+        return qty;
+    }
+
+    public void setQty(Integer qty) {
+        this.qty = qty;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;Invoice2{&quot; +
+                &quot;no=&#x27;&quot; + no + &#x27;\&#x27;&#x27; +
+                &quot;, unitPrice=&quot; + unitPrice +
+                &quot;, qty=&quot; + qty +
+                &#x27;}&#x27;;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Item.java</span>
+        <span class="path">Item.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.mkyong;
+
+import java.math.BigDecimal;
+
+public class Item {
+    private String name;
+    private int qty;
+    private BigDecimal price;
+
+    public Item(String name, int qty, BigDecimal price) {
+        this.name = name;
+        this.qty = qty;
+        this.price = price;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getQty() {
+        return qty;
+    }
+
+    public void setQty(int qty) {
+        this.qty = qty;
+    }
+
+    public BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;Item{&quot; +
+                &quot;name=&#x27;&quot; + name + &#x27;\&#x27;&#x27; +
+                &quot;, qty=&quot; + qty +
+                &quot;, price=&quot; + price +
+                &#x27;}&#x27;;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Person.java</span>
+        <span class="path">Person.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.mkyong;
+
+public class Person {
+    private String name;
+    private int age;
+
+    public Person(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;Person{&quot; +
+                &quot;name=&#x27;&quot; + name + &#x27;\&#x27;&#x27; +
+                &quot;, age=&quot; + age +
+                &#x27;}&#x27;;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">Staff.java</span>
+        <span class="path">Staff.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.mkyong;
+
+import java.math.BigDecimal;
+
+public class Staff {
+    private String name;
+    private int age;
+    private BigDecimal salary;
+
+    public Staff(String name, int age, BigDecimal salary) {
+        this.name = name;
+        this.age = age;
+        this.salary = salary;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public BigDecimal getSalary() {
+        return salary;
+    }
+
+    public void setSalary(BigDecimal salary) {
+        this.salary = salary;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;Staff{&quot; +
+                &quot;name=&#x27;&quot; + name + &#x27;\&#x27;&#x27; +
+                &quot;, age=&quot; + age +
+                &quot;, salary=&quot; + salary +
+                &#x27;}&#x27;;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">StaffPublic.java</span>
+        <span class="path">StaffPublic.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.mkyong;
+
+public class StaffPublic {
+    private String name;
+    private int age;
+    private String extra;
+
+    public StaffPublic() {
+    }
+
+    public StaffPublic(String name, int age, String extra) {
+        this.name = name;
+        this.age = age;
+        this.extra = extra;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;StaffPublic{&quot; +
+                &quot;name=&#x27;&quot; + name + &#x27;\&#x27;&#x27; +
+                &quot;, age=&quot; + age +
+                &quot;, extra=&#x27;&quot; + extra + &#x27;\&#x27;&#x27; +
+                &#x27;}&#x27;;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public String getExtra() {
+        return extra;
+    }
+
+    public void setExtra(String extra) {
+        this.extra = extra;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">TestMkyong.java</span>
+        <span class="path">TestMkyong.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.mkyong;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.function.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+public class TestMkyong {
+    public static void main(String[] args) {
+        TestMkyong testMkyong = new TestMkyong();
+        testMkyong.groupByCountAndSort();
+        testMkyong.convertListToMap();
+        testMkyong.convertArrayToStream();
+        testMkyong.readFileLineByLine();
+        testMkyong.howToSortMap();
+        testMkyong.streamsMapExamples();
+        testMkyong.findDuplicateElementsInStream();
+        testMkyong.streamsFilterExamples();
+        testMkyong.mathExactExamples();
+        testMkyong.mathExactExamples2();
+        testMkyong.mathExactExamples3();
+        testMkyong.streamsIterateExamples();
+        testMkyong.sumAllStreamIntegers();
+        testMkyong.sortListWithStreamSorted();
+        testMkyong.streamsFindFirstAndFindAny();
+        testMkyong.convertOptionalStringToString();
+        testMkyong.streamReduceExamples();
+        testMkyong.unaryOperatorExamples();
+        testMkyong.methodReferences_doubleColonOperator();
+        testMkyong.biFunctionExamples();
+    }
+
+    void groupByCountAndSort() {
+        // 1.1 Group by a List and display the total count of it.
+        //3 apple, 2 banana, others 1
+        List&lt;String&gt; items = Arrays.asList(&quot;apple&quot;, &quot;apple&quot;, &quot;banana&quot;, &quot;apple&quot;, &quot;orange&quot;, &quot;banana&quot;, &quot;papaya&quot;);
+
+        Map&lt;String, Long&gt; result =
+                items.stream().collect(
+                        Collectors.groupingBy(
+                                Function.identity(), Collectors.counting()
+                        )
+                );
+        System.out.println(&quot;result : &quot; + result); // {papaya=1, orange=1, banana=2, apple=3}
+
+        // 1.2 Add sorting.
+        Map&lt;String, Long&gt; finalMap = new LinkedHashMap&lt;&gt;();
+
+        //Sort a map and add to finalMap
+        result.entrySet().stream()
+                .sorted(Map.Entry.&lt;String, Long&gt;comparingByValue()
+                        .reversed()).forEachOrdered(e -&gt; finalMap.put(e.getKey(), e.getValue()));
+        System.out.println(&quot;finalMap : &quot; + finalMap); // {apple=3, banana=2, papaya=1, orange=1}
+
+        // 2. List Objects
+        // Examples to ‘group by’ a list of user defined Objects.
+        // Group by the name + Count or Sum the Qty.
+        //3 apple, 2 banana, others 1
+        List&lt;Item&gt; items2 = Arrays.asList(
+                new Item(&quot;apple&quot;, 10, new BigDecimal(&quot;9.99&quot;)),
+                new Item(&quot;banana&quot;, 20, new BigDecimal(&quot;19.99&quot;)),
+                new Item(&quot;orang&quot;, 10, new BigDecimal(&quot;29.99&quot;)),
+                new Item(&quot;watermelon&quot;, 10, new BigDecimal(&quot;29.99&quot;)),
+                new Item(&quot;papaya&quot;, 20, new BigDecimal(&quot;9.99&quot;)),
+                new Item(&quot;apple&quot;, 10, new BigDecimal(&quot;9.99&quot;)),
+                new Item(&quot;banana&quot;, 10, new BigDecimal(&quot;19.99&quot;)),
+                new Item(&quot;apple&quot;, 20, new BigDecimal(&quot;9.99&quot;))
+        );
+
+        Map&lt;String, Long&gt; counting = items2.stream().collect(
+                Collectors.groupingBy(Item::getName, Collectors.counting()));
+        System.out.println(&quot;counting : &quot; + counting);//{papaya=1, banana=2, apple=3, orang=1, watermelon=1}
+
+        Map&lt;String, Integer&gt; sum = items2.stream().collect(
+                Collectors.groupingBy(Item::getName, Collectors.summingInt(Item::getQty)));
+        System.out.println(&quot;sum : &quot; + sum);//{papaya=20, banana=30, apple=40, orang=10, watermelon=10}
+
+        // Group by Price – Collectors.groupingBy and Collectors.mapping example.
+        Map&lt;BigDecimal, List&lt;Item&gt;&gt; groupByPriceMap =
+                items2.stream().collect(Collectors.groupingBy(Item::getPrice));
+        System.out.println(&quot;groupByPriceMap : &quot; + groupByPriceMap);
+        //{19.99=[Item{name=&#x27;banana&#x27;, qty=20, price=19.99}, Item{name=&#x27;banana&#x27;, qty=10, price=19.99}],
+        // 29.99=[Item{name=&#x27;orang&#x27;, qty=10, price=29.99}, Item{name=&#x27;watermelon&#x27;, qty=10, price=29.99}],
+        // 9.99=[Item{name=&#x27;apple&#x27;, qty=10, price=9.99}, Item{name=&#x27;papaya&#x27;, qty=20, price=9.99}, Item{name=&#x27;apple&#x27;, qty=10, price=9.99}, Item{name=&#x27;apple&#x27;, qty=20, price=9.99}]}
+
+        // group by price, uses &#x27;mapping&#x27; to convert List&lt;Item&gt; to Set&lt;String&gt;
+        Map&lt;BigDecimal, Set&lt;String&gt;&gt; result2 =
+                items2.stream().collect(
+                        Collectors.groupingBy(Item::getPrice,
+                                Collectors.mapping(Item::getName, Collectors.toSet())
+                        )
+                );
+        System.out.println(&quot;result2 : &quot; + result2);//{19.99=[banana], 29.99=[orang, watermelon], 9.99=[papaya, apple]}
+
+    }
+
+    void convertListToMap() {
+        // 1. List to Map – Collectors.toMap()
+        // Create a list of the Hosting objects, and uses Collectors.toMap to convert it into a Map.
+
+        List&lt;Hosting&gt; list = new ArrayList&lt;&gt;();
+        list.add(new Hosting(1, &quot;liquidweb.com&quot;, 80000));
+        list.add(new Hosting(2, &quot;linode.com&quot;, 90000));
+        list.add(new Hosting(3, &quot;digitalocean.com&quot;, 120000));
+        list.add(new Hosting(4, &quot;aws.amazon.com&quot;, 200000));
+        list.add(new Hosting(5, &quot;mkyong.com&quot;, 1));
+
+        // key = id, value - websites
+        Map&lt;Integer, String&gt; result1 = list.stream().collect(
+                Collectors.toMap(Hosting::getId, Hosting::getName));
+        System.out.println(&quot;Result 1 : &quot; + result1);
+        //{1=liquidweb.com, 2=linode.com, 3=digitalocean.com, 4=aws.amazon.com, 5=mkyong.com}
+
+        // key = name, value - websites
+        Map&lt;String, Long&gt; result2 = list.stream().collect(
+                Collectors.toMap(Hosting::getName, Hosting::getWebsites));
+        System.out.println(&quot;Result 2 : &quot; + result2);
+        //{liquidweb.com=80000, mkyong.com=1, digitalocean.com=120000, linode.com=90000, aws.amazon.com=200000}
+
+        // Same with result1, just different syntax
+        // key = id, value = name
+        Map&lt;Integer, String&gt; result3 = list.stream().collect(
+                Collectors.toMap(x -&gt; x.getId(), x -&gt; x.getName()));
+        System.out.println(&quot;Result 3 : &quot; + result3);
+        //{1=liquidweb.com, 2=linode.com, 3=digitalocean.com, 4=aws.amazon.com, 5=mkyong.com}
+
+        // List to Map – Duplicated Key!
+        list.add(new Hosting(6, &quot;linode.com&quot;, 100000)); // new line
+        Map&lt;String, Long&gt; result4 = list.stream().collect(
+                Collectors.toMap(Hosting::getName, Hosting::getWebsites,
+                        (oldValue, newValue) -&gt; oldValue
+                )
+        );
+        System.out.println(&quot;Result 4 : &quot; + result4);
+        //{liquidweb.com=80000, mkyong.com=1, digitalocean.com=120000, aws.amazon.com=200000, linode.com=90000}
+
+        /* List to Map – Sort &amp; Collect */
+        Map&lt;String, Long&gt; result5 = list.stream()
+                .sorted(Comparator.comparingLong(Hosting::getWebsites).reversed())
+                .collect(
+                        Collectors.toMap(
+                                Hosting::getName, Hosting::getWebsites, // key = name, value = websites
+                                (oldValue, newValue) -&gt; oldValue,       // if same key, take the old key
+                                LinkedHashMap::new                      // returns a LinkedHashMap, keep order
+                        ));
+        System.out.println(&quot;Result 5 : &quot; + result5);
+        // {aws.amazon.com=200000, digitalocean.com=120000, linode.com=100000, liquidweb.com=80000, mkyong.com=1}
+    }
+
+    void convertArrayToStream() {
+        System.out.println(&quot;\n * * * convertArrayToStream&quot;);
+        // In Java 8, you can either use Arrays.stream or Stream.of to convert an Array into a Stream.
+
+        String[] array = {&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;, &quot;e&quot;};
+
+        //Arrays.stream
+        Stream&lt;String&gt; stream1 = Arrays.stream(array);
+        stream1.forEach(System.out::println);// a..e
+
+        //Stream.of
+        Stream&lt;String&gt; stream2 = Stream.of(array);
+        stream2.forEach(System.out::println);// a..e
+
+        // Primitive Arrays
+        // Note : For object arrays, the Stream.of method is calling the Arrays.stream internally.
+        int[] intArray = {1, 2, 3, 4, 5};
+
+        // 1. Arrays.stream -&gt; IntStream
+        IntStream intStream1 = Arrays.stream(intArray);
+        System.out.println(&quot;* intStream1 : &quot;);
+        intStream1.forEach(System.out::println);// 1..5
+
+        // 2. Stream.of -&gt; Stream&lt;int[]&gt;
+        Stream&lt;int[]&gt; temp = Stream.of(intArray);
+        Stream&lt;int[]&gt; temp2 = Stream.of(intArray);
+
+        // Cant print Stream&lt;int[]&gt; directly, convert / flat it to IntStream
+        IntStream intStream2 = temp.flatMapToInt(Arrays::stream);
+        IntStream intStream3 = temp2.flatMapToInt(IntStream::of);
+        System.out.println(&quot;* intStream2 : &quot;);
+        intStream2.forEach(System.out::println);// 1..5
+        System.out.println(&quot;* intStream3 : &quot;);
+        intStream3.forEach(System.out::println);// 1..5
+        /* flatMapToInt - Returns an IntStream consisting of the results of replacing each element of this stream
+          with the contents of a mapped stream produced by applying the provided mapping function to each element.
+          Each mapped stream is closed after its contents have been placed into this stream.
+          (If a mapped stream is null an empty stream is used, instead.)
+          This is an intermediate operation. */
+
+        /* Which one?
+        For object arrays, both are calling the same Arrays.stream (refer example 1, JDK source code).
+        For primitive arrays, I prefer Arrays.stream as well, because it returns fixed size IntStream directly, easier to manipulate it. */
+    }
+
+    void readFileLineByLine() {
+        System.out.println(&quot;\n * * * readFileLineByLine&quot;);
+        // C:\Users\roman\Work\pohovor\projects\java\myjavatest\lines.txt
+        //String fileName = &quot;C://Users//roman//Work//pohovor//projects//java//myjavatest//lines.txt&quot;;
+        String fileName = &quot;C:\\Users\\roman\\Work\\pohovor\\projects\\java\\myjavatest\\myjavatest\\src\\lines.txt&quot;;
+//        String fileName = &quot;C:/sers/roman/Work/pohovor/projects/java/myjavatest/lines.txt&quot;;
+//        String fileName = &quot;lines.txt&quot;;
+
+        //read file into stream, try-with-resources
+        try (Stream&lt;String&gt; stream = Files.lines(Paths.get(fileName))) {
+            stream.forEach(System.out::println); // line1 ..line5
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Read File + Stream + Extra
+        //This example shows you how to use Stream to filter content, convert the entire content to upper case and return it as a List.
+        System.out.println(&quot;* * * Read File + Stream + Extra&quot;);
+        List&lt;String&gt; list = new ArrayList&lt;&gt;();
+
+        try (Stream&lt;String&gt; stream = Files.lines(Paths.get(fileName))) {
+            //1. filter line 3
+            //2. convert all content to upper case
+            //3. convert it into a List
+            list = stream
+                    .filter(line -&gt; !line.startsWith(&quot;line3&quot;))
+                    .map(String::toUpperCase)
+                    .toList();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        list.forEach(System.out::println); // LINE1 LINE2 LINE4 LINE5
+
+        // BufferedReader + Stream
+        //A new method lines() has been added since 1.8, it lets BufferedReader returns content as Stream.
+        System.out.println(&quot;* * * BufferedReader + Stream&quot;);
+        try (BufferedReader br = Files.newBufferedReader(Paths.get(fileName))) {
+            //br returns as stream and convert it into a List
+            list = br.lines().collect(Collectors.toList());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        list.forEach(System.out::println); // line1 ..line5
+
+        // Classic BufferedReader And Scanner
+        // Enough of Java 8 and Stream, let revisit the classic BufferedReader (JDK1.1) and Scanner (JDK1.5) examples to read a file line by line, it is working still, just developers are moving toward Stream.
+        // 4.1 BufferedReader + try-with-resources example.
+        System.out.println(&quot;* * * BufferedReader + try-with-resources example&quot;);
+        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                System.out.println(line); // line1 ..line5
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Scanner + try-with-resources example.
+        System.out.println(&quot;* * * Scanner + try-with-resources example&quot;);
+        try (Scanner scanner = new Scanner(new File(fileName))) {
+            while (scanner.hasNext()){
+                System.out.println(scanner.nextLine()); // line1 ..line5
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    void howToSortMap() {
+        System.out.println(&quot;\n * * * howToSortMap&quot;);
+        Map&lt;String, Integer&gt; unsortMap = new HashMap&lt;&gt;();
+        unsortMap.put(&quot;z&quot;, 10);
+        unsortMap.put(&quot;b&quot;, 5);
+        unsortMap.put(&quot;a&quot;, 6);
+        unsortMap.put(&quot;c&quot;, 20);
+        unsortMap.put(&quot;d&quot;, 1);
+        unsortMap.put(&quot;e&quot;, 7);
+        unsortMap.put(&quot;y&quot;, 8);
+        unsortMap.put(&quot;n&quot;, 99);
+        unsortMap.put(&quot;g&quot;, 50);
+        unsortMap.put(&quot;m&quot;, 2);
+        unsortMap.put(&quot;f&quot;, 9);
+        System.out.println(&quot;Original :&quot; + unsortMap); // {a=6, b=5, c=20, d=1, e=7, f=9, g=50, y=8, z=10, m=2, n=99}
+
+        //Steps to sort a Map in Java 8.
+        //    1.Convert a Map into a Stream
+        //    2. Sort it
+        //    3. Collect and return a new LinkedHashMap (keep the order)
+        // P.S By default, Collectors.toMap will returns a HashMap
+        Map&lt;String, Integer&gt; result = unsortMap.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
+                        (oldValue, newValue) -&gt; oldValue, LinkedHashMap::new));
+        System.out.println(&quot;result : &quot; + result); // {a=6, b=5, c=20, d=1, e=7, f=9, g=50, m=2, n=99, y=8, z=10}
+
+        //sort by values, and reserve it, 10,9,8,7,6...
+        Map&lt;String, Integer&gt; result2 = unsortMap.entrySet().stream()
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
+                        (oldValue, newValue) -&gt; oldValue, LinkedHashMap::new));
+        System.out.println(&quot;result2 : &quot; + result2); //{n=99, g=50, c=20, z=10, f=9, y=8, e=7, a=6, b=5, m=2, d=1}
+
+        //Alternative way
+        Map&lt;String, Integer&gt; result3 = new LinkedHashMap&lt;&gt;();
+        unsortMap.entrySet().stream()
+                .sorted(Map.Entry.&lt;String, Integer&gt;comparingByValue().reversed())
+                .forEachOrdered(x -&gt; result3.put(x.getKey(), x.getValue()));
+        System.out.println(&quot;result3 : &quot; + result3); //{n=99, g=50, c=20, z=10, f=9, y=8, e=7, a=6, b=5, m=2, d=1}
+    }
+
+    void streamsMapExamples() {
+        System.out.println(&quot;\n * * * streamsMapExamples&quot;);
+        // In Java 8, stream().map() lets you convert an object to something else. Review the following examples :
+        // A List of Strings to Uppercase
+        // Simple Java example to convert a list of Strings to upper case.
+        List&lt;String&gt; alpha = Arrays.asList(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;);
+
+        //Before Java8
+        List&lt;String&gt; alphaUpper = new ArrayList&lt;&gt;();
+        for (String s : alpha) {
+            alphaUpper.add(s.toUpperCase());
+        }
+        System.out.println(&quot;alpha : &quot; + alpha); //[a, b, c, d]
+        System.out.println(&quot;alphaUpper : &quot; + alphaUpper); //[A, B, C, D]
+
+        // Java 8
+        List&lt;String&gt; collect = alpha.stream().map(String::toUpperCase).toList();
+        System.out.println(&quot;collect : &quot; + collect); //[A, B, C, D]
+
+        // Extra, streams apply to any data type.
+        List&lt;Integer&gt; num = Arrays.asList(1,2,3,4,5);
+        List&lt;Integer&gt; collect1 = num.stream().map(n -&gt; n * 2).toList();
+        System.out.println(&quot;collect1 : &quot; + collect1); //[2, 4, 6, 8, 10]
+
+        // List of objects -&gt; List of String
+        // Get all the name values from a list of the staff objects.
+        List&lt;Staff&gt; staff = Arrays.asList(
+                new Staff(&quot;mkyong&quot;, 30, new BigDecimal(10000)),
+                new Staff(&quot;jack&quot;, 27, new BigDecimal(20000)),
+                new Staff(&quot;lawrence&quot;, 33, new BigDecimal(30000))
+        );
+
+        //Before Java 8
+        List&lt;String&gt; result = new ArrayList&lt;&gt;();
+        for (Staff x : staff) {
+            result.add(x.getName());
+        }
+        System.out.println(&quot;result : &quot; + result); //[mkyong, jack, lawrence]
+
+        //Java 8
+        List&lt;String&gt; collect3 = staff.stream().map(Staff::getName).toList();
+        System.out.println(&quot;collect3 : &quot; + collect3); //[mkyong, jack, lawrence]
+
+        // 3. List of objects -&gt; List of other objects
+        // This example shows you how to convert a list of staff objects into a list of StaffPublic objects.
+        // Before Java 8
+        List&lt;Staff&gt; staff2 = Arrays.asList(
+                new Staff(&quot;mkyong&quot;, 30, new BigDecimal(10000)),
+                new Staff(&quot;jack&quot;, 27, new BigDecimal(20000)),
+                new Staff(&quot;lawrence&quot;, 33, new BigDecimal(30000))
+        );
+
+        List&lt;StaffPublic&gt; result2 = convertToStaffPublic(staff2);
+        System.out.println(&quot;result2 : &quot; + result2);
+        //[StaffPublic{name=&#x27;mkyong&#x27;, age=30, extra=&#x27;this field is for mkyong only!&#x27;},
+        // StaffPublic{name=&#x27;jack&#x27;, age=27, extra=&#x27;null&#x27;},
+        // StaffPublic{name=&#x27;lawrence&#x27;, age=33, extra=&#x27;null&#x27;}]
+
+        // Java 8 example
+        // convert inside the map() method directly.
+        List&lt;StaffPublic&gt; result3 = staff.stream().map(temp -&gt; {
+            StaffPublic obj = new StaffPublic();
+            obj.setName(temp.getName());
+            obj.setAge(temp.getAge());
+            if (&quot;mkyong&quot;.equals(temp.getName())) {
+                obj.setExtra(&quot;this field is for mkyong only!&quot;);
+            }
+            return obj;
+        }).toList();
+        System.out.println(&quot;result3 : &quot; + result3);
+        //[StaffPublic{name=&#x27;mkyong&#x27;, age=30, extra=&#x27;this field is for mkyong only!&#x27;},
+        // StaffPublic{name=&#x27;jack&#x27;, age=27, extra=&#x27;null&#x27;},
+        // StaffPublic{name=&#x27;lawrence&#x27;, age=33, extra=&#x27;null&#x27;}]
+
+
+    }
+
+    void findDuplicateElementsInStream() {
+        System.out.println(&quot;\n * * * findDuplicateElementsInStream&quot;);
+        // Filter &amp; Set.add()
+        //The Set.add() returns false if the element was already in the set; let see the benchmark at the end of the article.
+        List&lt;Integer&gt; list = Arrays.asList(5, 3, 4, 1, 3, 7, 2, 9, 9, 4);
+        Set&lt;Integer&gt; result = findDuplicateBySetAdd(list);
+        result.forEach(System.out::println); // 3 4 9
+
+        // Map &amp; Collectors.groupingBy
+        //2.1 Create a Map by Collectors.groupingBy and find elements that count &gt; 1.
+        System.out.println(&quot;\n * * * result2&quot;);
+        Set&lt;Integer&gt; result2 = findDuplicateByGrouping(list);
+        result2.forEach(System.out::println); // 3 4 9
+
+        // Collections.frequency
+        //It compares each item with a list – Collections.frequency(list, i).
+        System.out.println(&quot;\n * * * result3&quot;);
+        Set&lt;Integer&gt; result3 = findDuplicateByFrequency(list);
+        result3.forEach(System.out::println); // 3 4 9
+    }
+
+    void streamsFilterExamples() {
+        System.out.println(&quot;\n * * * streamsFilterExamples&quot;);
+        List&lt;String&gt; lines = Arrays.asList(&quot;spring&quot;, &quot;node&quot;, &quot;mkyong&quot;);
+
+        // Streams filter() and collect()
+        //1.1 Before Java 8, filter a List like this :
+        List&lt;String&gt; result = getFilterOutput(lines, &quot;mkyong&quot;);
+        for (String temp : result) {
+            System.out.println(temp); //spring, node
+        }
+
+        // The equivalent example in Java 8, stream.filter() to filter a List, and collect() to convert a stream into a List.
+        List&lt;String&gt; result2 = lines.stream()                // convert list to stream
+                .filter(line -&gt; !&quot;mkyong&quot;.equals(line))     // we dont like mkyong
+                .toList();              // collect the output and convert streams to a List
+        result2.forEach(System.out::println); //spring, node
+
+        // Streams filter(), findAny() and orElse()
+        List&lt;Person&gt; persons = Arrays.asList(
+                new Person(&quot;mkyong&quot;, 30),
+                new Person(&quot;jack&quot;, 20),
+                new Person(&quot;lawrence&quot;, 40)
+        );
+
+        // Before Java 8, you get a Person by name like this :
+        Person result3 = getStudentByName(persons, &quot;jack&quot;);
+        System.out.println(&quot;result3 : &quot; + result3);//Person{name=&#x27;jack&#x27;, age=20}
+
+        // The equivalent example in Java 8, use stream.filter() to filter a List, and .findAny().orElse (null) to return an object conditional.
+        Person result4 = persons.stream()                        // Convert to steam
+                .filter(x -&gt; &quot;jack&quot;.equals(x.getName()))        // we want &quot;jack&quot; only
+                .findAny()                                      // If &#x27;findAny&#x27; then return found
+                .orElse(null);                                  // If not found, return null
+        System.out.println(&quot;result4 : &quot; + result4);//Person{name=&#x27;jack&#x27;, age=20}
+
+        Person result5 = persons.stream()
+                .filter(x -&gt; &quot;ahmook&quot;.equals(x.getName()))
+                .findAny()
+                .orElse(null);
+        System.out.println(&quot;result5 : &quot; + result5);//null
+
+        // For multiple condition.
+        Person result6 = persons.stream()
+                .filter((p) -&gt; &quot;jack&quot;.equals(p.getName()) &amp;&amp; 20 == p.getAge())
+                .findAny()
+                .orElse(null);
+        System.out.println(&quot;result 6 :&quot; + result6);//Person{name=&#x27;jack&#x27;, age=20}
+
+        //or like this
+        Person result7 = persons.stream()
+                .filter(p -&gt; {
+                    if (&quot;jack&quot;.equals(p.getName()) &amp;&amp; 20 == p.getAge()) {
+                        return true;
+                    }
+                    return false;
+                }).findAny()
+                .orElse(null);
+        System.out.println(&quot;result 7 :&quot; + result7);//Person{name=&#x27;jack&#x27;, age=20}
+
+        // Streams filter() and map()
+        String name = persons.stream()
+                .filter(x -&gt; &quot;jack&quot;.equals(x.getName()))
+                .map(Person::getName)   //convert stream to String
+                .findAny()
+                .orElse(&quot;&quot;);
+        System.out.println(&quot;name : &quot; + name);//name : jack
+
+        List&lt;String&gt; collect = persons.stream()
+                .map(Person::getName)
+                .toList();
+        collect.forEach(System.out::println);//mkyong jack lawrence
+
+    }
+
+    void mathExactExamples() {
+        System.out.println(&quot;\n * * * mathExactExamples&quot;);
+        //Math.multiplyExact
+        //This example demonstrates the difference between common multiplication and the new multiplyExact
+        int x = Integer.MAX_VALUE; //( = 2 147 483 647)
+        int y = Integer.MAX_VALUE;
+        Object z;
+
+        System.out.println(&quot;---Before Java 8---&quot;);
+        z = x * y;
+        System.out.println(&quot;z : &quot; + z);
+
+        System.out.println(&quot;\n---Since Java 8---&quot;);
+        try {
+            z = Math.multiplyExact(x, y);
+        } catch (ArithmeticException e) {
+            System.out.println(e.getMessage()); //Java 8 throws integer overflow
+            z = Math.multiplyExact((long) x, (long) y);
+            System.out.println(&quot;z : &quot; + z);
+        }
+        if (z instanceof Long) {
+            System.out.println(&quot;\n&gt; yuuuup z is Long&quot;);
+        }
+        //---Before Java 8---
+        //z : 1
+        //
+        //---Since Java 8---
+        //integer overflow
+        //z : 4611686014132420609
+        //
+        //&gt; yuuuup z is Long
+
+        // Detect and handle the overflow
+        // An example where we handle the overflow for integer and determine the overflow for long.
+
+    }
+
+    void mathExactExamples2() {
+        System.out.println(&quot;\n * * * mathExactExamples2&quot;);
+        int x = 1000000;
+        int y = 1000000;
+        long a = Long.MAX_VALUE; //( = 9 223 372 036 854 775 807)
+        long b = Long.MAX_VALUE;
+        Object z, c;
+
+        System.out.println(&quot;---Before Java 8---&quot;);
+        z = x * y;
+        c = a * b;
+        System.out.println(&quot;z : &quot; + z);
+        System.out.println(&quot;c : &quot; + c);
+
+        System.out.println(&quot;\n---Since Java 8---&quot;);
+        try {
+            z = Math.multiplyExact(x, y);
+            c = Math.multiplyExact(a, b);
+        } catch (ArithmeticException e) {
+            try {
+                z = Math.multiplyExact((long) x, (long) y);
+                c = null;
+            } catch (ArithmeticException ex) {
+                z = null;
+            }
+        }
+
+        if (z instanceof Integer) {
+            System.out.println(&quot;z is instance of Integer: &quot; + z);
+        }
+        if (z instanceof Long) {
+            System.out.println(&quot;z is instance of Long: &quot; + z);
+        } else {
+            System.out.println(&quot;Overflow for z&quot;);
+        }
+
+        if (c instanceof Integer) {
+            System.out.println(&quot;Instance of Integer: &quot; + c);
+        }
+        if (c instanceof Long) {
+            System.out.println(&quot;Instance of Long: &quot; + c);
+        } else {
+            System.out.println(&quot;Overflow for c&quot;);
+        }
+        //---Before Java 8---
+        //z : -727379968
+        //c : 1
+        //
+        //---Since Java 8---
+        //z is instance of Long: 1000000000000
+        //Overflow for c
+    }
+
+    void mathExactExamples3() {
+        System.out.println(&quot;\n * * * mathExactExamples3&quot;);
+        int x = 10000;
+        int y = 10000;
+        Object z;
+
+        z = Math.addExact(x, y);
+        System.out.println(&quot;addExact: &quot; + x + &quot; + &quot; + y + &quot; = &quot; + z);
+        z = Math.subtractExact(x, y);
+        System.out.println(&quot;subtractExact: &quot; + x + &quot; - &quot; + y + &quot; = &quot; + z);
+        z = Math.multiplyExact(x, y);
+        System.out.println(&quot;multiplyExact: &quot; + x + &quot; * &quot; + y + &quot; = &quot; + z);
+        z = Math.incrementExact(x);
+        System.out.println(&quot;incrementExact: &quot; + x + &quot; + 1 = &quot; + z);
+        z = Math.decrementExact(y);
+        System.out.println(&quot;decrementExact: &quot; + y + &quot; - 1 = &quot; + z);
+        z = Math.negateExact(x);
+        System.out.println(&quot;negateExact: &quot; + x + &quot; * -1 = &quot; + z);
+        //addExact: 10000 + 10000 = 20000
+        //subtractExact: 10000 - 10000 = 0
+        //multiplyExact: 10000 * 10000 = 100000000
+        //incrementExact: 10000 + 1 = 10001
+        //decrementExact: 10000 - 1 = 9999
+        //negateExact: 10000 * -1 = -10000
+    }
+
+    void streamsIterateExamples() {
+        System.out.println(&quot;\n * * * streamsIterateExamples&quot;);
+        // In Java 8, we can use Stream.iterate to create stream values on demand, so called infinite stream.
+        //1. Stream.iterate
+        //1.1 Stream of 0 – 9
+
+        //Stream.iterate(initial value, next value)
+        Stream.iterate(0, n -&gt; n + 1)
+                .limit(10)
+                .forEach(System.out::println); // 0 .. 9
+
+        // Stream of odd numbers only.
+        Stream.iterate(0, n -&gt; n + 1)
+                .filter(x -&gt; x % 2 != 0) //odd
+                .limit(10)
+                .forEach(System.out::println);//1,3,5,7,9..19
+
+        // A classic Fibonacci example
+        Stream.iterate(new int[]{0, 1}, n -&gt; new int[]{n[1], n[0] + n[1]})
+                .limit(20)
+                .map(n -&gt; n[0])
+                .forEach(System.out::println);
+        //0
+        //1
+        //1
+        //2
+        //3
+        //5
+        //8
+        //13
+        //21
+        // ...
+
+        // Sum all the Fibonacci values.
+        int sum = Stream.iterate(new int[]{0, 1}, n -&gt; new int[]{n[1], n[0] + n[1]})
+                .limit(10)
+                .map(n -&gt; n[0]) // Stream&lt;Integer&gt;
+                .mapToInt(n -&gt; n)
+                .sum();
+        System.out.println(&quot;Fibonacci 10 sum : &quot; + sum); // 88
+
+        // Java 9
+        //The stream.iterate was enhanced in Java 9. It supports a predicate (condition) as second argument, and the stream.iterate will stop if the predicate is false.
+        // Stop the stream iteration if n &gt;= 20
+        Stream.iterate(1, n -&gt; n &lt; 20 , n -&gt; n * 2)
+                .forEach(System.out::println);// 1 2 4 8 16
+    }
+
+    void sumAllStreamIntegers() {
+        System.out.println(&quot;\n * * * sumAllStreamIntegers&quot;);
+        // The sum() method is available in the primitive int-value stream like IntStream, not Stream&lt;Integer&gt;.
+        // We can use mapToInt() to convert a stream integers into a IntStream.
+        List&lt;Integer&gt; integers = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        int sum = integers.stream().mapToInt(Integer::intValue).sum();
+        System.out.println(&quot;Total : &quot; + sum);//Total : 55
+
+        Stream&lt;Integer&gt; integers2 = Stream.iterate(1, n -&gt; n + 1).limit(10);
+        IntStream intStream = integers2.mapToInt(x -&gt; x);
+        int sum1 = intStream.sum();
+        System.out.println(&quot;Total : &quot; + sum1);//Total : 55
+    }
+
+    void sortListWithStreamSorted() {
+        System.out.println(&quot;\n * * * sortListWithStreamSorted&quot;);
+        // Few examples to show you how to sort a List with stream.sorted()
+        List&lt;String&gt; list = Arrays.asList(&quot;9&quot;, &quot;A&quot;, &quot;Z&quot;, &quot;1&quot;, &quot;B&quot;, &quot;Y&quot;, &quot;4&quot;, &quot;a&quot;, &quot;c&quot;);
+
+        // List
+        // Sort a List with Comparator.naturalOrder()
+        List&lt;String&gt; sortedList = list.stream().sorted().toList();
+        sortedList.forEach(System.out::println); // 1 4..A B..a c
+
+        // Sort a List with Comparator.reverseOrder()
+        List&lt;String&gt; sortedListReverse = list.stream()
+                .sorted(Comparator.reverseOrder())
+                .toList();
+        System.out.println(&quot;\n sortedListReverse : &quot;);
+        sortedListReverse.forEach(System.out::println);// c a Z..9 4 1
+
+        // List Objects
+        // Sort by age, natural order.
+        List&lt;User&gt; users = Arrays.asList(
+                new User(&quot;C&quot;, 20),
+                new User(&quot;D&quot;, 40),
+                new User(&quot;A&quot;, 10),
+                new User(&quot;B&quot;, 50),
+                new User(&quot;E&quot;, 30));
+
+        List&lt;User&gt; sortedList2 = users.stream()
+                .sorted(Comparator.comparingInt(User::getAge))
+                .toList();
+        System.out.println(&quot;\n sortedList2 : &quot;);
+        sortedList2.forEach(System.out::println);
+        //User{name=&#x27;A&#x27;, age=10}
+        //User{name=&#x27;C&#x27;, age=20}
+        //User{name=&#x27;E&#x27;, age=30}
+        //User{name=&#x27;D&#x27;, age=40}
+        //User{name=&#x27;B&#x27;, age=50}
+
+        // reverse order.
+        List&lt;User&gt; sortedListReverse2 = users.stream()
+                .sorted(Comparator.comparingInt(User::getAge)
+                        .reversed())
+                .toList();
+        System.out.println(&quot;\n sortedListReverse2 : &quot;);
+        sortedListReverse2.forEach(System.out::println);
+        //User{name=&#x27;B&#x27;, age=50}
+        //User{name=&#x27;D&#x27;, age=40}
+        //User{name=&#x27;E&#x27;, age=30}
+        //User{name=&#x27;C&#x27;, age=20}
+        //User{name=&#x27;A&#x27;, age=10}
+
+        // Sort by name
+        List&lt;User&gt; sortedList3 = users.stream()
+                .sorted(Comparator.comparing(User::getName))
+                .toList();
+        System.out.println(&quot;\n sortedList3 : &quot;);
+        sortedList3.forEach(System.out::println);
+        //User{name=&#x27;A&#x27;, age=10}
+        //User{name=&#x27;B&#x27;, age=50}
+        //User{name=&#x27;C&#x27;, age=20}
+        //User{name=&#x27;D&#x27;, age=40}
+        //User{name=&#x27;E&#x27;, age=30}
+    }
+
+    void streamsFindFirstAndFindAny() {
+        System.out.println(&quot;\n * * * streamsFindFirstAndFindAny&quot;);
+        // In Java 8 Stream, the findFirst() returns the first element from a Stream, while findAny() returns any element from a Stream.
+        // findFirst() - Find the first element from a Stream of Integers.
+        List&lt;Integer&gt; list = Arrays.asList(1, 2, 3, 2, 1);
+
+        Optional&lt;Integer&gt; first = list.stream().findFirst();
+        if (first.isPresent()) {
+            Integer result = first.get();
+            System.out.println(result);       // 1
+        } else {
+            System.out.println(&quot;no value?&quot;);
+        }
+
+        Optional&lt;Integer&gt; first2 = list
+                .stream()
+                .filter(x -&gt; x &gt; 1).findFirst();
+
+        if (first2.isPresent()) {
+            System.out.println(first2.get()); // 2
+        } else {
+            System.out.println(&quot;no value?&quot;);
+        }
+
+        // Find the first element from a Stream of String which is not equal to &quot;node&quot;.
+        List&lt;String&gt; list2 = Arrays.asList(&quot;node&quot;, &quot;java&quot;, &quot;python&quot;, &quot;ruby&quot;);
+
+        Optional&lt;String&gt; result = list2.stream()
+                .filter(x -&gt; !x.equalsIgnoreCase(&quot;node&quot;))
+                .findFirst();
+
+        if (result.isPresent()) {
+            System.out.println(result.get()); // java
+        } else {
+            System.out.println(&quot;no value?&quot;);
+        }
+
+        // findAny()
+        // Find any element from a Stream of Integers.
+        // If we run the below program, most of the time, the result is 2, it looks like findAny() always returns the first element?
+        // But, there is no guaranteed for this, findAny() may return any element from a Stream.
+        List&lt;Integer&gt; list3 = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+        Optional&lt;Integer&gt; any = list3.stream().filter(x -&gt; x &gt; 1).findAny();
+        any.ifPresent(result3 -&gt; System.out.println(&quot;result3 : &quot; + result3));//2 // no guaranteed
+
+    }
+
+    void convertOptionalStringToString() {
+        System.out.println(&quot;\n * * * convertOptionalStringToString&quot;);
+        // In Java 8, we can use .map(Object::toString) to convert an Optional&lt;String&gt; to a String.
+        List&lt;String&gt; list = Arrays.asList(&quot;a&quot;, &quot;bb&quot;, &quot;c&quot;, &quot;ddd&quot;, &quot;eeee&quot;);
+
+        String result = list.stream()
+                .filter(x -&gt; x.length() == 1)
+                .findFirst()  // returns Optional
+                .map(Object::toString)
+                .orElse(&quot;&quot;);
+        System.out.println(&quot;result : &quot; + result);//a
+
+        String result2 = list.stream()
+                .filter(x -&gt; x.length() == 1)
+                .findAny()  // returns Optional
+                .map(Object::toString)
+                .orElse(&quot;&quot;);
+        System.out.println(&quot;result2 : &quot; + result2);//a
+
+        // A standard Optional way to get a value.
+        Optional&lt;String&gt; result3 = list.stream()
+                .filter(x -&gt; x.length() == 1)
+                .findFirst();
+        result3.ifPresent(System.out::println);// a
+
+        // Try map(Object::toString)
+        String result4 = list.stream().filter(x -&gt; x.length() == 1)
+                .findFirst()
+                .map(Object::toString)
+                .orElse(null);
+        System.out.println(&quot;result4 : &quot; + result4);//a
+    }
+
+    void streamReduceExamples() {
+        System.out.println(&quot;\n * * * streamReduceExamples&quot;);
+        // In Java 8, the Stream.reduce() combine elements of a stream and produces a single value.
+        // A simple sum operation using a for loop.
+        int[] numbers = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+        // before Java 8
+        int sum = 0;
+        for (int i : numbers) {
+            sum += i;
+        }
+        System.out.println(&quot;sum : &quot; + sum); // 55
+
+        // The equivalent in Stream.reduce()
+        // 1st argument, init value = 0
+        int sum2 = Arrays.stream(numbers).reduce(0, (a, b) -&gt; a + b);
+        System.out.println(&quot;sum2 : &quot; + sum2); // 55
+
+        // 1st argument, init value = 5
+        int sum3 = Arrays.stream(numbers).reduce(5, (a, b) -&gt; a + b);
+        System.out.println(&quot;sum3 : &quot; + sum3); // 60
+
+        // or method reference with Integer::sum
+        int sum4 = Arrays.stream(numbers).reduce(0, Integer::sum);
+        System.out.println(&quot;sum4 : &quot; + sum4); // 55
+
+        // More Examples
+        // Math operations
+        System.out.println(&quot;--- Math operations &quot;);
+        System.out.println(Arrays.stream(numbers).reduce(0, (a, b) -&gt; a + b)); //55
+        System.out.println(Arrays.stream(numbers).reduce(0, Integer::sum)); //55
+        System.out.println(Arrays.stream(numbers).reduce(0, (a, b) -&gt; a - b)); //-55
+        System.out.println(Arrays.stream(numbers).reduce(0, (a, b) -&gt; a * b)); // 0, initial is 0, 0 * whatever = 0
+        System.out.println(Arrays.stream(numbers).reduce(0, (a, b) -&gt; a / b)); // 0
+        System.out.println(Arrays.stream(numbers).reduce(1, (a, b) -&gt; a * b)); // 3628800
+        System.out.println(Arrays.stream(numbers).reduce(1, (a, b) -&gt; a / b)); //0
+
+        //  Max and Min.
+        // https://mkyong.com/java8/java-8-stream-reduce-examples/
+        // In Java 8, the Stream.reduce() combine elements of a stream and produces a single value.
+
+        int max = Arrays.stream(numbers).reduce(0, (a, b) -&gt; a &gt; b ? a : b); // 10
+        int max1 = Arrays.stream(numbers).reduce(0, Integer::max); // 10
+        System.out.println(&quot;max : &quot; + max + &quot;, max1 : &quot; + max1);
+
+        int min = Arrays.stream(numbers).reduce(0, (a, b) -&gt; a &lt; b ? a : b);  // 0
+        int min1 = Arrays.stream(numbers).reduce(0, Integer::min); // 0
+        System.out.println(&quot;min : &quot; + min + &quot;, min1 : &quot; + min1);
+
+        // A simple map and reduce example to sum BigDecimal from a list of invoices.
+        List&lt;Invoice&gt; invoices = Arrays.asList(
+                new Invoice(&quot;A01&quot;, BigDecimal.valueOf(9.99), BigDecimal.valueOf(1)),
+                new Invoice(&quot;A02&quot;, BigDecimal.valueOf(19.99), BigDecimal.valueOf(1.5)),
+                new Invoice(&quot;A03&quot;, BigDecimal.valueOf(4.99), BigDecimal.valueOf(2))
+        );
+
+        BigDecimal sum5 = invoices.stream()
+                .map(x -&gt; x.getQty().multiply(x.getPrice())) // map
+                .reduce(BigDecimal.ZERO, BigDecimal::add); // reduce
+        System.out.println(&quot;sum5 : &quot; + sum5); // 49.955
+        System.out.println(&quot;sum5-rounded : &quot; + sum5.setScale(2, RoundingMode.HALF_UP)); // 49.96
+
+    }
+
+    void unaryOperatorExamples() {
+        // https://mkyong.com/java8/java-8-unaryoperator-examples/
+        System.out.println(&quot;\n * * * unaryOperatorExamples&quot;);
+        /**
+         * In Java 8, UnaryOperator is a functional interface and it extends Function.
+         *
+         * The UnaryOperator takes one argument, and returns a result of the same type of its arguments.
+         *
+         * UnaryOperator.java :
+         * @FunctionalInterface
+         *    public interface UnaryOperator&lt;T&gt; extends Function&lt;T, T&gt; {
+         * }
+         *
+         * The Function takes one argument of any type and returns a result of any type.
+         *
+         * Function.java :
+         * @FunctionalInterface
+         * public interface Function&lt;T, R&gt; {
+         *     R apply(T t);
+         * }
+         */
+        // 1. UnaryOperator
+        // In this example, the Function&lt;Integer, Integer&gt; which accepts and returns the same type, can be replaced with UnaryOperator&lt;Integer&gt;.
+        Function&lt;Integer, Integer&gt; func = x -&gt; x * 2;
+        Integer result = func.apply(2);
+        System.out.println(&quot;result : &quot; + result); // 4
+
+        UnaryOperator&lt;Integer&gt; func2 = x -&gt; x * 2;
+        Integer result2 = func2.apply(2);
+        System.out.println(&quot;result2 : &quot; + result2); // 4
+
+        // 2. UnaryOperator as argument
+        List&lt;Integer&gt; list = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        List&lt;Integer&gt; result3 = math(list, x -&gt; x * 2);
+        System.out.println(&quot;result3 : &quot; + result3); // [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+
+        // 3. Chain UnaryOperator
+        List&lt;Integer&gt; result4 = math(list,
+                x -&gt; x * 2,
+                x -&gt; x + 1);
+        System.out.println(&quot;result4 : &quot; + result4); // [3, 5, 7, 9, 11, 13, 15, 17, 19, 21]
+
+    }
+
+    void methodReferences_doubleColonOperator() {
+        // https://mkyong.com/java8/java-8-method-references-double-colon-operator/
+        System.out.println(&quot;\n * * * unaryOperatorExamples&quot;);
+
+        // Anonymous class to print a list.
+        List&lt;String&gt; list = Arrays.asList(&quot;node&quot;, &quot;java&quot;, &quot;python&quot;, &quot;ruby&quot;);
+        list.forEach(new Consumer&lt;String&gt;() {       // anonymous class
+            @Override
+            public void accept(String str) {
+                System.out.println(str);
+            }
+        });
+
+        // Anonymous class -&gt; Lambda expressions.
+        list.forEach(str -&gt; System.out.println(str)); // lambda
+
+        // Lambda expressions -&gt; Method references.
+        list.forEach(System.out::println); // method references
+
+        /**
+         * Anonymous Class -&gt; Lambda expression -&gt; Method Reference
+         *
+         * Note : Both lambda expression or method reference does nothing but just another way call to an existing method.
+         * With method reference, it gains better readability.
+         *
+         * There are four kinds of method references:
+         *     Reference to a static method ClassName::staticMethodName
+         *     Reference to an instance method of a particular object Object::instanceMethodName
+         *     Reference to an instance method of an arbitrary object of a particular type ContainingType::methodName–
+         *     Reference to a constructor ClassName::new
+         */
+        // 1. Static method
+        // 1.1 This example prints a list of Strings, method reference to a static method SimplePrinter::print.
+        // anonymous class
+        list.forEach(new Consumer&lt;String&gt;() {
+            @Override
+            public void accept(String x) {
+                SimplePrinter.print(x);
+            }
+        });
+
+        // lambda expression
+        list.forEach(x -&gt; SimplePrinter.print(x));
+
+        // method reference
+        list.forEach(SimplePrinter::print);
+
+        // 1.2 This example converts a list of Strings into a list of Integers, method reference to a static method Integer::parseInt.
+        List&lt;String&gt; list2 = Arrays.asList(&quot;1&quot;, &quot;2&quot;, &quot;3&quot;);
+
+        // anonymous class
+        List&lt;Integer&gt; collect1 = list2.stream()
+                .map(new Function&lt;String, Integer&gt;() {
+                    @Override
+                    public Integer apply(String s) {
+                        return Integer.parseInt(s);
+                    }
+                })
+                .toList();
+        System.out.println(&quot;collect1 : &quot; + collect1); // [1, 2, 3]
+
+        // lambda expression
+        List&lt;Integer&gt; collect2 = list2.stream()
+                .map(s -&gt; Integer.parseInt(s))
+                .toList();
+        System.out.println(&quot;collect2 : &quot; + collect2); // [1, 2, 3]
+
+        // method reference
+        List&lt;Integer&gt; collect3 = list2.stream()
+                .map(Integer::parseInt)
+                .toList();
+        System.out.println(&quot;collect3 : &quot; + collect3); // [1, 2, 3]
+
+        // 1.3 This example joins two Integer and returns a String.
+        // It passes a method reference static method IntegerUtils::join as an argument into another method that accepts a BiFunction.
+
+        // anonymous class
+        String result1 = playTwoArgument(1, 2, new BiFunction&lt;Integer, Integer, String&gt;() {
+            @Override
+            public String apply(Integer a, Integer b) {
+                return IntegerUtils.join(a, b);
+            }
+        });
+        System.out.println(&quot;result1 : &quot; + result1); // 3
+
+        // lambda
+        String result2 = playTwoArgument(1, 2, (a, b) -&gt; IntegerUtils.join(a, b));
+        System.out.println(&quot;result2 : &quot; + result2); // 3
+
+        // method reference
+        String result3 = playTwoArgument(1, 2, IntegerUtils::join);
+        System.out.println(&quot;result3 : &quot; + result3); // 3
+
+        // 2. Reference to an instance method of a particular object
+        // 2.1 This example sorts a list of Employee by salary.
+        // We can reference to an instance method compareBySalary of a particular object ComparatorProvider.
+        List&lt;Employee&gt; list3 = Arrays.asList(
+                new Employee(&quot;mkyong&quot;, 38, BigDecimal.valueOf(3800)),
+                new Employee(&quot;zilap&quot;, 5, BigDecimal.valueOf(100)),
+                new Employee(&quot;ali&quot;, 25, BigDecimal.valueOf(2500)),
+                new Employee(&quot;unknown&quot;, 99, BigDecimal.valueOf(9999)));
+
+        ComparatorProvider provider = new ComparatorProvider();
+
+        // anonymous class
+        System.out.println(&quot;\n * compareByAge&quot;);
+        list3.sort(new Comparator&lt;Employee&gt;() {
+            @Override
+            public int compare(Employee o1, Employee o2) {
+                return provider.compareByAge(o1, o2);
+            }
+        });
+        list3.forEach(System.out::println);
+
+        // lambda
+         list3.sort((o1, o2) -&gt; provider.compareByName(o1, o2));
+        System.out.println(&quot;\n * compareByName&quot;);
+        list3.forEach(System.out::println);
+
+        // method reference
+        list3.sort(provider::compareBySalary);
+        System.out.println(&quot;\n * compareBySalary&quot;);
+        list3.forEach(x -&gt; System.out.println(x));
+
+        // * compareByAge
+        //Employee{name=&#x27;zilap&#x27;, age=5, salary=100}
+        //Employee{name=&#x27;ali&#x27;, age=25, salary=2500}
+        //Employee{name=&#x27;mkyong&#x27;, age=38, salary=3800}
+        //Employee{name=&#x27;unknown&#x27;, age=99, salary=9999}
+        //
+        // * compareByName
+        //Employee{name=&#x27;ali&#x27;, age=25, salary=2500}
+        //Employee{name=&#x27;mkyong&#x27;, age=38, salary=3800}
+        //Employee{name=&#x27;unknown&#x27;, age=99, salary=9999}
+        //Employee{name=&#x27;zilap&#x27;, age=5, salary=100}
+        //
+        // * compareBySalary
+        //Employee{name=&#x27;zilap&#x27;, age=5, salary=100}
+        //Employee{name=&#x27;ali&#x27;, age=25, salary=2500}
+        //Employee{name=&#x27;mkyong&#x27;, age=38, salary=3800}
+        //Employee{name=&#x27;unknown&#x27;, age=99, salary=9999}
+
+        // 3. Reference to an instance method of an arbitrary object of a particular type.
+        String[] stringArray = { &quot;Barbara&quot;, &quot;James&quot;, &quot;Mary&quot;, &quot;John&quot;,
+                &quot;Patricia&quot;, &quot;Robert&quot;, &quot;Michael&quot;, &quot;Linda&quot; };
+        Arrays.sort(stringArray, String::compareToIgnoreCase);
+        System.out.println(&quot;stringArray : &quot; + Arrays.toString(stringArray));
+        // [Barbara, James, John, Linda, Mary, Michael, Patricia, Robert]
+
+        // lambda
+        int resultb1 = playOneArgument(&quot;mkyong&quot;, x -&gt; x.length()); // 6
+        System.out.println(&quot;resultb1 = &quot; + resultb1);
+
+        // method reference
+        int resultb2 = playOneArgument(&quot;mkyong&quot;, String::length); // 6
+        System.out.println(&quot;resultb2 = &quot; + resultb2);
+
+        // lambda
+        Boolean resultb3 = playTwoArgument(&quot;mkyong&quot;, &quot;y&quot;, (a, b) -&gt; a.contains(b)); // true
+        System.out.println(&quot;resultb3 = &quot; + resultb3);
+
+        // method reference
+        Boolean resultb4 = playTwoArgument(&quot;mkyong&quot;, &quot;y&quot;, String::contains); // true
+        System.out.println(&quot;resultb4 = &quot; + resultb4);
+
+        // lambda
+        Boolean resultb5 = playTwoArgument(&quot;mkyong&quot;, &quot;1&quot;, (a, b) -&gt; a.startsWith(b)); // false
+        System.out.println(&quot;resultb5 = &quot; + resultb5);
+
+        // method reference
+        Boolean resultb6 = playTwoArgument(&quot;mkyong&quot;, &quot;y&quot;, String::startsWith); // false
+        System.out.println(&quot;resultb6 = &quot; + resultb6);
+
+        // another example, custom object.
+        Invoice2 obj = new Invoice2(&quot;A001&quot;, BigDecimal.valueOf(1.99), 3);
+        InvoiceCalculator formula = new InvoiceCalculator();
+
+        // lambda
+        BigDecimal resultc1 = calculate(formula, obj, (f, o) -&gt; f.normal(o)); // 5.97
+        System.out.println(&quot;resultc1 = &quot; + resultc1);
+
+        // method reference
+        BigDecimal resultc2 = calculate(formula, obj, InvoiceCalculator::normal); // 5.97
+        System.out.println(&quot;resultc2 = &quot; + resultc2);
+
+        // lambda
+        BigDecimal resultc3 = calculate(formula, obj, (f, o) -&gt; f.promotion(o)); // 5.37
+        System.out.println(&quot;resultc3 = &quot; + resultc3);
+
+        // method reference
+        BigDecimal resultc4 = calculate(formula, obj, InvoiceCalculator::promotion); // 5.37
+        System.out.println(&quot;resultc4 = &quot; + resultc4);
+
+        /**
+         * 4. Reference to a constructor.
+         *
+         * Lambda expression :
+         * (args) -&gt; new ClassName(args)
+         *
+         * Method Reference :
+         * ClassName::new
+         */
+        // 4.1 Reference to a default constructor.
+
+        // lambda
+        Supplier&lt;Map&gt; obj1 = () -&gt; new HashMap();   // default HashMap() constructor
+        Map map1 = obj1.get();
+
+        // method reference
+        Supplier&lt;Map&gt; obj2 = HashMap::new;
+        Map map2 = obj2.get();
+
+        // lambda
+        Supplier&lt;Invoice2&gt; obj3 = () -&gt; new Invoice2(); // default Invoice() constructor
+        Invoice2 invoice1 = obj3.get();
+
+        // method reference
+        Supplier&lt;Invoice2&gt; obj4 = Invoice2::new;
+        Invoice2 invoice2 = obj4.get();
+
+        // 4.2 Reference to a constructor which accepts an argument – Invoice(BigDecimal unitPrice)
+        List&lt;BigDecimal&gt; listInv = Arrays.asList(
+                BigDecimal.valueOf(9.99),
+                BigDecimal.valueOf(2.99),
+                BigDecimal.valueOf(8.99));
+
+        // lambda
+         List&lt;Invoice2&gt; invoices = fakeInvoice(listInv, (price) -&gt; new Invoice2(price));
+        System.out.println(&quot;\n * invoices&quot;);
+        invoices.forEach(System.out::println);
+
+        // method reference
+        List&lt;Invoice2&gt; invoices2 = fakeInvoice(listInv, Invoice2::new);
+        System.out.println(&quot;\n * invoices2&quot;);
+        invoices2.forEach(System.out::println);
+
+        // * invoices
+        //Invoice2{no=&#x27;null&#x27;, unitPrice=9.99, qty=null}
+        //Invoice2{no=&#x27;null&#x27;, unitPrice=2.99, qty=null}
+        //Invoice2{no=&#x27;null&#x27;, unitPrice=8.99, qty=null}
+        // * invoices2
+        //Invoice2{no=&#x27;null&#x27;, unitPrice=9.99, qty=null}
+        //Invoice2{no=&#x27;null&#x27;, unitPrice=2.99, qty=null}
+        //Invoice2{no=&#x27;null&#x27;, unitPrice=8.99, qty=null}
+
+    }
+
+    void biFunctionExamples() {
+        // https://mkyong.com/java8/java-8-bifunction-examples/
+        System.out.println(&quot;\n * * * biFunctionExamples&quot;);
+        /**
+         * In Java 8, BiFunction is a functional interface; it takes two arguments and returns an object.
+         * BiFunction.java
+         * @FunctionalInterface
+         * public interface BiFunction&lt;T, U, R&gt; {
+         *       R apply(T t, U u);
+         * }
+         *     T – Type of the first argument to the function.
+         *     U – Type of the second argument to the function.
+         *     R – Type of the result of the function.
+         */
+        // 1. BiFunction&lt;T, U, R&gt;
+        // 1.1 This example takes two Integers and returns an Integer, Double or List
+        // takes two Integers and return an Integer
+        BiFunction&lt;Integer, Integer, Integer&gt; funca1 = (x1, x2) -&gt; x1 + x2;
+        BiFunction&lt;Integer, Integer, Integer&gt; funca1b = Integer::sum;
+        Integer resulta1 = funca1.apply(2, 3);
+        System.out.println(&quot;resulta1=&quot; + resulta1 + &quot;, funca1b=&quot; + funca1b.apply(2, 3)); // resulta1=5, funca1b=5
+
+        // take two Integers and return an Double
+        BiFunction&lt;Integer, Integer, Double&gt; funca2 = (x1, x2) -&gt; Math.pow(x1, x2);
+        BiFunction&lt;Integer, Integer, Double&gt; funca2b = Math::pow;
+        Double resulta2 = funca2.apply(2, 4);
+        System.out.println(&quot;resulta2=&quot; + resulta2 + &quot;, funca2b=&quot; + funca2b.apply(2, 4)); // resulta2=16.0, funca2b=16.0
+
+        // take two Integers and return a List&lt;Integer&gt;
+        BiFunction&lt;Integer, Integer, List&lt;Integer&gt;&gt; funca3 = (x1, x2) -&gt; Arrays.asList(x1 + x2);
+        BiFunction&lt;Integer, Integer, List&lt;Integer&gt;&gt; funca3b = (x1, x2) -&gt; Arrays.asList(x1 + x2);
+        List&lt;Integer&gt; resulta3 = funca3.apply(2, 3);
+        System.out.println(&quot;resulta3=&quot; + resulta3 + &quot;, funca3b=&quot; + funca3b.apply(2, 3)); // resulta3=[5], funca3b=[5]
+
+        // 2.2 This example converts the above program into a method that accepts BiFunction and Function as arguments and chains it together.
+        String resultb1 = powToString(2, 4,
+                (a1, a2) -&gt; Math.pow(a1, a2),
+                (r) -&gt; &quot;Result : &quot; + String.valueOf(r));
+        String resultb2 = powToString(2, 4,
+                Math::pow,
+                (r) -&gt; &quot;Result : &quot; + String.valueOf(r));
+        System.out.println(&quot;resultb1=&quot; + resultb1 + &quot;, resultb2=&quot; + resultb2); // resultb1=Result : 16.0, resultb2=Result : 16.0
+
+        // 2.3 This example converts the above method into a generic method:
+        // Take two Integers, pow it into a Double, convert Double into a String.
+        String resultc1 = convert(2, 4,
+                (a1, a2) -&gt; Math.pow(a1, a2),
+                (r) -&gt; &quot;Pow : &quot; + String.valueOf(r));
+        System.out.println(&quot;resultc1=&quot; + resultc1); // resultc1=Pow : 16.0
+
+        // Take two Integers, multiply into an Integer, convert Integer into a String.
+        String resultc2 = convert(2, 4,
+                (a1, a2) -&gt; a1 * a1,
+                (r) -&gt; &quot;Multiply : &quot; + String.valueOf(r));
+        System.out.println(&quot;resultc2=&quot; + resultc2); // resultc2=Multiply : 4
+
+        // Take two Strings, join both, join &quot;cde&quot;
+        String resultc3 = convert(&quot;a&quot;, &quot;b&quot;,
+                (a1, a2) -&gt; a1 + a2,
+                (r) -&gt; r + &quot;cde&quot;);
+        System.out.println(&quot;resultc3=&quot; + resultc3); // resultc3=abcde
+
+        // Take two Strings, join both, convert it into an Integer
+        Integer resultc4 = convert(&quot;100&quot;, &quot;200&quot;,
+                (a1, a2) -&gt; a1 + a2,
+                (r) -&gt; Integer.valueOf(r));
+        Integer resultc4b = convert(&quot;100&quot;, &quot;200&quot;,
+                (a1, a2) -&gt; a1 + a2,
+                Integer::valueOf);
+        System.out.println(&quot;resultc4=&quot; + resultc4 + &quot;, resultc4b=&quot; + resultc4b); // resultc4=100200, resultc4b=100200
+
+        // 3. Factory
+        // 3.1 This example uses BiFunction to create an object, acts as a factory pattern.
+        GPS obj = factory(&quot;40.741895&quot;, &quot;-73.989308&quot;, GPS::new);
+        System.out.println(&quot;obj=&quot; + obj); // obj=GPS{Latitude=&#x27;40.741895&#x27;, Longitude=&#x27;-73.989308&#x27;}
+
+        // 4. More
+        //4.1 Filtering a List by some conditions.
+        TestMkyong obj2 = new TestMkyong();
+        List&lt;String&gt; list = Arrays.asList(&quot;node&quot;, &quot;c++&quot;, &quot;java&quot;, &quot;javascript&quot;);
+
+        List&lt;String&gt; resultd0 = obj2.filterList(list, 3, obj2::filterByLength);
+        System.out.println(&quot;resultd0=&quot; + resultd0);   // [node, java, javascript]
+
+        List&lt;String&gt; resultd1 = obj2.filterList(list, 3, (l1, size) -&gt; {
+            if (l1.length() &gt; size) {
+                return l1;
+            } else {
+                return null;
+            }
+        });
+        System.out.println(&quot;resultd1=&quot; + resultd1);  // [node, java, javascript]
+
+        List&lt;String&gt; resultd2 = obj2.filterList(list, &quot;c&quot;, (l1, condition) -&gt; {
+            if (l1.startsWith(condition)) {
+                return l1;
+            } else {
+                return null;
+            }
+        });
+        System.out.println(&quot;resultd2=&quot; + resultd2);  // [c++]
+
+        List&lt;Integer&gt; number = Arrays.asList(1, 2, 3, 4, 5);
+
+        List&lt;Integer&gt; resultd3 = obj2.filterList(number, 2, (l1, condition) -&gt; {
+            if (l1 % condition == 0) {
+                return l1;
+            } else {
+                return null;
+            }
+        });
+        System.out.println(&quot;resultd3=&quot; + resultd3);  // [2, 4]
+    }
+
+    /* other functions */
+
+    public List&lt;StaffPublic&gt; convertToStaffPublic(List&lt;Staff&gt; staff) {
+        List&lt;StaffPublic&gt; result = new ArrayList&lt;&gt;();
+        for (Staff temp : staff) {
+            StaffPublic obj = new StaffPublic();
+            obj.setName(temp.getName());
+            obj.setAge(temp.getAge());
+            if (&quot;mkyong&quot;.equals(temp.getName())) {
+                obj.setExtra(&quot;this field is for mkyong only!&quot;);
+            }
+            result.add(obj);
+        }
+        return result;
+
+    }
+
+    public &lt;T&gt; Set&lt;T&gt; findDuplicateBySetAdd(List&lt;T&gt; list) {
+        Set&lt;T&gt; items = new HashSet&lt;&gt;();
+        return list.stream()
+                .filter(n -&gt; !items.add(n)) // Set.add() returns false if the element was already in the set.
+                .collect(Collectors.toSet());
+    }
+
+    public &lt;T&gt; Set&lt;T&gt; findDuplicateByGrouping(List&lt;T&gt; list) {
+        return list.stream()
+                .collect(Collectors.groupingBy(
+                        Function.identity() , Collectors.counting())) // create a map {1=1, 2=1, 3=2, 4=2, 5=1, 7=1, 9=2}
+                .entrySet().stream()                 // Map -&gt; Stream
+                .filter(m -&gt; m.getValue() &gt; 1)       // if map value &gt; 1, duplicate element
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+    }
+
+    public &lt;T&gt; Set&lt;T&gt; findDuplicateByFrequency(List&lt;T&gt; list) {
+
+        return list.stream().filter(i -&gt; Collections.frequency(list, i) &gt; 1)
+                .collect(Collectors.toSet());
+
+    }
+
+    private List&lt;String&gt; getFilterOutput(List&lt;String&gt; lines, String filter) {
+        List&lt;String&gt; result = new ArrayList&lt;&gt;();
+        for (String line : lines) {
+            if (!&quot;mkyong&quot;.equals(line)) { // we dont like mkyong
+                result.add(line);
+            }
+        }
+        return result;
+    }
+
+    private Person getStudentByName(List&lt;Person&gt; persons, String name) {
+        Person result = null;
+        for (Person temp : persons) {
+            if (name.equals(temp.getName())) {
+                result = temp;
+            }
+        }
+        return result;
+    }
+
+    private &lt;T&gt; List&lt;T&gt; math(List&lt;T&gt; list, UnaryOperator&lt;T&gt; uo) {
+        List&lt;T&gt; result = new ArrayList&lt;&gt;();
+        for (T t : list) {
+            result.add(uo.apply(t));
+        }
+        return result;
+    }
+
+    private &lt;T&gt; List&lt;T&gt; math(List&lt;T&gt; list, UnaryOperator&lt;T&gt; uo, UnaryOperator&lt;T&gt; uo2) {
+        List&lt;T&gt; result = new ArrayList&lt;&gt;();
+        for (T t : list) {
+            result.add(uo.andThen(uo2).apply(t));
+        }
+        return result;
+    }
+
+    private static class SimplePrinter {
+        public static void print(String str) {
+            System.out.println(str);
+        }
+    }
+
+    private static class IntegerUtils{
+        public static String join(Integer a, Integer b) {
+            return String.valueOf(a + b);
+        }
+    }
+
+    private &lt;R&gt; R playTwoArgument(Integer i1, Integer i2, BiFunction&lt;Integer, Integer, R&gt; func) {
+        return func.apply(i1, i2);
+    }
+
+    private static class ComparatorProvider {
+
+        public int compareByAge(Employee o1, Employee o2) {
+            return o1.getAge().compareTo(o2.getAge());
+        }
+
+        public int compareByName(Employee o1, Employee o2) {
+            return o1.getName().compareTo(o2.getName());
+        }
+
+        public int compareBySalary(Employee o1, Employee o2) {
+            return o1.getAge().compareTo(o2.getAge());
+        }
+
+    }
+
+    private &lt;R&gt; R playOneArgument(String s1, Function&lt;String, R&gt; func) {
+        return func.apply(s1);
+    }
+
+    private Boolean playTwoArgument(String s1, String s2, BiPredicate&lt;String, String&gt; func) {
+        return func.test(s1, s2);
+    }
+
+    private BigDecimal calculate(InvoiceCalculator formula, Invoice2 s1, BiFunction&lt;InvoiceCalculator, Invoice2, BigDecimal&gt; func) {
+        return func.apply(formula, s1);
+    }
+
+    static class InvoiceCalculator {
+
+        public BigDecimal normal(Invoice2 obj) {
+            return obj.getUnitPrice().multiply(BigDecimal.valueOf(obj.qty));
+        }
+
+        public BigDecimal promotion(Invoice2 obj) {
+            return obj.getUnitPrice()
+                    .multiply(BigDecimal.valueOf(obj.qty))
+                    .multiply(BigDecimal.valueOf(0.9))
+                    .setScale(2, RoundingMode.HALF_UP);
+        }
+    }
+
+    private List&lt;Invoice2&gt; fakeInvoice(List&lt;BigDecimal&gt; list, Function&lt;BigDecimal, Invoice2&gt; func) {
+        List&lt;Invoice2&gt; result = new ArrayList&lt;&gt;();
+
+        for (BigDecimal amount : list) {
+            result.add(func.apply(amount));
+        }
+        return result;
+    }
+
+    private &lt;R&gt; R powToString(Integer a1, Integer a2, BiFunction&lt;Integer, Integer, Double&gt; func, Function&lt;Double, R&gt; func2) {
+        return func.andThen(func2).apply(a1, a2);
+    }
+
+    private &lt;A1, A2, R1, R2&gt; R2 convert(A1 a1, A2 a2, BiFunction&lt;A1, A2, R1&gt; func, Function&lt;R1, R2&gt; func2) {
+        return func.andThen(func2).apply(a1, a2);
+    }
+
+    private &lt;R extends GPS&gt; R factory(String Latitude, String Longitude, BiFunction&lt;String, String, R&gt; func) {
+        return func.apply(Latitude, Longitude);
+    }
+
+    public String filterByLength(String str, Integer size) {
+        if (str.length() &gt; size) {
+            return str;
+        } else {
+            return null;
+        }
+    }
+
+    public &lt;T, U, R&gt; List&lt;R&gt; filterList(List&lt;T&gt; list1, U condition, BiFunction&lt;T, U, R&gt; func) {
+        List&lt;R&gt; result = new ArrayList&lt;&gt;();
+        for (T t : list1) {
+            R apply = func.apply(t, condition);
+            if (apply != null) {
+                result.add(apply);
+            }
+        }
+        return result;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">User.java</span>
+        <span class="path">User.java</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-java">package test.mkyong;
+
+public class User {
+    private String name;
+    private int age;
+
+    public User(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    @Override
+    public String toString() {
+        return &quot;User{&quot; +
+                &quot;name=&#x27;&quot; + name + &#x27;\&#x27;&#x27; +
+                &quot;, age=&quot; + age +
+                &#x27;}&#x27;;
+    }
+}
+</code></pre>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      hljs.highlightAll();
+    });
+
+    // ── per-card toggle ──────────────────────────────────────────────
+    function toggleCard(header) {
+      const body = header.nextElementSibling;
+      const btn  = header.querySelector('.toggle-btn');
+      const collapsed = body.classList.toggle('collapsed');
+      btn.textContent = collapsed ? '\u25b6 Show' : '\u25bc Hide';
+    }
+
+    // ── show / collapse all ──────────────────────────────────────────
+    function showAll() {
+      document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+        b.classList.remove('collapsed');
+        b.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+      });
+    }
+    function collapseAll() {
+      document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+        b.classList.add('collapsed');
+        b.closest('.card').querySelector('.toggle-btn').textContent = '\u25b6 Show';
+      });
+    }
+
+    // ── card-level filter (show/hide cards by match) ─────────────────
+    function applyCardFilter(term) {
+      const lower = term.trim().toLowerCase();
+      let shown = 0;
+      document.querySelectorAll('.card').forEach(card => {
+        const has = !lower || card.querySelector('code').textContent.toLowerCase().includes(lower);
+        card.classList.toggle('hidden-by-search', !has);
+        if (has) shown++;
+      });
+      const info = document.getElementById('match-info');
+      info.textContent = lower
+        ? (shown === 0 ? 'No files match' : shown + ' file' + (shown > 1 ? 's' : '') + ' match')
+        : '';
+    }
+
+    // ── in-page text search ──────────────────────────────────────────
+    let marks = [];
+    let currentIdx = -1;
+    const psbInput = document.getElementById('psb-input');
+    const psbCount = document.getElementById('psb-count');
+
+    function clearMarks() {
+      document.querySelectorAll('mark.sh, mark.sh-current').forEach(m => {
+        m.outerHTML = m.textContent
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      });
+      // normalize() re-merges adjacent text nodes
+      document.querySelectorAll('.card-body code').forEach(c => c.normalize());
+      marks = [];
+      currentIdx = -1;
+    }
+
+    function findAll(term) {
+      clearMarks();
+      if (!term) { updateCount(); return; }
+      const lower = term.toLowerCase();
+
+      document.querySelectorAll('.card-body code').forEach(code => {
+        const walker = document.createTreeWalker(code, NodeFilter.SHOW_TEXT);
+        const nodes = [];
+        let n;
+        while ((n = walker.nextNode())) nodes.push(n);
+
+        nodes.forEach(node => {
+          const text = node.textContent;
+          const ltxt = text.toLowerCase();
+          let pos = 0, start;
+          const frags = [];
+          while ((start = ltxt.indexOf(lower, pos)) !== -1) {
+            if (start > pos) frags.push(document.createTextNode(text.slice(pos, start)));
+            const m = document.createElement('mark');
+            m.className = 'sh';
+            m.textContent = text.slice(start, start + term.length);
+            frags.push(m);
+            marks.push(m);
+            pos = start + term.length;
+          }
+          if (frags.length) {
+            if (pos < text.length) frags.push(document.createTextNode(text.slice(pos)));
+            node.replaceWith(...frags);
+          }
+        });
+      });
+      updateCount();
+    }
+
+    function goTo(idx) {
+      if (!marks.length) return;
+      if (currentIdx >= 0) {
+        marks[currentIdx].className = 'sh';
+      }
+      currentIdx = ((idx % marks.length) + marks.length) % marks.length;
+      const m = marks[currentIdx];
+      m.className = 'sh-current';
+      // expand card if collapsed
+      const body = m.closest('.card-body');
+      if (body && body.classList.contains('collapsed')) {
+        body.classList.remove('collapsed');
+        body.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+      }
+      m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      updateCount();
+    }
+
+    function updateCount() {
+      if (!psbInput.value.trim()) { psbCount.textContent = ''; return; }
+      psbCount.textContent = marks.length === 0
+        ? '0 matches'
+        : (currentIdx + 1) + ' / ' + marks.length;
+      document.getElementById('psb-prev').disabled = marks.length === 0;
+      document.getElementById('psb-next').disabled = marks.length === 0;
+    }
+
+    function runPageSearch() {
+      const term = psbInput.value;
+      applyCardFilter(term);
+      findAll(term);
+      if (marks.length) goTo(0);
+    }
+
+    function prevMatch() { if (marks.length) goTo(currentIdx - 1); }
+    function nextMatch() { if (marks.length) goTo(currentIdx + 1); }
+
+    function clearPageSearch() {
+      psbInput.value = '';
+      clearMarks();
+      applyCardFilter('');
+      updateCount();
+    }
+
+    psbInput.addEventListener('input', runPageSearch);
+    psbInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.shiftKey ? prevMatch() : nextMatch(); }
+      if (e.key === 'Escape') clearPageSearch();
+    });
+
+    // ── messages from sidebar ────────────────────────────────────────
+    window.addEventListener('message', function (e) {
+      if (!e.data) return;
+      if (e.data.type === 'page-search') {
+        psbInput.value = e.data.term || '';
+        runPageSearch();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subject</title>
+<link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #1e1e2e; color: #cdd6f4; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Page header ── */
+  #page-header {
+    flex-shrink: 0;
+    background: #181825;
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid #313244;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    z-index: 10;
+  }
+  #page-header h1 {
+    font-size: 18px; font-weight: 700; color: #cba6f7; margin-bottom: 8px;
+    letter-spacing: 0.03em;
+  }
+  #match-info { font-size: 12px; color: #a6adc8; margin-left: 4px; }
+
+  /* ── Page search bar ── */
+  .page-search-bar {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  #psb-input {
+    flex: 1; min-width: 180px; max-width: 320px;
+    background: #313244; border: 1px solid #45475a; color: #cdd6f4;
+    border-radius: 4px; padding: 5px 10px; font-size: 13px; outline: none;
+  }
+  #psb-input:focus { border-color: #89b4fa; box-shadow: 0 0 0 2px rgba(137,180,250,.2); }
+  #psb-input::placeholder { color: #6c7086; }
+  .psb-btn {
+    padding: 4px 10px; border: 1px solid #45475a; border-radius: 4px;
+    background: #313244; color: #cdd6f4; cursor: pointer; font-size: 12px;
+    transition: background .15s;
+  }
+  .psb-btn:hover { background: #45475a; }
+  .psb-btn:disabled { opacity: .4; cursor: default; }
+  .psb-clear {
+    padding: 4px 10px; border: none; border-radius: 4px;
+    background: #f38ba8; color: #1e1e2e; cursor: pointer; font-size: 12px;
+    font-weight: 600; transition: background .15s;
+  }
+  .psb-clear:hover { background: #eba0ac; }
+  #psb-count { font-size: 12px; color: #a6adc8; min-width: 60px; }
+
+  /* ── Cards container ── */
+  #cards-container {
+    flex: 1; overflow-y: auto; padding: 12px 16px 20px;
+  }
+  .card {
+    margin-bottom: 12px; border-radius: 8px; overflow: hidden;
+    border: 1px solid #313244; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .card.hidden-by-search { display: none; }
+
+  /* ── Card header ── */
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #2a2a3d; padding: 8px 14px; cursor: pointer;
+    user-select: none; transition: background .15s;
+    border-bottom: 1px solid #313244;
+  }
+  .card-header:hover { background: #313244; }
+  .filename { font-size: 14px; font-weight: 600; color: #89dceb; font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+  .toggle-btn {
+    background: none; border: 1px solid #45475a; color: #a6adc8;
+    border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 11px;
+    transition: all .15s; white-space: nowrap;
+  }
+  .toggle-btn:hover { background: #45475a; color: #cdd6f4; }
+
+  /* ── Card body ── */
+  .card-body { overflow: hidden; }
+  .card-body.collapsed { display: none; }
+  .card-body pre { margin: 0; }
+  .card-body pre code.hljs {
+    font-size: 13px; line-height: 1.55; padding: 14px 16px !important;
+    background: #282c34 !important;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  }
+
+  /* ── Search highlights ── */
+  mark.sh         { background: #f9e2af; color: #1e1e2e; border-radius: 2px; }
+  mark.sh-current { background: #fab387; color: #1e1e2e; border-radius: 2px; outline: 2px solid #f38ba8; }
+</style>
+</head>
+<body>
+<div id="page-header">
+  <h1>Subject</h1>
+  <div class="page-search-bar">
+    <input id="psb-input" placeholder="Search in code…" autocomplete="off" spellcheck="false" />
+    <button class="psb-btn" id="psb-prev" onclick="prevMatch()">&#8593; Prev</button>
+    <button class="psb-btn" id="psb-next" onclick="nextMatch()">&#8595; Next</button>
+    <button class="psb-clear" onclick="clearPageSearch()">&#10005; Clear</button>
+    <span id="psb-count"></span>
+  </div>
+</div>
+<div id="cards-container">
+  <div class="card" id="04-subject">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="filename">04-subject.ts</span>
+      <button class="toggle-btn">&#x25bc; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-typescript">/**
+ * Subject
+ *
+ * A Subject is both an Observable and an Observer. It can multicast values
+ * to multiple subscribers simultaneously — all subscribers share the same
+ * execution. Unlike a plain Observable (which is unicast), a Subject acts
+ * as an event bus: you push values into it manually via next(), and all
+ * current subscribers receive them.
+ *
+ * Variants: BehaviorSubject, ReplaySubject, AsyncSubject each differ in
+ * how they treat late subscribers.
+ *
+ * @see https://rxjs.dev/guide/subject
+ */
+
+import { Subject, BehaviorSubject, ReplaySubject, AsyncSubject } from &#x27;rxjs&#x27;;
+
+/**
+ * Basic Subject: multicast — multiple subscribers all receive the same emission.
+ * Values pushed via next() are delivered to every active subscriber.
+ */
+function basicSubject(): void {
+  const subject$ = new Subject&lt;number&gt;();
+
+  subject$.subscribe(val =&gt; console.log(&#x27;subscriber A:&#x27;, val));
+  subject$.subscribe(val =&gt; console.log(&#x27;subscriber B:&#x27;, val));
+
+  subject$.next(1);
+  subject$.next(2);
+  subject$.complete();
+
+  // Expected output:
+  // subscriber A: 1
+  // subscriber B: 1
+  // subscriber A: 2
+  // subscriber B: 2
+}
+
+/**
+ * Late subscriber: a plain Subject does NOT replay past values.
+ * A subscriber that joins after emissions have occurred misses those values entirely.
+ */
+function lateSubscriber(): void {
+  const subject$ = new Subject&lt;string&gt;();
+
+  subject$.subscribe(val =&gt; console.log(&#x27;early subscriber:&#x27;, val));
+
+  subject$.next(&#x27;first&#x27;);
+  subject$.next(&#x27;second&#x27;);
+
+  // Subscribes AFTER the first two values — receives nothing past
+  subject$.subscribe(val =&gt; console.log(&#x27;late subscriber:&#x27;, val));
+
+  subject$.next(&#x27;third&#x27;);
+
+  // Expected output:
+  // early subscriber: first
+  // early subscriber: second
+  // early subscriber: third
+  // late subscriber: third      ← missed &quot;first&quot; and &quot;second&quot;
+}
+
+/**
+ * BehaviorSubject: stores the current value and replays it immediately to
+ * any new subscriber. Requires an initial value. Useful for state management.
+ */
+function behaviorSubjectExample(): void {
+  const behavior$ = new BehaviorSubject&lt;number&gt;(0); // initial value: 0
+
+  console.log(&#x27;current value:&#x27;, behavior$.value); // 0
+
+  behavior$.subscribe(val =&gt; console.log(&#x27;A:&#x27;, val)); // immediately gets 0
+
+  behavior$.next(1);
+  behavior$.next(2);
+
+  behavior$.subscribe(val =&gt; console.log(&#x27;B:&#x27;, val)); // immediately gets 2 (latest)
+
+  behavior$.next(3);
+
+  // Expected output:
+  // current value: 0
+  // A: 0
+  // A: 1
+  // A: 2
+  // B: 2    ← replayed on subscribe
+  // A: 3
+  // B: 3
+}
+
+/**
+ * ReplaySubject: buffers the last N values and replays all of them to new
+ * subscribers. Unlike BehaviorSubject, it works with any number of past values
+ * and does not require an initial value.
+ */
+function replaySubjectExample(): void {
+  const replay$ = new ReplaySubject&lt;number&gt;(2); // buffer last 2 values
+
+  replay$.next(10);
+  replay$.next(20);
+  replay$.next(30);
+
+  // Late subscriber gets the last 2 buffered values (20 and 30)
+  replay$.subscribe(val =&gt; console.log(&#x27;late subscriber:&#x27;, val));
+
+  replay$.next(40); // received in real-time
+
+  // Expected output:
+  // late subscriber: 20   ← replayed
+  // late subscriber: 30   ← replayed
+  // late subscriber: 40   ← real-time
+}
+
+/**
+ * AsyncSubject: only emits the very last value, and only when complete() is called.
+ * Useful for representing a single async operation (similar to a Promise).
+ */
+function asyncSubjectExample(): void {
+  const async$ = new AsyncSubject&lt;number&gt;();
+
+  async$.subscribe(val =&gt; console.log(&#x27;subscriber:&#x27;, val));
+
+  async$.next(1); // buffered, not emitted yet
+  async$.next(2); // buffered, not emitted yet
+  async$.next(3); // buffered, not emitted yet
+
+  console.log(&#x27;completing...&#x27;);
+  async$.complete(); // now emits only the last value: 3
+
+  // Late subscriber also gets the last value (AsyncSubject replays on subscribe after complete)
+  async$.subscribe(val =&gt; console.log(&#x27;late subscriber:&#x27;, val));
+
+  // Expected output:
+  // completing...
+  // subscriber: 3
+  // late subscriber: 3
+}
+
+function main(): void {
+  console.log(&#x27;\n=== basicSubject ===&#x27;);
+  basicSubject();
+
+  console.log(&#x27;\n=== lateSubscriber ===&#x27;);
+  lateSubscriber();
+
+  console.log(&#x27;\n=== behaviorSubjectExample ===&#x27;);
+  behaviorSubjectExample();
+
+  console.log(&#x27;\n=== replaySubjectExample ===&#x27;);
+  replaySubjectExample();
+
+  console.log(&#x27;\n=== asyncSubjectExample ===&#x27;);
+  asyncSubjectExample();
+}
+
+main();
+</code></pre>
+    </div>
+  </div>
+</div>
+<script>
+// ── Card toggle ──────────────────────────────────────────────────────────────
+function toggleCard(header) {
+  const body = header.nextElementSibling;
+  const btn  = header.querySelector('.toggle-btn');
+  const c    = body.classList.toggle('collapsed');
+  btn.textContent = c ? '\u25b6 Show' : '\u25bc Hide';
+}
+
+// ── In-page text search ──────────────────────────────────────────────────────
+const psbInput = document.getElementById('psb-input');
+const psbCount = document.getElementById('psb-count');
+let marks = [], currentIdx = -1;
+
+function clearMarks() {
+  document.querySelectorAll('mark.sh, mark.sh-current').forEach(m => {
+    m.parentNode.replaceChild(document.createTextNode(m.textContent), m);
+  });
+  document.querySelectorAll('.card-body code').forEach(c => c.normalize());
+  marks = []; currentIdx = -1;
+}
+
+function findAll(term) {
+  clearMarks();
+  if (!term.trim()) { updateCount(); return; }
+  const lower = term.toLowerCase();
+  document.querySelectorAll('.card-body code').forEach(code => {
+    const walker = document.createTreeWalker(code, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.textContent, ltxt = text.toLowerCase();
+      let pos = 0, start;
+      const frags = [];
+      while ((start = ltxt.indexOf(lower, pos)) !== -1) {
+        if (start > pos) frags.push(document.createTextNode(text.slice(pos, start)));
+        const m = document.createElement('mark');
+        m.className = 'sh';
+        m.textContent = text.slice(start, start + term.length);
+        frags.push(m); marks.push(m);
+        pos = start + term.length;
+      }
+      if (frags.length) {
+        if (pos < text.length) frags.push(document.createTextNode(text.slice(pos)));
+        node.replaceWith(...frags);
+      }
+    });
+  });
+  updateCount();
+}
+
+function goTo(idx) {
+  if (!marks.length) return;
+  if (currentIdx >= 0) marks[currentIdx].className = 'sh';
+  currentIdx = ((idx % marks.length) + marks.length) % marks.length;
+  const m = marks[currentIdx];
+  m.className = 'sh-current';
+  const body = m.closest('.card-body');
+  if (body && body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    body.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+  }
+  m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  updateCount();
+}
+
+function updateCount() {
+  const v = psbInput.value.trim();
+  if (!v) { psbCount.textContent = ''; return; }
+  psbCount.textContent = marks.length === 0
+    ? '0 matches'
+    : (currentIdx + 1) + ' / ' + marks.length;
+  document.getElementById('psb-prev').disabled = marks.length === 0;
+  document.getElementById('psb-next').disabled = marks.length === 0;
+}
+
+function runPageSearch() {
+  const term = psbInput.value;
+  findAll(term);
+  if (marks.length) goTo(0);
+}
+function prevMatch() { if (marks.length) goTo(currentIdx - 1); }
+function nextMatch() { if (marks.length) goTo(currentIdx + 1); }
+function clearPageSearch() {
+  psbInput.value = ''; clearMarks(); updateCount();
+}
+
+psbInput.addEventListener('input', runPageSearch);
+psbInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.shiftKey ? prevMatch() : nextMatch(); }
+  if (e.key === 'Escape') clearPageSearch();
+});
+
+window.addEventListener('message', function(e) {
+  if (!e.data || e.data.type !== 'page-search') return;
+  psbInput.value = e.data.term || '';
+  runPageSearch();
+});
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  hljs.highlightAll();
+  if (location.hash) {
+    const target = document.querySelector(location.hash);
+    if (target) {
+      const body = target.querySelector('.card-body');
+      if (body) body.classList.remove('collapsed');
+      setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+    }
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java 8</title>
+<link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #1e1e2e; color: #cdd6f4; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Page header ── */
+  #page-header {
+    flex-shrink: 0;
+    background: #181825;
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid #313244;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    z-index: 10;
+  }
+  #page-header h1 {
+    font-size: 18px; font-weight: 700; color: #cba6f7; margin-bottom: 8px;
+    letter-spacing: 0.03em;
+  }
+  .toolbar {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
+  }
+  .btn { padding: 4px 12px; border: none; border-radius: 4px; cursor: pointer;
+          font-size: 12px; font-weight: 600; transition: background .15s; }
+  .btn-show  { background: #89b4fa; color: #1e1e2e; }
+  .btn-show:hover  { background: #74c7ec; }
+  .btn-hide  { background: #585b70; color: #cdd6f4; }
+  .btn-hide:hover  { background: #6c7086; }
+  #match-info { font-size: 12px; color: #a6adc8; margin-left: 4px; }
+
+  /* ── Page search bar ── */
+  .page-search-bar {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  #psb-input {
+    flex: 1; min-width: 180px; max-width: 320px;
+    background: #313244; border: 1px solid #45475a; color: #cdd6f4;
+    border-radius: 4px; padding: 5px 10px; font-size: 13px; outline: none;
+  }
+  #psb-input:focus { border-color: #89b4fa; box-shadow: 0 0 0 2px rgba(137,180,250,.2); }
+  #psb-input::placeholder { color: #6c7086; }
+  .psb-btn {
+    padding: 4px 10px; border: 1px solid #45475a; border-radius: 4px;
+    background: #313244; color: #cdd6f4; cursor: pointer; font-size: 12px;
+    transition: background .15s;
+  }
+  .psb-btn:hover { background: #45475a; }
+  .psb-btn:disabled { opacity: .4; cursor: default; }
+  .psb-clear {
+    padding: 4px 10px; border: none; border-radius: 4px;
+    background: #f38ba8; color: #1e1e2e; cursor: pointer; font-size: 12px;
+    font-weight: 600; transition: background .15s;
+  }
+  .psb-clear:hover { background: #eba0ac; }
+  #psb-count { font-size: 12px; color: #a6adc8; min-width: 60px; }
+
+  /* ── Cards container ── */
+  #cards-container {
+    flex: 1; overflow-y: auto; padding: 12px 16px 20px;
+  }
+  .card {
+    margin-bottom: 12px; border-radius: 8px; overflow: hidden;
+    border: 1px solid #313244; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .card.hidden-by-search { display: none; }
+
+  /* ── Card header ── */
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #2a2a3d; padding: 8px 14px; cursor: pointer;
+    user-select: none; transition: background .15s;
+    border-bottom: 1px solid #313244;
+  }
+  .card-header:hover { background: #313244; }
+  .filename { font-size: 14px; font-weight: 600; color: #89dceb; font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+  .toggle-btn {
+    background: none; border: 1px solid #45475a; color: #a6adc8;
+    border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 11px;
+    transition: all .15s; white-space: nowrap;
+  }
+  .toggle-btn:hover { background: #45475a; color: #cdd6f4; }
+
+  /* ── Card body ── */
+  .card-body { overflow: hidden; }
+  .card-body.collapsed { display: none; }
+  .card-body pre { margin: 0; }
+  .card-body pre code.hljs {
+    font-size: 13px; line-height: 1.55; padding: 14px 16px !important;
+    background: #282c34 !important;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  }
+
+  /* ── Search highlights ── */
+  mark.sh         { background: #f9e2af; color: #1e1e2e; border-radius: 2px; }
+  mark.sh-current { background: #fab387; color: #1e1e2e; border-radius: 2px; outline: 2px solid #f38ba8; }
+</style>
+</head>
+<body>
+<div id="page-header">
+  <h1>Java 8</h1>
+  <div class="toolbar">
+    <button class="btn btn-show" onclick="showAll()">&#9660; Show all</button>
+    <button class="btn btn-hide" onclick="collapseAll()">&#9654; Collapse all</button>
+    <span id="match-info"></span>
+  </div>
+  <div class="page-search-bar">
+    <input id="psb-input" placeholder="Search in code…" autocomplete="off" spellcheck="false" />
+    <button class="psb-btn" id="psb-prev" onclick="prevMatch()">&#8593; Prev</button>
+    <button class="psb-btn" id="psb-next" onclick="nextMatch()">&#8595; Next</button>
+    <button class="psb-clear" onclick="clearPageSearch()">&#10005; Clear</button>
+    <span id="psb-count"></span>
+  </div>
+</div>
+<div id="cards-container">
+  <div class="card" id="LambdaExpressions">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="filename">LambdaExpressions.java</span>
+      <button class="toggle-btn">&#x25bc; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package java8;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
+/**
+ * &lt;b&gt;Lambda Expressions&lt;/b&gt;
+ * &lt;p&gt;
+ * Lambda expressions allow writing anonymous functions inline as {@code (parameters) -&gt; body},
+ * replacing verbose anonymous class syntax. They are the foundation of Java&#x27;s functional
+ * programming support and work wherever a functional interface is expected.
+ * Introduced in Java 8.
+ *
+ * @see &lt;a href=&quot;https://openjdk.org/projects/lambda/&quot;&gt;Project Lambda&lt;/a&gt;
+ */
+public class LambdaExpressions {
+
+    public static void main(String[] args) {
+        System.out.println(&quot;=== Before Java 8: anonymous classes ===&quot;);
+        demonstrateBefore();
+        System.out.println();
+        System.out.println(&quot;=== Java 8: lambda expressions ===&quot;);
+        demonstrateAfter();
+    }
+
+    /** Before Java 8: anonymous classes for single-method interfaces */
+    static void demonstrateBefore() {
+        List&lt;String&gt; names = new ArrayList&lt;&gt;(Arrays.asList(&quot;Banana&quot;, &quot;Apple&quot;, &quot;Cherry&quot;));
+
+        // Comparator as anonymous class
+        Comparator&lt;String&gt; comparator = new Comparator&lt;String&gt;() {
+            @Override
+            public int compare(String a, String b) {
+                return a.compareTo(b);
+            }
+        };
+        Collections.sort(names, comparator);
+        System.out.println(&quot;Sorted: &quot; + names); // Output: [Apple, Banana, Cherry]
+
+        // Runnable as anonymous class
+        Runnable task = new Runnable() {
+            @Override
+            public void run() {
+                System.out.println(&quot;Running with anonymous class&quot;);
+            }
+        };
+        task.run(); // Output: Running with anonymous class
+    }
+
+    /** Java 8: same behaviour expressed with lambda expressions */
+    static void demonstrateAfter() {
+        List&lt;String&gt; names = new ArrayList&lt;&gt;(Arrays.asList(&quot;Banana&quot;, &quot;Apple&quot;, &quot;Cherry&quot;));
+
+        // Comparator as lambda
+        Comparator&lt;String&gt; comparator = (a, b) -&gt; a.compareTo(b);
+        Collections.sort(names, comparator);
+        System.out.println(&quot;Sorted: &quot; + names); // Output: [Apple, Banana, Cherry]
+
+        // Runnable as lambda
+        Runnable task = () -&gt; System.out.println(&quot;Running with lambda&quot;);
+        task.run(); // Output: Running with lambda
+
+        // Block-body lambda (multiple statements)
+        BiFunction&lt;Integer, Integer, Integer&gt; add = (x, y) -&gt; {
+            int sum = x + y;
+            System.out.println(&quot;sum = &quot; + sum); // Output: sum = 7
+            return sum;
+        };
+        add.apply(3, 4);
+
+        // Expression lambda returning a value
+        Function&lt;Integer, Integer&gt; square = x -&gt; x * x;
+        System.out.println(&quot;square(9) = &quot; + square.apply(9)); // Output: square(9) = 81
+
+        // Lambda passed directly as argument (inline)
+        names.sort((a, b) -&gt; b.compareTo(a)); // reverse sort
+        System.out.println(&quot;Reverse sorted: &quot; + names); // Output: [Cherry, Banana, Apple]
+    }
+}
+
+// Console output:
+// === Before Java 8: anonymous classes ===
+// Sorted: [Apple, Banana, Cherry]
+// Running with anonymous class
+//
+// === Java 8: lambda expressions ===
+// Sorted: [Apple, Banana, Cherry]
+// Running with lambda
+// sum = 7
+// square(9) = 81
+// Reverse sorted: [Cherry, Banana, Apple]
+</code></pre>
+    </div>
+  </div>
+  <div class="card" id="StreamApi">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="filename">StreamApi.java</span>
+      <button class="toggle-btn">&#x25bc; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package java8;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+/**
+ * &lt;b&gt;Stream API&lt;/b&gt;
+ * &lt;p&gt;
+ * The Stream API provides a declarative pipeline model for processing sequences of elements
+ * using operations like {@code filter}, {@code map}, {@code reduce}, and {@code collect},
+ * without explicit loops. Streams are lazy — intermediate operations execute only when a
+ * terminal operation is invoked. Introduced in Java 8 as {@code java.util.stream}.
+ *
+ * @see &lt;a href=&quot;https://docs.oracle.com/en/java/se/8/docs/api/java/util/stream/package-summary.html&quot;&gt;java.util.stream package&lt;/a&gt;
+ */
+public class StreamApi {
+
+    public static void main(String[] args) {
+        System.out.println(&quot;=== Before Java 8: explicit loops ===&quot;);
+        demonstrateBefore();
+        System.out.println();
+        System.out.println(&quot;=== Java 8: Stream API ===&quot;);
+        demonstrateAfter();
+    }
+
+    /** Before Java 8: imperative loops for filtering and transforming collections */
+    static void demonstrateBefore() {
+        List&lt;String&gt; names = Arrays.asList(&quot;Alice&quot;, &quot;Bob&quot;, &quot;Diana&quot;, &quot;Elena&quot;, &quot;Ed&quot;);
+
+        // Filter names longer than 4 chars, convert to uppercase
+        List&lt;String&gt; result = new ArrayList&lt;&gt;();
+        for (String name : names) {
+            if (name.length() &gt; 4) {
+                result.add(name.toUpperCase());
+            }
+        }
+        System.out.println(&quot;Filtered names: &quot; + result); // Output: [ALICE, DIANA, ELENA]
+
+        // Count even numbers
+        List&lt;Integer&gt; numbers = Arrays.asList(1, 2, 3, 4, 5, 6);
+        int evenCount = 0;
+        for (int n : numbers) {
+            if (n % 2 == 0) evenCount++;
+        }
+        System.out.println(&quot;Even count: &quot; + evenCount); // Output: Even count: 3
+
+        // Sum all numbers
+        int sum = 0;
+        for (int n : numbers) sum += n;
+        System.out.println(&quot;Sum: &quot; + sum); // Output: Sum: 21
+    }
+
+    /** Java 8: same operations expressed as Stream pipelines */
+    static void demonstrateAfter() {
+        List&lt;String&gt; names = Arrays.asList(&quot;Alice&quot;, &quot;Bob&quot;, &quot;Diana&quot;, &quot;Elena&quot;, &quot;Ed&quot;);
+        List&lt;Integer&gt; numbers = Arrays.asList(1, 2, 3, 4, 5, 6);
+
+        // filter + map + collect
+        List&lt;String&gt; result = names.stream()
+                .filter(s -&gt; s.length() &gt; 4)
+                .map(String::toUpperCase)
+                .collect(Collectors.toList());
+        System.out.println(&quot;Filtered names: &quot; + result); // Output: [ALICE, DIANA, ELENA]
+
+        // count terminal operation
+        long evenCount = numbers.stream()
+                .filter(n -&gt; n % 2 == 0)
+                .count();
+        System.out.println(&quot;Even count: &quot; + evenCount); // Output: Even count: 3
+
+        // reduce
+        int sum = numbers.stream()
+                .reduce(0, Integer::sum);
+        System.out.println(&quot;Sum: &quot; + sum); // Output: Sum: 21
+
+        // sorted + distinct
+        List&lt;Integer&gt; dupes = Arrays.asList(3, 1, 4, 1, 5, 9, 2, 6, 5);
+        List&lt;Integer&gt; sortedUnique = dupes.stream()
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+        System.out.println(&quot;Sorted unique: &quot; + sortedUnique); // Output: [1, 2, 3, 4, 5, 6, 9]
+
+        // forEach
+        System.out.print(&quot;forEach: &quot;);
+        names.stream()
+                .filter(s -&gt; s.length() &lt;= 3)
+                .forEach(s -&gt; System.out.print(s + &quot; &quot;)); // Output: Bob Ed
+        System.out.println();
+
+        // anyMatch / allMatch / noneMatch
+        boolean anyShort = names.stream().anyMatch(s -&gt; s.length() &lt;= 2);
+        boolean allShort = names.stream().allMatch(s -&gt; s.length() &lt;= 5);
+        System.out.println(&quot;anyMatch length&lt;=2: &quot; + anyShort); // Output: false
+        System.out.println(&quot;allMatch length&lt;=5: &quot; + allShort); // Output: false
+
+        // findFirst returns Optional
+        Optional&lt;String&gt; first = names.stream()
+                .filter(s -&gt; s.startsWith(&quot;D&quot;))
+                .findFirst();
+        first.ifPresent(s -&gt; System.out.println(&quot;First starting with D: &quot; + s)); // Output: Diana
+    }
+}
+
+// Console output:
+// === Before Java 8: explicit loops ===
+// Filtered names: [ALICE, DIANA, ELENA]
+// Even count: 3
+// Sum: 21
+//
+// === Java 8: Stream API ===
+// Filtered names: [ALICE, DIANA, ELENA]
+// Even count: 3
+// Sum: 21
+// Sorted unique: [1, 2, 3, 4, 5, 6, 9]
+// forEach: Bob Ed
+// anyMatch length&lt;=2: true
+// allMatch length&lt;=5: true
+// First starting with D: Diana
+</code></pre>
+    </div>
+  </div>
+  <div class="card" id="FunctionalInterfaces">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="filename">FunctionalInterfaces.java</span>
+      <button class="toggle-btn">&#x25bc; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package java8;
+
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+/**
+ * &lt;b&gt;Functional Interfaces&lt;/b&gt;
+ * &lt;p&gt;
+ * A functional interface has exactly one abstract method, making it compatible with lambda
+ * expressions. The {@code java.util.function} package provides a standard vocabulary of
+ * ready-made functional interfaces: {@code Predicate} (test), {@code Function} (transform),
+ * {@code Consumer} (consume), {@code Supplier} (produce), and {@code BiFunction} (combine two
+ * inputs). They compose via {@code and}, {@code or}, {@code negate}, {@code andThen}, and
+ * {@code compose}. Introduced in Java 8.
+ *
+ * @see &lt;a href=&quot;https://docs.oracle.com/javase/8/docs/api/java/util/function/package-summary.html&quot;&gt;java.util.function package&lt;/a&gt;
+ */
+public class FunctionalInterfaces {
+
+    // Custom functional interface
+    @FunctionalInterface
+    interface Transformer&lt;T&gt; {
+        T transform(T input);
+        // Only one abstract method allowed; default/static methods are permitted
+        default Transformer&lt;T&gt; andThen(Transformer&lt;T&gt; next) {
+            return input -&gt; next.transform(this.transform(input));
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println(&quot;=== Before Java 8: custom single-method interfaces ===&quot;);
+        demonstrateBefore();
+        System.out.println();
+        System.out.println(&quot;=== Java 8: java.util.function interfaces ===&quot;);
+        demonstrateAfter();
+    }
+
+    /** Before Java 8: manual single-method interface + anonymous class */
+    static void demonstrateBefore() {
+        // Had to define a custom interface for every operation
+        interface StringChecker {
+            boolean check(String s);
+        }
+
+        StringChecker isLong = new StringChecker() {
+            @Override
+            public boolean check(String s) {
+                return s.length() &gt; 5;
+            }
+        };
+        System.out.println(&quot;isLong(\&quot;Hello\&quot;): &quot; + isLong.check(&quot;Hello&quot;));       // Output: false
+        System.out.println(&quot;isLong(\&quot;HelloWorld\&quot;): &quot; + isLong.check(&quot;HelloWorld&quot;)); // Output: true
+    }
+
+    /** Java 8: standard functional interfaces from java.util.function */
+    static void demonstrateAfter() {
+        // Predicate&lt;T&gt; — boolean test(T t)
+        Predicate&lt;String&gt; isLong = s -&gt; s.length() &gt; 5;
+        System.out.println(&quot;isLong(\&quot;Hello\&quot;): &quot; + isLong.test(&quot;Hello&quot;));       // Output: false
+        System.out.println(&quot;isLong(\&quot;HelloWorld\&quot;): &quot; + isLong.test(&quot;HelloWorld&quot;)); // Output: true
+
+        // Predicate composition: and, or, negate
+        Predicate&lt;String&gt; startsWithH = s -&gt; s.startsWith(&quot;H&quot;);
+        Predicate&lt;String&gt; longAndH = isLong.and(startsWithH);
+        Predicate&lt;String&gt; longOrH = isLong.or(startsWithH);
+        System.out.println(&quot;long AND starts with H (\&quot;HelloWorld\&quot;): &quot; + longAndH.test(&quot;HelloWorld&quot;)); // Output: true
+        System.out.println(&quot;long OR  starts with H (\&quot;Hi\&quot;): &quot; + longOrH.test(&quot;Hi&quot;));                 // Output: true
+        System.out.println(&quot;NOT isLong (\&quot;Hello\&quot;): &quot; + isLong.negate().test(&quot;Hello&quot;));               // Output: true
+
+        // Function&lt;T,R&gt; — R apply(T t)
+        Function&lt;String, Integer&gt; length = String::length;
+        System.out.println(&quot;length(\&quot;Hello\&quot;): &quot; + length.apply(&quot;Hello&quot;)); // Output: 5
+
+        // Function composition: andThen (f then g), compose (g then f)
+        Function&lt;Integer, String&gt; intToStr = n -&gt; &quot;Number=&quot; + n;
+        Function&lt;String, String&gt; lengthThenStr = length.andThen(intToStr);
+        System.out.println(&quot;andThen: &quot; + lengthThenStr.apply(&quot;Hello&quot;)); // Output: Number=5
+
+        // Consumer&lt;T&gt; — void accept(T t)
+        Consumer&lt;String&gt; printer = System.out::println;
+        printer.accept(&quot;Consumer prints: Hello&quot;); // Output: Consumer prints: Hello
+
+        // Consumer chaining with andThen
+        Consumer&lt;String&gt; upperPrinter = s -&gt; System.out.println(&quot;Upper: &quot; + s.toUpperCase());
+        printer.andThen(upperPrinter).accept(&quot;world&quot;);
+        // Output: world
+        // Output: Upper: WORLD
+
+        // Supplier&lt;T&gt; — T get()
+        Supplier&lt;String&gt; greeting = () -&gt; &quot;Hello, World!&quot;;
+        System.out.println(&quot;Supplier: &quot; + greeting.get()); // Output: Hello, World!
+
+        // BiFunction&lt;T,U,R&gt; — R apply(T t, U u)
+        BiFunction&lt;Integer, Integer, Integer&gt; multiply = (a, b) -&gt; a * b;
+        System.out.println(&quot;3 * 4 = &quot; + multiply.apply(3, 4)); // Output: 3 * 4 = 12
+
+        // Custom @FunctionalInterface with default method
+        Transformer&lt;String&gt; upper = String::toUpperCase;
+        Transformer&lt;String&gt; exclaim = s -&gt; s + &quot;!&quot;;
+        Transformer&lt;String&gt; shout = upper.andThen(exclaim);
+        System.out.println(&quot;shout(\&quot;hello\&quot;): &quot; + shout.transform(&quot;hello&quot;)); // Output: HELLO!
+    }
+}
+
+// Console output:
+// === Before Java 8: custom single-method interfaces ===
+// isLong(&quot;Hello&quot;): false
+// isLong(&quot;HelloWorld&quot;): true
+//
+// === Java 8: java.util.function interfaces ===
+// isLong(&quot;Hello&quot;): false
+// isLong(&quot;HelloWorld&quot;): true
+// long AND starts with H (&quot;HelloWorld&quot;): true
+// long OR  starts with H (&quot;Hi&quot;): true
+// NOT isLong (&quot;Hello&quot;): true
+// length(&quot;Hello&quot;): 5
+// andThen: Number=5
+// Consumer prints: Hello
+// world
+// Upper: WORLD
+// Supplier: Hello, World!
+// 3 * 4 = 12
+// shout(&quot;hello&quot;): HELLO!
+</code></pre>
+    </div>
+  </div>
+  <div class="card" id="MethodReferences">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="filename">MethodReferences.java</span>
+      <button class="toggle-btn">&#x25bc; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package java8;
+
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+/**
+ * &lt;b&gt;Method References&lt;/b&gt;
+ * &lt;p&gt;
+ * Method references are shorthand lambda expressions that delegate to an existing method using
+ * the {@code ::} operator. There are four forms:
+ * &lt;ul&gt;
+ *   &lt;li&gt;&lt;b&gt;Static:&lt;/b&gt; {@code ClassName::staticMethod} — e.g. {@code Integer::parseInt}&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Bound instance:&lt;/b&gt; {@code instance::method} — e.g. {@code System.out::println}&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Unbound instance:&lt;/b&gt; {@code ClassName::instanceMethod} — e.g. {@code String::toUpperCase}&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Constructor:&lt;/b&gt; {@code ClassName::new} — e.g. {@code StringBuilder::new}&lt;/li&gt;
+ * &lt;/ul&gt;
+ * Introduced in Java 8.
+ *
+ * @see &lt;a href=&quot;https://docs.oracle.com/javase/tutorial/java/javaOO/methodreferences.html&quot;&gt;Method References tutorial&lt;/a&gt;
+ */
+public class MethodReferences {
+
+    public static void main(String[] args) {
+        System.out.println(&quot;=== Before Java 8: explicit lambdas ===&quot;);
+        demonstrateBefore();
+        System.out.println();
+        System.out.println(&quot;=== Java 8: method references ===&quot;);
+        demonstrateAfter();
+    }
+
+    /** Before Java 8: explicit lambda expressions for every method delegation */
+    static void demonstrateBefore() {
+        List&lt;String&gt; words = Arrays.asList(&quot;hello&quot;, &quot;world&quot;, &quot;java&quot;);
+
+        // Explicit lambda instead of unbound instance reference
+        List&lt;String&gt; upper = words.stream()
+                .map(s -&gt; s.toUpperCase())
+                .collect(Collectors.toList());
+        System.out.println(&quot;Uppercase: &quot; + upper); // Output: [HELLO, WORLD, JAVA]
+
+        // Explicit lambda instead of bound instance reference
+        words.forEach(s -&gt; System.out.println(s));
+        // Output: hello / world / java
+
+        // Explicit lambda instead of static reference
+        List&lt;String&gt; numStrs = Arrays.asList(&quot;1&quot;, &quot;2&quot;, &quot;3&quot;);
+        List&lt;Integer&gt; nums = numStrs.stream()
+                .map(s -&gt; Integer.parseInt(s))
+                .collect(Collectors.toList());
+        System.out.println(&quot;Parsed: &quot; + nums); // Output: [1, 2, 3]
+    }
+
+    /** Java 8: method references — more readable than equivalent lambdas */
+    static void demonstrateAfter() {
+        List&lt;String&gt; words = Arrays.asList(&quot;hello&quot;, &quot;world&quot;, &quot;java&quot;);
+
+        // Unbound instance reference: ClassName::instanceMethod
+        // Equivalent lambda: s -&gt; s.toUpperCase()
+        List&lt;String&gt; upper = words.stream()
+                .map(String::toUpperCase)
+                .collect(Collectors.toList());
+        System.out.println(&quot;Uppercase: &quot; + upper); // Output: [HELLO, WORLD, JAVA]
+
+        // Bound instance reference: instance::method
+        // Equivalent lambda: s -&gt; System.out.println(s)
+        words.forEach(System.out::println);
+        // Output: hello / world / java
+
+        // Static reference: ClassName::staticMethod
+        // Equivalent lambda: s -&gt; Integer.parseInt(s)
+        List&lt;String&gt; numStrs = Arrays.asList(&quot;1&quot;, &quot;2&quot;, &quot;3&quot;);
+        List&lt;Integer&gt; nums = numStrs.stream()
+                .map(Integer::parseInt)
+                .collect(Collectors.toList());
+        System.out.println(&quot;Parsed: &quot; + nums); // Output: [1, 2, 3]
+
+        // Static reference: String::valueOf converts int to String
+        List&lt;Integer&gt; numbers = Arrays.asList(10, 20, 30);
+        List&lt;String&gt; asStrings = numbers.stream()
+                .map(String::valueOf)
+                .collect(Collectors.toList());
+        System.out.println(&quot;As strings: &quot; + asStrings); // Output: [10, 20, 30]
+
+        // Constructor reference: ClassName::new
+        // Equivalent lambda: s -&gt; new StringBuilder(s)
+        Function&lt;String, StringBuilder&gt; sbFactory = StringBuilder::new;
+        StringBuilder sb = sbFactory.apply(&quot;Hello&quot;);
+        System.out.println(&quot;StringBuilder: &quot; + sb); // Output: Hello
+
+        // Supplier constructor reference (no-arg constructor)
+        Supplier&lt;StringBuilder&gt; sbSupplier = StringBuilder::new;
+        System.out.println(&quot;Empty SB: &#x27;&quot; + sbSupplier.get() + &quot;&#x27;&quot;); // Output: &#x27;&#x27;
+
+        // Used with Comparator.comparing — sort by string length
+        List&lt;String&gt; sorted = words.stream()
+                .sorted(Comparator.comparing(String::length))
+                .collect(Collectors.toList());
+        System.out.println(&quot;Sorted by length: &quot; + sorted); // Output: [java, hello, world]
+    }
+}
+
+// Console output:
+// === Before Java 8: explicit lambdas ===
+// Uppercase: [HELLO, WORLD, JAVA]
+// hello
+// world
+// java
+// Parsed: [1, 2, 3]
+//
+// === Java 8: method references ===
+// Uppercase: [HELLO, WORLD, JAVA]
+// hello
+// world
+// java
+// Parsed: [1, 2, 3]
+// As strings: [10, 20, 30]
+// StringBuilder: Hello
+// Empty SB: &#x27;&#x27;
+// Sorted by length: [java, hello, world]
+</code></pre>
+    </div>
+  </div>
+  <div class="card" id="DefaultMethods">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="filename">DefaultMethods.java</span>
+      <button class="toggle-btn">&#x25bc; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package java8;
+
+/**
+ * &lt;b&gt;Default and Static Methods in Interfaces&lt;/b&gt;
+ * &lt;p&gt;
+ * Java 8 allowed interfaces to declare {@code default} methods with a full implementation and
+ * {@code static} methods. This lets library authors add new methods to existing interfaces
+ * without breaking all implementing classes. Default methods can be overridden; when two
+ * interfaces provide the same default method, the implementing class must resolve the conflict
+ * explicitly using {@code InterfaceA.super.method()}. Introduced in Java 8.
+ *
+ * @see &lt;a href=&quot;https://docs.oracle.com/javase/tutorial/java/IandI/defaultmethods.html&quot;&gt;Default Methods tutorial&lt;/a&gt;
+ */
+public class DefaultMethods {
+
+    // ── Before: shared logic required an external utility class ─────────────
+
+    interface OldVehicle {
+        String getBrand();
+        // No default methods — every implementor must handle startEngine separately,
+        // or rely on an external utility class like VehicleUtils.
+    }
+
+    static class VehicleUtils {
+        static void startEngine(OldVehicle v) {
+            System.out.println(&quot;[util] &quot; + v.getBrand() + &quot; engine started&quot;);
+        }
+    }
+
+    // ── After: default and static methods on the interface ──────────────────
+
+    interface Vehicle {
+        String getBrand();
+
+        /** Default method — provided by the interface, can be overridden */
+        default void startEngine() {
+            System.out.println(getBrand() + &quot; engine started&quot;);
+        }
+
+        default void stopEngine() {
+            System.out.println(getBrand() + &quot; engine stopped&quot;);
+        }
+
+        /** Static factory on the interface — available without an instance */
+        static Vehicle of(String brand) {
+            return () -&gt; brand; // lambda satisfies the single abstract method
+        }
+    }
+
+    // Diamond problem: two interfaces both define the same default method
+    interface A {
+        default String describe() { return &quot;Interface A&quot;; }
+    }
+
+    interface B {
+        default String describe() { return &quot;Interface B&quot;; }
+    }
+
+    // Implementing class must override and disambiguate
+    static class AB implements A, B {
+        @Override
+        public String describe() {
+            return A.super.describe(); // explicitly choose A&#x27;s implementation
+        }
+    }
+
+    // A class that overrides the default method
+    static class ElectricCar implements Vehicle {
+        private final String brand;
+        ElectricCar(String brand) { this.brand = brand; }
+
+        @Override
+        public String getBrand() { return brand; }
+
+        @Override
+        public void startEngine() {
+            // Electric cars are silent — override the default behaviour
+            System.out.println(brand + &quot; motor engaged (no engine noise)&quot;);
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println(&quot;=== Before Java 8: utility class for shared behaviour ===&quot;);
+        demonstrateBefore();
+        System.out.println();
+        System.out.println(&quot;=== Java 8: default and static interface methods ===&quot;);
+        demonstrateAfter();
+    }
+
+    /** Before Java 8: shared logic lives in a separate utility class */
+    static void demonstrateBefore() {
+        OldVehicle car = () -&gt; &quot;Toyota&quot;;
+        VehicleUtils.startEngine(car); // Output: [util] Toyota engine started
+    }
+
+    /** Java 8: default methods provide shared behaviour directly on the interface */
+    static void demonstrateAfter() {
+        // Static factory method on the interface
+        Vehicle toyota = Vehicle.of(&quot;Toyota&quot;);
+        toyota.startEngine(); // Output: Toyota engine started
+        toyota.stopEngine();  // Output: Toyota engine stopped
+
+        // Subclass overrides the default
+        Vehicle tesla = new ElectricCar(&quot;Tesla&quot;);
+        tesla.startEngine(); // Output: Tesla motor engaged (no engine noise)
+        tesla.stopEngine();  // Output: Tesla engine stopped  (uses default)
+
+        // Diamond problem resolution
+        AB ab = new AB();
+        System.out.println(&quot;Diamond resolved: &quot; + ab.describe()); // Output: Interface A
+    }
+}
+
+// Console output:
+// === Before Java 8: utility class for shared behaviour ===
+// [util] Toyota engine started
+//
+// === Java 8: default and static interface methods ===
+// Toyota engine started
+// Toyota engine stopped
+// Tesla motor engaged (no engine noise)
+// Tesla engine stopped
+// Diamond resolved: Interface A
+</code></pre>
+    </div>
+  </div>
+  <div class="card" id="OptionalClass">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="filename">OptionalClass.java</span>
+      <button class="toggle-btn">&#x25bc; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">package java8;
+
+import java.util.Optional;
+
+/**
+ * &lt;b&gt;Optional&amp;lt;T&amp;gt;&lt;/b&gt;
+ * &lt;p&gt;
+ * {@code Optional&lt;T&gt;} is a container that either holds a non-null value or is explicitly empty.
+ * It forces callers to handle the absent case, replacing {@code null} returns that silently
+ * cause {@code NullPointerException}. Use it as a return type for methods that may produce no
+ * result; avoid it as a field or parameter type. Introduced in Java 8.
+ *
+ * @see &lt;a href=&quot;https://docs.oracle.com/javase/8/docs/api/java/util/Optional.html&quot;&gt;Optional Javadoc&lt;/a&gt;
+ */
+public class OptionalClass {
+
+    public static void main(String[] args) {
+        System.out.println(&quot;=== Before Java 8: nullable return values ===&quot;);
+        demonstrateBefore();
+        System.out.println();
+        System.out.println(&quot;=== Java 8: Optional&lt;T&gt; ===&quot;);
+        demonstrateAfter();
+    }
+
+    // ── Simulated repository ─────────────────────────────────────────────────
+
+    /** Pre-Java-8 style: returns null when not found */
+    static String findUserOld(String name) {
+        if (&quot;Alice&quot;.equals(name)) return &quot;Alice (age 30)&quot;;
+        return null; // caller must remember to check!
+    }
+
+    /** Java 8 style: Optional makes absence explicit in the signature */
+    static Optional&lt;String&gt; findUser(String name) {
+        if (&quot;Alice&quot;.equals(name)) return Optional.of(&quot;Alice (age 30)&quot;);
+        return Optional.empty();
+    }
+
+    /** Before Java 8: manual null checks everywhere */
+    static void demonstrateBefore() {
+        String user = findUserOld(&quot;Alice&quot;);
+        if (user != null) {
+            System.out.println(&quot;Found: &quot; + user); // Output: Found: Alice (age 30)
+        }
+
+        String missing = findUserOld(&quot;Bob&quot;);
+        if (missing != null) {
+            System.out.println(missing.toUpperCase());
+        } else {
+            System.out.println(&quot;User not found&quot;); // Output: User not found
+        }
+
+        // Easy to forget the null check — NullPointerException risk:
+        // String danger = findUserOld(&quot;Bob&quot;).toUpperCase(); // would throw NPE
+    }
+
+    /** Java 8: Optional API for safe, readable absent-value handling */
+    static void demonstrateAfter() {
+        // Creating Optionals
+        Optional&lt;String&gt; present = Optional.of(&quot;Alice&quot;);
+        Optional&lt;String&gt; empty   = Optional.empty();
+        Optional&lt;String&gt; nullable = Optional.ofNullable(null); // same as empty()
+
+        System.out.println(&quot;present: &quot; + present);   // Output: Optional[Alice]
+        System.out.println(&quot;empty: &quot;   + empty);     // Output: Optional.empty
+
+        // Checking presence
+        System.out.println(&quot;isPresent: &quot; + present.isPresent()); // Output: true
+        System.out.println(&quot;isEmpty:   &quot; + empty.isEmpty());     // Output: true
+
+        // Safe extraction
+        System.out.println(&quot;orElse: &quot; + empty.orElse(&quot;default&quot;));          // Output: default
+        System.out.println(&quot;orElseGet: &quot; + empty.orElseGet(() -&gt; &quot;lazy&quot;)); // Output: lazy
+
+        try {
+            empty.orElseThrow(() -&gt; new IllegalStateException(&quot;not found&quot;));
+        } catch (IllegalStateException e) {
+            System.out.println(&quot;orElseThrow: &quot; + e.getMessage()); // Output: not found
+        }
+
+        // Transformations — do nothing when empty, no NPE
+        Optional&lt;String&gt; upper = present.map(String::toUpperCase);
+        System.out.println(&quot;map: &quot; + upper); // Output: Optional[ALICE]
+
+        Optional&lt;String&gt; filtered = present.filter(s -&gt; s.length() &gt; 10);
+        System.out.println(&quot;filter (len&gt;10): &quot; + filtered); // Output: Optional.empty
+
+        // flatMap — avoids Optional&lt;Optional&lt;T&gt;&gt;
+        Optional&lt;Optional&lt;String&gt;&gt; nested = present.map(s -&gt; Optional.of(s + &quot;!&quot;));
+        Optional&lt;String&gt; flat = present.flatMap(s -&gt; Optional.of(s + &quot;!&quot;));
+        System.out.println(&quot;nested: &quot; + nested); // Output: Optional[Optional[Alice!]]
+        System.out.println(&quot;flat:   &quot; + flat);   // Output: Optional[Alice!]
+
+        // ifPresent — consume only when value exists
+        present.ifPresent(s -&gt; System.out.println(&quot;ifPresent: &quot; + s)); // Output: ifPresent: Alice
+        empty.ifPresent(s -&gt; System.out.println(&quot;never printed&quot;));
+
+        // Full example: safe lookup chain
+        findUser(&quot;Alice&quot;)
+                .map(String::toUpperCase)
+                .ifPresent(s -&gt; System.out.println(&quot;Found: &quot; + s)); // Output: Found: ALICE (AGE 30)
+
+        findUser(&quot;Bob&quot;)
+                .map(String::toUpperCase)
+                .ifPresentOrElse(
+                        s -&gt; System.out.println(&quot;Found: &quot; + s),
+                        () -&gt; System.out.println(&quot;Bob not found&quot;) // Output: Bob not found
+                );
+    }
+}
+
+// Console output:
+// === Before Java 8: nullable return values ===
+// Found: Alice (age 30)
+// User not found
+//
+// === Java 8: Optional&lt;T&gt; ===
+// present: Optional[Alice]
+// empty: Optional.empty
+// isPresent: true
+// isEmpty:   true
+// orElse: default
+// orElseGet: lazy
+// orElseThrow: not found
+// map: Optional[ALICE]
+// filter (len&gt;10): Optional.empty
+// nested: Optional[Optional[Alice!]]
+// flat:   Optional[Alice!]
+// ifPresent: Alice
+// Found: ALICE (AGE 30)
+// Bob not found
+</code></pre>
+    </div>
+  </div>
+</div>
+<script>
+// ── Card toggle ──────────────────────────────────────────────────────────────
+function toggleCard(header) {
+  const body = header.nextElementSibling;
+  const btn  = header.querySelector('.toggle-btn');
+  const c    = body.classList.toggle('collapsed');
+  btn.textContent = c ? '\u25b6 Show' : '\u25bc Hide';
+}
+function showAll() {
+  document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+    b.classList.remove('collapsed');
+    b.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+  });
+}
+function collapseAll() {
+  document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+    b.classList.add('collapsed');
+    b.closest('.card').querySelector('.toggle-btn').textContent = '\u25b6 Show';
+  });
+}
+
+// ── Card filter ──────────────────────────────────────────────────────────────
+function applyCardFilter(term) {
+  const lower = term.trim().toLowerCase();
+  let shown = 0;
+  document.querySelectorAll('.card').forEach(card => {
+    const has = !lower || card.querySelector('code').textContent.toLowerCase().includes(lower);
+    card.classList.toggle('hidden-by-search', !has);
+    if (has) shown++;
+  });
+  document.getElementById('match-info').textContent = lower
+    ? (shown === 0 ? 'No files match' : shown + ' file' + (shown > 1 ? 's' : '') + ' match')
+    : '';
+}
+
+// ── In-page text search ──────────────────────────────────────────────────────
+const psbInput = document.getElementById('psb-input');
+const psbCount = document.getElementById('psb-count');
+let marks = [], currentIdx = -1;
+
+function clearMarks() {
+  document.querySelectorAll('mark.sh, mark.sh-current').forEach(m => {
+    const t = document.createTextNode(
+      m.textContent.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    );
+    // actually just replace with text node directly:
+    m.parentNode.replaceChild(document.createTextNode(m.textContent), m);
+  });
+  document.querySelectorAll('.card-body code').forEach(c => c.normalize());
+  marks = []; currentIdx = -1;
+}
+
+function findAll(term) {
+  clearMarks();
+  if (!term.trim()) { updateCount(); return; }
+  const lower = term.toLowerCase();
+  document.querySelectorAll('.card-body code').forEach(code => {
+    const walker = document.createTreeWalker(code, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.textContent, ltxt = text.toLowerCase();
+      let pos = 0, start;
+      const frags = [];
+      while ((start = ltxt.indexOf(lower, pos)) !== -1) {
+        if (start > pos) frags.push(document.createTextNode(text.slice(pos, start)));
+        const m = document.createElement('mark');
+        m.className = 'sh';
+        m.textContent = text.slice(start, start + term.length);
+        frags.push(m); marks.push(m);
+        pos = start + term.length;
+      }
+      if (frags.length) {
+        if (pos < text.length) frags.push(document.createTextNode(text.slice(pos)));
+        node.replaceWith(...frags);
+      }
+    });
+  });
+  updateCount();
+}
+
+function goTo(idx) {
+  if (!marks.length) return;
+  if (currentIdx >= 0) marks[currentIdx].className = 'sh';
+  currentIdx = ((idx % marks.length) + marks.length) % marks.length;
+  const m = marks[currentIdx];
+  m.className = 'sh-current';
+  // auto-expand card if collapsed
+  const body = m.closest('.card-body');
+  if (body && body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    body.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+  }
+  m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  updateCount();
+}
+
+function updateCount() {
+  const v = psbInput.value.trim();
+  if (!v) { psbCount.textContent = ''; return; }
+  psbCount.textContent = marks.length === 0
+    ? '0 matches'
+    : (currentIdx + 1) + ' / ' + marks.length;
+  document.getElementById('psb-prev').disabled = marks.length === 0;
+  document.getElementById('psb-next').disabled = marks.length === 0;
+}
+
+function runPageSearch() {
+  const term = psbInput.value;
+  applyCardFilter(term);
+  findAll(term);
+  if (marks.length) goTo(0);
+}
+function prevMatch() { if (marks.length) goTo(currentIdx - 1); }
+function nextMatch() { if (marks.length) goTo(currentIdx + 1); }
+function clearPageSearch() {
+  psbInput.value = ''; clearMarks(); applyCardFilter(''); updateCount();
+}
+
+psbInput.addEventListener('input', runPageSearch);
+psbInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.shiftKey ? prevMatch() : nextMatch(); }
+  if (e.key === 'Escape') clearPageSearch();
+});
+
+window.addEventListener('message', function(e) {
+  if (!e.data || e.data.type !== 'page-search') return;
+  psbInput.value = e.data.term || '';
+  runPageSearch();
+});
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  hljs.highlightAll();
+  // Hash-based scroll: navigate to specific card when loaded via #CardName
+  if (location.hash) {
+    const target = document.querySelector(location.hash);
+    if (target) {
+      const body = target.querySelector('.card-body');
+      if (body) body.classList.remove('collapsed');
+      setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+    }
+  }
+});
+</script>
+</body>
+</html>

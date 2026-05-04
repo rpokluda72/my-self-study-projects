@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operators: Filtering</title>
+<link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #1e1e2e; color: #cdd6f4; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Page header ── */
+  #page-header {
+    flex-shrink: 0;
+    background: #181825;
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid #313244;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    z-index: 10;
+  }
+  #page-header h1 {
+    font-size: 18px; font-weight: 700; color: #cba6f7; margin-bottom: 8px;
+    letter-spacing: 0.03em;
+  }
+  #match-info { font-size: 12px; color: #a6adc8; margin-left: 4px; }
+
+  /* ── Page search bar ── */
+  .page-search-bar {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  #psb-input {
+    flex: 1; min-width: 180px; max-width: 320px;
+    background: #313244; border: 1px solid #45475a; color: #cdd6f4;
+    border-radius: 4px; padding: 5px 10px; font-size: 13px; outline: none;
+  }
+  #psb-input:focus { border-color: #89b4fa; box-shadow: 0 0 0 2px rgba(137,180,250,.2); }
+  #psb-input::placeholder { color: #6c7086; }
+  .psb-btn {
+    padding: 4px 10px; border: 1px solid #45475a; border-radius: 4px;
+    background: #313244; color: #cdd6f4; cursor: pointer; font-size: 12px;
+    transition: background .15s;
+  }
+  .psb-btn:hover { background: #45475a; }
+  .psb-btn:disabled { opacity: .4; cursor: default; }
+  .psb-clear {
+    padding: 4px 10px; border: none; border-radius: 4px;
+    background: #f38ba8; color: #1e1e2e; cursor: pointer; font-size: 12px;
+    font-weight: 600; transition: background .15s;
+  }
+  .psb-clear:hover { background: #eba0ac; }
+  #psb-count { font-size: 12px; color: #a6adc8; min-width: 60px; }
+
+  /* ── Cards container ── */
+  #cards-container {
+    flex: 1; overflow-y: auto; padding: 12px 16px 20px;
+  }
+  .card {
+    margin-bottom: 12px; border-radius: 8px; overflow: hidden;
+    border: 1px solid #313244; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .card.hidden-by-search { display: none; }
+
+  /* ── Card header ── */
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #2a2a3d; padding: 8px 14px; cursor: pointer;
+    user-select: none; transition: background .15s;
+    border-bottom: 1px solid #313244;
+  }
+  .card-header:hover { background: #313244; }
+  .filename { font-size: 14px; font-weight: 600; color: #89dceb; font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+  .toggle-btn {
+    background: none; border: 1px solid #45475a; color: #a6adc8;
+    border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 11px;
+    transition: all .15s; white-space: nowrap;
+  }
+  .toggle-btn:hover { background: #45475a; color: #cdd6f4; }
+
+  /* ── Card body ── */
+  .card-body { overflow: hidden; }
+  .card-body.collapsed { display: none; }
+  .card-body pre { margin: 0; }
+  .card-body pre code.hljs {
+    font-size: 13px; line-height: 1.55; padding: 14px 16px !important;
+    background: #282c34 !important;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  }
+
+  /* ── Search highlights ── */
+  mark.sh         { background: #f9e2af; color: #1e1e2e; border-radius: 2px; }
+  mark.sh-current { background: #fab387; color: #1e1e2e; border-radius: 2px; outline: 2px solid #f38ba8; }
+</style>
+</head>
+<body>
+<div id="page-header">
+  <h1>Operators: Filtering</h1>
+  <div class="page-search-bar">
+    <input id="psb-input" placeholder="Search in code…" autocomplete="off" spellcheck="false" />
+    <button class="psb-btn" id="psb-prev" onclick="prevMatch()">&#8593; Prev</button>
+    <button class="psb-btn" id="psb-next" onclick="nextMatch()">&#8595; Next</button>
+    <button class="psb-clear" onclick="clearPageSearch()">&#10005; Clear</button>
+    <span id="psb-count"></span>
+  </div>
+</div>
+<div id="cards-container">
+  <div class="card" id="08-operators-filtering">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="filename">08-operators-filtering.ts</span>
+      <button class="toggle-btn">&#x25bc; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-typescript">/**
+ * Operators: Filtering
+ *
+ * Filtering operators let values through (or block them) based on a predicate,
+ * position, or timing. They never transform values — a value either passes
+ * through unchanged or is silently discarded.
+ *
+ * @see https://rxjs.dev/guide/operators#filtering-operators
+ */
+
+import { of, interval, Subject, from } from &#x27;rxjs&#x27;;
+import {
+  filter,
+  take,
+  takeUntil,
+  skip,
+  debounceTime,
+  throttleTime,
+  distinctUntilChanged,
+  first,
+  last,
+} from &#x27;rxjs&#x27;;
+
+/**
+ * filter(predicate): passes only values that satisfy the predicate function.
+ * Values that return false are silently discarded.
+ */
+function operatorFilter(): void {
+  of(1, 2, 3, 4, 5, 6)
+    .pipe(filter(x =&gt; x % 2 === 0))
+    .subscribe(val =&gt; console.log(&#x27;filter (even):&#x27;, val));
+
+  from([&#x27;apple&#x27;, &#x27;banana&#x27;, &#x27;avocado&#x27;, &#x27;cherry&#x27;])
+    .pipe(filter(s =&gt; s.startsWith(&#x27;a&#x27;)))
+    .subscribe(val =&gt; console.log(&#x27;filter (starts with a):&#x27;, val));
+
+  // Expected output:
+  // filter (even): 2
+  // filter (even): 4
+  // filter (even): 6
+  // filter (starts with a): apple
+  // filter (starts with a): avocado
+}
+
+/**
+ * take(count): emits the first N values, then completes.
+ * Automatically unsubscribes the source after N values.
+ */
+function operatorTake(): void {
+  of(1, 2, 3, 4, 5)
+    .pipe(take(3))
+    .subscribe({
+      next:     val =&gt; console.log(&#x27;take:&#x27;, val),
+      complete: ()  =&gt; console.log(&#x27;take complete&#x27;),
+    });
+
+  // Expected output:
+  // take: 1
+  // take: 2
+  // take: 3
+  // take complete
+}
+
+/**
+ * takeUntil(notifier$): emits values until the notifier Observable emits.
+ * When the notifier fires, the source is unsubscribed immediately.
+ * The canonical way to tie the lifetime of one Observable to another.
+ */
+function operatorTakeUntil(): void {
+  const stop$ = new Subject&lt;void&gt;();
+
+  interval(80)
+    .pipe(takeUntil(stop$))
+    .subscribe({
+      next:     val =&gt; console.log(&#x27;takeUntil:&#x27;, val),
+      complete: ()  =&gt; console.log(&#x27;takeUntil complete&#x27;),
+    });
+
+  setTimeout(() =&gt; stop$.next(), 300); // stop after ~3 ticks
+
+  // Expected output:
+  // takeUntil: 0
+  // takeUntil: 1
+  // takeUntil: 2
+  // takeUntil complete
+}
+
+/**
+ * skip(count): ignores the first N values, then passes all subsequent values through.
+ * Opposite of take().
+ */
+function operatorSkip(): void {
+  of(1, 2, 3, 4, 5)
+    .pipe(skip(2))
+    .subscribe(val =&gt; console.log(&#x27;skip:&#x27;, val));
+
+  // Expected output:
+  // skip: 3
+  // skip: 4
+  // skip: 5
+}
+
+/**
+ * debounceTime(ms): waits for a &quot;silence period&quot; of ms milliseconds after the
+ * last emission before passing the value through. Useful for search inputs —
+ * only fires after the user has stopped typing.
+ */
+function operatorDebounceTime(): void {
+  const input$ = new Subject&lt;string&gt;();
+
+  input$
+    .pipe(debounceTime(100))
+    .subscribe(val =&gt; console.log(&#x27;debounced:&#x27;, val));
+
+  // Rapid-fire emissions — only the last one in each burst passes through
+  input$.next(&#x27;r&#x27;);
+  input$.next(&#x27;rx&#x27;);
+  input$.next(&#x27;rxj&#x27;);
+  input$.next(&#x27;rxjs&#x27;); // only this passes (100 ms silence after)
+
+  setTimeout(() =&gt; {
+    input$.next(&#x27;rxjs &#x27;); // new burst after silence
+    input$.next(&#x27;rxjs o&#x27;);
+    input$.next(&#x27;rxjs op&#x27;); // only this passes
+  }, 300);
+
+  // Expected output:
+  // debounced: rxjs
+  // debounced: rxjs op
+}
+
+/**
+ * throttleTime(ms): passes the first value through, then ignores subsequent values
+ * for ms milliseconds. Limits the emission rate.
+ * Useful for scroll/resize events where you want periodic updates, not every pixel.
+ */
+function operatorThrottleTime(): void {
+  const scroll$ = new Subject&lt;number&gt;();
+
+  scroll$
+    .pipe(throttleTime(150))
+    .subscribe(val =&gt; console.log(&#x27;throttled:&#x27;, val));
+
+  // Emit rapidly — only the first of each 150 ms window passes through
+  scroll$.next(0);
+  scroll$.next(10);
+  scroll$.next(20); // blocked
+  scroll$.next(30); // blocked
+
+  setTimeout(() =&gt; scroll$.next(100), 200); // new window — passes through
+  setTimeout(() =&gt; scroll$.next(110), 220); // blocked
+
+  // Expected output:
+  // throttled: 0
+  // throttled: 100
+}
+
+/**
+ * distinctUntilChanged(): suppresses consecutive duplicate values.
+ * A value is only emitted if it is different from the immediately preceding value.
+ */
+function operatorDistinctUntilChanged(): void {
+  of(1, 1, 2, 2, 2, 3, 1, 1)
+    .pipe(distinctUntilChanged())
+    .subscribe(val =&gt; console.log(&#x27;distinct:&#x27;, val));
+
+  // With a custom comparator
+  of(
+    { id: 1, name: &#x27;Alice&#x27; },
+    { id: 1, name: &#x27;Alice&#x27; },
+    { id: 2, name: &#x27;Bob&#x27; },
+  )
+    .pipe(distinctUntilChanged((a, b) =&gt; a.id === b.id))
+    .subscribe(val =&gt; console.log(&#x27;distinct by id:&#x27;, val.name));
+
+  // Expected output:
+  // distinct: 1
+  // distinct: 2
+  // distinct: 3
+  // distinct: 1
+  // distinct by id: Alice
+  // distinct by id: Bob
+}
+
+/**
+ * first(predicate?): emits only the first value (or first matching value) then completes.
+ * Errors if no matching value is emitted before the source completes.
+ */
+function operatorFirst(): void {
+  of(3, 1, 4, 1, 5, 9)
+    .pipe(first())
+    .subscribe({
+      next:     val =&gt; console.log(&#x27;first:&#x27;, val),
+      complete: ()  =&gt; console.log(&#x27;first complete&#x27;),
+    });
+
+  of(3, 1, 4, 1, 5, 9)
+    .pipe(first(x =&gt; x &gt; 4))
+    .subscribe({
+      next:     val =&gt; console.log(&#x27;first &gt; 4:&#x27;, val),
+      complete: ()  =&gt; console.log(&#x27;first &gt; 4 complete&#x27;),
+    });
+
+  // Expected output:
+  // first: 3
+  // first complete
+  // first &gt; 4: 5
+  // first &gt; 4 complete
+}
+
+/**
+ * last(): emits only the last value before the source completes, then completes.
+ * The source must complete — last() on an infinite Observable never emits.
+ */
+function operatorLast(): void {
+  of(10, 20, 30, 40, 50)
+    .pipe(last())
+    .subscribe({
+      next:     val =&gt; console.log(&#x27;last:&#x27;, val),
+      complete: ()  =&gt; console.log(&#x27;last complete&#x27;),
+    });
+
+  // Expected output:
+  // last: 50
+  // last complete
+}
+
+function main(): void {
+  console.log(&#x27;\n=== operatorFilter ===&#x27;);
+  operatorFilter();
+
+  console.log(&#x27;\n=== operatorTake ===&#x27;);
+  operatorTake();
+
+  console.log(&#x27;\n=== operatorTakeUntil ===&#x27;);
+  operatorTakeUntil();
+
+  console.log(&#x27;\n=== operatorSkip ===&#x27;);
+  operatorSkip();
+
+  console.log(&#x27;\n=== operatorDebounceTime ===&#x27;);
+  operatorDebounceTime();
+
+  console.log(&#x27;\n=== operatorThrottleTime ===&#x27;);
+  operatorThrottleTime();
+
+  console.log(&#x27;\n=== operatorDistinctUntilChanged ===&#x27;);
+  operatorDistinctUntilChanged();
+
+  console.log(&#x27;\n=== operatorFirst ===&#x27;);
+  operatorFirst();
+
+  console.log(&#x27;\n=== operatorLast ===&#x27;);
+  operatorLast();
+}
+
+main();
+</code></pre>
+    </div>
+  </div>
+</div>
+<script>
+// ── Card toggle ──────────────────────────────────────────────────────────────
+function toggleCard(header) {
+  const body = header.nextElementSibling;
+  const btn  = header.querySelector('.toggle-btn');
+  const c    = body.classList.toggle('collapsed');
+  btn.textContent = c ? '\u25b6 Show' : '\u25bc Hide';
+}
+
+// ── In-page text search ──────────────────────────────────────────────────────
+const psbInput = document.getElementById('psb-input');
+const psbCount = document.getElementById('psb-count');
+let marks = [], currentIdx = -1;
+
+function clearMarks() {
+  document.querySelectorAll('mark.sh, mark.sh-current').forEach(m => {
+    m.parentNode.replaceChild(document.createTextNode(m.textContent), m);
+  });
+  document.querySelectorAll('.card-body code').forEach(c => c.normalize());
+  marks = []; currentIdx = -1;
+}
+
+function findAll(term) {
+  clearMarks();
+  if (!term.trim()) { updateCount(); return; }
+  const lower = term.toLowerCase();
+  document.querySelectorAll('.card-body code').forEach(code => {
+    const walker = document.createTreeWalker(code, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.textContent, ltxt = text.toLowerCase();
+      let pos = 0, start;
+      const frags = [];
+      while ((start = ltxt.indexOf(lower, pos)) !== -1) {
+        if (start > pos) frags.push(document.createTextNode(text.slice(pos, start)));
+        const m = document.createElement('mark');
+        m.className = 'sh';
+        m.textContent = text.slice(start, start + term.length);
+        frags.push(m); marks.push(m);
+        pos = start + term.length;
+      }
+      if (frags.length) {
+        if (pos < text.length) frags.push(document.createTextNode(text.slice(pos)));
+        node.replaceWith(...frags);
+      }
+    });
+  });
+  updateCount();
+}
+
+function goTo(idx) {
+  if (!marks.length) return;
+  if (currentIdx >= 0) marks[currentIdx].className = 'sh';
+  currentIdx = ((idx % marks.length) + marks.length) % marks.length;
+  const m = marks[currentIdx];
+  m.className = 'sh-current';
+  const body = m.closest('.card-body');
+  if (body && body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    body.closest('.card').querySelector('.toggle-btn').textContent = '\u25bc Hide';
+  }
+  m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  updateCount();
+}
+
+function updateCount() {
+  const v = psbInput.value.trim();
+  if (!v) { psbCount.textContent = ''; return; }
+  psbCount.textContent = marks.length === 0
+    ? '0 matches'
+    : (currentIdx + 1) + ' / ' + marks.length;
+  document.getElementById('psb-prev').disabled = marks.length === 0;
+  document.getElementById('psb-next').disabled = marks.length === 0;
+}
+
+function runPageSearch() {
+  const term = psbInput.value;
+  findAll(term);
+  if (marks.length) goTo(0);
+}
+function prevMatch() { if (marks.length) goTo(currentIdx - 1); }
+function nextMatch() { if (marks.length) goTo(currentIdx + 1); }
+function clearPageSearch() {
+  psbInput.value = ''; clearMarks(); updateCount();
+}
+
+psbInput.addEventListener('input', runPageSearch);
+psbInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.shiftKey ? prevMatch() : nextMatch(); }
+  if (e.key === 'Escape') clearPageSearch();
+});
+
+window.addEventListener('message', function(e) {
+  if (!e.data || e.data.type !== 'page-search') return;
+  psbInput.value = e.data.term || '';
+  runPageSearch();
+});
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  hljs.highlightAll();
+  if (location.hash) {
+    const target = document.querySelector(location.hash);
+    if (target) {
+      const body = target.querySelector('.card-body');
+      if (body) body.classList.remove('collapsed');
+      setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+    }
+  }
+});
+</script>
+</body>
+</html>
