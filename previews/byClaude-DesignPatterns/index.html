@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Design Patterns — Code Preview</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: 'Segoe UI', Arial, sans-serif; }
+    #layout { display: flex; height: 100vh; }
+
+    #sidebar { width: 270px; min-width: 270px; background: #1a202c; color: #e2e8f0; display: flex; flex-direction: column; overflow-y: auto; }
+    #sidebar h2 { padding: 18px 16px 12px; font-size: 0.85rem; font-weight: 700; color: #63b3ed; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 1px solid #2d3748; flex-shrink: 0; }
+
+    .lang-list { list-style: none; padding: 4px 0; flex: 1; }
+    .lang-item { border-bottom: 1px solid #2d3748; }
+    .lang-toggle { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 0.9rem; font-weight: 700; color: #e2e8f0; cursor: pointer; user-select: none; transition: background 0.12s; }
+    .lang-toggle:hover { background: #2d3748; }
+
+    .group-list { list-style: none; }
+    .group-item {}
+    .group-toggle { display: flex; align-items: center; gap: 8px; padding: 7px 16px 7px 28px; font-size: 0.82rem; font-weight: 600; color: #a0aec0; cursor: pointer; user-select: none; transition: background 0.12s; }
+    .group-toggle:hover { background: #2d3748; color: #e2e8f0; }
+
+    .pattern-list { list-style: none; }
+    .pattern-list li a { display: block; padding: 6px 16px 6px 44px; color: #718096; text-decoration: none; font-size: 0.83rem; border-left: 3px solid transparent; transition: background 0.12s, color 0.12s; }
+    .pattern-list li a:hover { background: #2d3748; color: #e2e8f0; }
+    .pattern-list li a.active { background: #2d3748; color: #63b3ed; border-left-color: #63b3ed; }
+
+    .arrow { font-size: 0.65rem; display: inline-block; transition: transform 0.18s; }
+    .arrow.rotated { transform: rotate(-90deg); }
+    .hidden { display: none; }
+
+    #content { flex: 1; overflow: hidden; }
+    #content iframe { width: 100%; height: 100%; border: none; }
+  </style>
+</head>
+<body>
+<div id="layout">
+  <nav id="sidebar">
+    <h2>Design Patterns</h2>
+    <ul class="lang-list">
+  <li class="lang-item">
+    <div class="lang-toggle" onclick="toggleSection('lang-java')">
+      <span class="arrow" id="arr-lang-java">&#9660;</span> Java
+    </div>
+    <ul class="group-list" id="lang-java">
+      <li class="group-item">
+        <div class="group-toggle" onclick="toggleSection('group-java-creational')">
+          <span class="arrow" id="arr-group-java-creational">&#9660;</span> Creational
+        </div>
+        <ul class="pattern-list" id="group-java-creational">
+          <li><a href="java/creational/AbstractFactory.html" target="content" onclick="setActive(this)">Abstract Factory</a></li>
+          <li><a href="java/creational/Builder.html" target="content" onclick="setActive(this)">Builder</a></li>
+          <li><a href="java/creational/FactoryMethod.html" target="content" onclick="setActive(this)">Factory Method</a></li>
+          <li><a href="java/creational/Prototype.html" target="content" onclick="setActive(this)">Prototype</a></li>
+          <li><a href="java/creational/Singleton.html" target="content" onclick="setActive(this)">Singleton</a></li>
+        </ul>
+      </li>
+      <li class="group-item">
+        <div class="group-toggle" onclick="toggleSection('group-java-structural')">
+          <span class="arrow" id="arr-group-java-structural">&#9660;</span> Structural
+        </div>
+        <ul class="pattern-list" id="group-java-structural">
+          <li><a href="java/structural/Adapter.html" target="content" onclick="setActive(this)">Adapter</a></li>
+          <li><a href="java/structural/Composite.html" target="content" onclick="setActive(this)">Composite</a></li>
+          <li><a href="java/structural/Decorator.html" target="content" onclick="setActive(this)">Decorator</a></li>
+          <li><a href="java/structural/Facade.html" target="content" onclick="setActive(this)">Facade</a></li>
+          <li><a href="java/structural/Proxy.html" target="content" onclick="setActive(this)">Proxy</a></li>
+        </ul>
+      </li>
+      <li class="group-item">
+        <div class="group-toggle" onclick="toggleSection('group-java-behavioral')">
+          <span class="arrow" id="arr-group-java-behavioral">&#9660;</span> Behavioral
+        </div>
+        <ul class="pattern-list" id="group-java-behavioral">
+          <li><a href="java/behavioral/Command.html" target="content" onclick="setActive(this)">Command</a></li>
+          <li><a href="java/behavioral/Iterator.html" target="content" onclick="setActive(this)">Iterator</a></li>
+          <li><a href="java/behavioral/Observer.html" target="content" onclick="setActive(this)">Observer</a></li>
+          <li><a href="java/behavioral/Strategy.html" target="content" onclick="setActive(this)">Strategy</a></li>
+          <li><a href="java/behavioral/TemplateMethod.html" target="content" onclick="setActive(this)">Template Method</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li class="lang-item">
+    <div class="lang-toggle" onclick="toggleSection('lang-javascript')">
+      <span class="arrow" id="arr-lang-javascript">&#9660;</span> JavaScript
+    </div>
+    <ul class="group-list" id="lang-javascript">
+      <li class="group-item">
+        <div class="group-toggle" onclick="toggleSection('group-javascript-creational')">
+          <span class="arrow" id="arr-group-javascript-creational">&#9660;</span> Creational
+        </div>
+        <ul class="pattern-list" id="group-javascript-creational">
+          <li><a href="javascript/creational/abstractFactory.html" target="content" onclick="setActive(this)">Abstract Factory</a></li>
+          <li><a href="javascript/creational/builder.html" target="content" onclick="setActive(this)">Builder</a></li>
+          <li><a href="javascript/creational/factoryMethod.html" target="content" onclick="setActive(this)">Factory Method</a></li>
+          <li><a href="javascript/creational/prototype.html" target="content" onclick="setActive(this)">Prototype</a></li>
+          <li><a href="javascript/creational/singleton.html" target="content" onclick="setActive(this)">Singleton</a></li>
+        </ul>
+      </li>
+      <li class="group-item">
+        <div class="group-toggle" onclick="toggleSection('group-javascript-structural')">
+          <span class="arrow" id="arr-group-javascript-structural">&#9660;</span> Structural
+        </div>
+        <ul class="pattern-list" id="group-javascript-structural">
+          <li><a href="javascript/structural/adapter.html" target="content" onclick="setActive(this)">Adapter</a></li>
+          <li><a href="javascript/structural/composite.html" target="content" onclick="setActive(this)">Composite</a></li>
+          <li><a href="javascript/structural/decorator.html" target="content" onclick="setActive(this)">Decorator</a></li>
+          <li><a href="javascript/structural/facade.html" target="content" onclick="setActive(this)">Facade</a></li>
+          <li><a href="javascript/structural/proxy.html" target="content" onclick="setActive(this)">Proxy</a></li>
+        </ul>
+      </li>
+      <li class="group-item">
+        <div class="group-toggle" onclick="toggleSection('group-javascript-behavioral')">
+          <span class="arrow" id="arr-group-javascript-behavioral">&#9660;</span> Behavioral
+        </div>
+        <ul class="pattern-list" id="group-javascript-behavioral">
+          <li><a href="javascript/behavioral/command.html" target="content" onclick="setActive(this)">Command</a></li>
+          <li><a href="javascript/behavioral/iterator.html" target="content" onclick="setActive(this)">Iterator</a></li>
+          <li><a href="javascript/behavioral/observer.html" target="content" onclick="setActive(this)">Observer</a></li>
+          <li><a href="javascript/behavioral/strategy.html" target="content" onclick="setActive(this)">Strategy</a></li>
+          <li><a href="javascript/behavioral/templateMethod.html" target="content" onclick="setActive(this)">Template Method</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li class="lang-item">
+    <div class="lang-toggle" onclick="toggleSection('lang-typescript')">
+      <span class="arrow" id="arr-lang-typescript">&#9660;</span> TypeScript
+    </div>
+    <ul class="group-list" id="lang-typescript">
+      <li class="group-item">
+        <div class="group-toggle" onclick="toggleSection('group-typescript-creational')">
+          <span class="arrow" id="arr-group-typescript-creational">&#9660;</span> Creational
+        </div>
+        <ul class="pattern-list" id="group-typescript-creational">
+          <li><a href="typescript/creational/abstractFactory.html" target="content" onclick="setActive(this)">Abstract Factory</a></li>
+          <li><a href="typescript/creational/builder.html" target="content" onclick="setActive(this)">Builder</a></li>
+          <li><a href="typescript/creational/factoryMethod.html" target="content" onclick="setActive(this)">Factory Method</a></li>
+          <li><a href="typescript/creational/prototype.html" target="content" onclick="setActive(this)">Prototype</a></li>
+          <li><a href="typescript/creational/singleton.html" target="content" onclick="setActive(this)">Singleton</a></li>
+        </ul>
+      </li>
+      <li class="group-item">
+        <div class="group-toggle" onclick="toggleSection('group-typescript-structural')">
+          <span class="arrow" id="arr-group-typescript-structural">&#9660;</span> Structural
+        </div>
+        <ul class="pattern-list" id="group-typescript-structural">
+          <li><a href="typescript/structural/adapter.html" target="content" onclick="setActive(this)">Adapter</a></li>
+          <li><a href="typescript/structural/composite.html" target="content" onclick="setActive(this)">Composite</a></li>
+          <li><a href="typescript/structural/decorator.html" target="content" onclick="setActive(this)">Decorator</a></li>
+          <li><a href="typescript/structural/facade.html" target="content" onclick="setActive(this)">Facade</a></li>
+          <li><a href="typescript/structural/proxy.html" target="content" onclick="setActive(this)">Proxy</a></li>
+        </ul>
+      </li>
+      <li class="group-item">
+        <div class="group-toggle" onclick="toggleSection('group-typescript-behavioral')">
+          <span class="arrow" id="arr-group-typescript-behavioral">&#9660;</span> Behavioral
+        </div>
+        <ul class="pattern-list" id="group-typescript-behavioral">
+          <li><a href="typescript/behavioral/command.html" target="content" onclick="setActive(this)">Command</a></li>
+          <li><a href="typescript/behavioral/iterator.html" target="content" onclick="setActive(this)">Iterator</a></li>
+          <li><a href="typescript/behavioral/observer.html" target="content" onclick="setActive(this)">Observer</a></li>
+          <li><a href="typescript/behavioral/strategy.html" target="content" onclick="setActive(this)">Strategy</a></li>
+          <li><a href="typescript/behavioral/templateMethod.html" target="content" onclick="setActive(this)">Template Method</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+    </ul>
+  </nav>
+  <div id="content">
+    <iframe name="content" id="frame" src="java/creational/Singleton.html"></iframe>
+  </div>
+</div>
+<script>
+
+  function toggleSection(id) {
+    const el  = document.getElementById(id);
+    const arr = document.getElementById('arr-' + id);
+    el.classList.toggle('hidden');
+    arr.classList.toggle('rotated');
+  }
+  function setActive(link) {
+    document.querySelectorAll('.pattern-list a').forEach(a => a.classList.remove('active'));
+    link.classList.add('active');
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    const first = document.querySelector('.pattern-list a');
+    if (first) first.classList.add('active');
+  });
+</script>
+</body>
+</html>

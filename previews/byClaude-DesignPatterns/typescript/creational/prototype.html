@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Prototype — TypeScript | Design Patterns</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; display: flex; flex-direction: column; }
+    #page-header { flex-shrink: 0; background: #f0f2f5; padding: 16px 20px 10px; border-bottom: 1px solid #e2e8f0; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+    h1 { color: #2d3748; margin-bottom: 10px; font-size: 1.3rem; }
+    .breadcrumb { font-size: 0.82rem; font-weight: 400; color: #718096; }
+    .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .toolbar button { padding: 5px 13px; border: none; border-radius: 5px; cursor: pointer; font-size: 0.82rem; font-weight: 600; transition: background 0.15s; }
+    .btn-show { background: #3182ce; color: #fff; }
+    .btn-show:hover { background: #2b6cb0; }
+    .btn-hide { background: #718096; color: #fff; }
+    .btn-hide:hover { background: #4a5568; }
+    .match-info { font-size: 0.82rem; color: #718096; margin-left: 4px; }
+    .page-search-bar { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; background: #fff; border: 1px solid #cbd5e0; border-radius: 7px; padding: 6px 12px; }
+    .page-search-bar input { flex: 1; min-width: 160px; padding: 5px 8px; border: 1px solid #cbd5e0; border-radius: 5px; font-size: 0.85rem; outline: none; color: #2d3748; }
+    .page-search-bar input:focus { border-color: #63b3ed; }
+    .psb-btn { padding: 5px 11px; border: 1px solid #cbd5e0; border-radius: 5px; background: #f7fafc; cursor: pointer; font-size: 0.8rem; color: #4a5568; transition: background 0.12s; }
+    .psb-btn:hover { background: #e2e8f0; }
+    .psb-btn:disabled { opacity: 0.4; cursor: default; }
+    .psb-clear { padding: 5px 9px; border: 1px solid #cbd5e0; border-radius: 5px; background: #f7fafc; cursor: pointer; font-size: 0.85rem; color: #718096; transition: background 0.12s; }
+    .psb-clear:hover { background: #fed7d7; color: #c53030; border-color: #fc8181; }
+    .psb-count { font-size: 0.8rem; color: #718096; white-space: nowrap; min-width: 60px; }
+    mark.sh { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 1px; }
+    mark.sh-current { background: #f97316; color: #fff; border-radius: 2px; padding: 0 1px; }
+    #cards-container { flex: 1; overflow-y: auto; padding: 20px; }
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: hidden; }
+    .card.hidden-by-search { display: none; }
+    .card-header { background: #2d3748; color: #e2e8f0; padding: 9px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+    .card-header:hover { background: #3a4a5c; }
+    .card-header .filename { font-size: 0.9rem; font-weight: 700; flex: 1; }
+    .card-header .path { color: #a0aec0; font-size: 0.78rem; }
+    .card-header .toggle-btn { background: none; border: 1px solid #4a5568; border-radius: 4px; color: #a0aec0; font-size: 0.75rem; padding: 2px 8px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+    .card-header .toggle-btn:hover { border-color: #63b3ed; color: #63b3ed; }
+    .card-body { display: block; }
+    .card-body.collapsed { display: none; }
+    pre { margin: 0; overflow-x: auto; }
+    pre code.hljs { font-size: 13px; line-height: 1.5; padding: 16px !important; }
+  </style>
+</head>
+<body>
+  <div id="page-header">
+    <h1>Prototype <span class="breadcrumb">— TypeScript › Creational</span></h1>
+    <div class="toolbar">
+      <button class="btn-show" onclick="showAll()">&#9660; Show all</button>
+      <button class="btn-hide" onclick="collapseAll()">&#9654; Collapse all</button>
+      <span class="match-info" id="match-info"></span>
+    </div>
+    <div class="page-search-bar">
+      <input id="psb-input" type="text" placeholder="&#128269; Search in code&hellip;" autocomplete="off">
+      <button class="psb-btn" id="psb-prev" onclick="prevMatch()" disabled title="Previous (Shift+Enter)">&#9650; Prev</button>
+      <button class="psb-btn" id="psb-next" onclick="nextMatch()" disabled title="Next (Enter)">&#9660; Next</button>
+      <button class="psb-clear" onclick="clearPageSearch()" title="Clear (Esc)">&#x2715;</button>
+      <span class="psb-count" id="psb-count"></span>
+    </div>
+  </div>
+  <div id="cards-container">
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="filename">prototype.ts</span>
+        <span class="path">typescript/creational/prototype.ts</span>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleCard(this.closest('.card-header'))">&#9660; Hide</button>
+      </div>
+      <div class="card-body">
+        <pre><code class="language-typescript">// Run: npx ts-node typescript/creational/prototype.ts
+class GameCharacter {
+    constructor(
+        public name:           string,
+        public readonly level: number,
+        public readonly skills: string[],
+        public readonly weapon: string
+    ) {}
+
+    clone(): GameCharacter {
+        // Spread [...] deep-copies the skills array so the clone is independent
+        return new GameCharacter(this.name, this.level, [...this.skills], this.weapon);
+    }
+
+    toString(): string {
+        const skills = this.skills.map(s =&gt; `'${s}'`).join(', ');
+        return `GameCharacter { name: '${this.name}', level: ${this.level}, skills: [${skills}], weapon: '${this.weapon}' }`;
+    }
+}
+
+// Demo
+const hero = new GameCharacter('Arthur', 10, ['Slash', 'Shield'], 'sword');
+console.log('Original:', hero.toString());
+
+const rogue = hero.clone();
+rogue.name = 'Rogue';
+rogue.skills[1] = 'Stealth';  // modifying clone should NOT affect original
+
+console.log('Clone:   ', rogue.toString());
+console.log('Original skills unchanged:', hero.skills);
+</code></pre>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => hljs.highlightAll());
+
+    function toggleCard(header) {
+      const body = header.nextElementSibling;
+      const btn  = header.querySelector('.toggle-btn');
+      btn.textContent = body.classList.toggle('collapsed') ? '▶ Show' : '▼ Hide';
+    }
+    function showAll() {
+      document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+        b.classList.remove('collapsed');
+        b.closest('.card').querySelector('.toggle-btn').textContent = '▼ Hide';
+      });
+    }
+    function collapseAll() {
+      document.querySelectorAll('.card:not(.hidden-by-search) .card-body').forEach(b => {
+        b.classList.add('collapsed');
+        b.closest('.card').querySelector('.toggle-btn').textContent = '▶ Show';
+      });
+    }
+
+    let allMatches = [], curIdx = -1;
+
+    function applyCardFilter(term) {
+      let n = 0;
+      document.querySelectorAll('.card').forEach(c => {
+        const show = !term || c.textContent.toLowerCase().includes(term.toLowerCase());
+        c.classList.toggle('hidden-by-search', !show);
+        if (show && term) n++;
+      });
+      document.getElementById('match-info').textContent =
+        term ? n + ' card' + (n !== 1 ? 's' : '') + ' match' : '';
+    }
+
+    function clearMarks() {
+      Array.from(document.querySelectorAll('mark.sh')).forEach(m => {
+        const p = m.parentNode;
+        if (p) p.replaceChild(document.createTextNode(m.textContent), m);
+      });
+      document.getElementById('cards-container').normalize();
+    }
+
+    function findAll(term) {
+      clearMarks(); allMatches = []; curIdx = -1;
+      if (!term) { upd(); return; }
+      const lc = term.toLowerCase();
+      const walker = document.createTreeWalker(
+        document.getElementById('cards-container'), NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      let n;
+      while ((n = walker.nextNode())) nodes.push(n);
+      nodes.forEach(tn => {
+        const val = tn.nodeValue, lv = val.toLowerCase();
+        let i = lv.indexOf(lc), off = 0;
+        if (i < 0) return;
+        const frag = document.createDocumentFragment();
+        while (i >= 0) {
+          if (i > off) frag.appendChild(document.createTextNode(val.slice(off, i)));
+          const m = document.createElement('mark');
+          m.className = 'sh'; m.textContent = val.slice(i, i + term.length);
+          frag.appendChild(m); allMatches.push(m);
+          off = i + term.length; i = lv.indexOf(lc, off);
+        }
+        if (off < val.length) frag.appendChild(document.createTextNode(val.slice(off)));
+        tn.parentNode.replaceChild(frag, tn);
+      });
+      upd();
+      if (allMatches.length) goTo(0);
+    }
+
+    function goTo(i) {
+      if (!allMatches.length) return;
+      if (curIdx >= 0) allMatches[curIdx].className = 'sh';
+      curIdx = ((i % allMatches.length) + allMatches.length) % allMatches.length;
+      allMatches[curIdx].className = 'sh sh-current';
+      allMatches[curIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      upd();
+    }
+
+    function upd() {
+      const inp = document.getElementById('psb-input').value;
+      document.getElementById('psb-count').textContent =
+        allMatches.length ? (curIdx + 1) + ' / ' + allMatches.length
+        : (inp ? '0 matches' : '');
+      const has = allMatches.length > 0;
+      document.getElementById('psb-prev').disabled = !has;
+      document.getElementById('psb-next').disabled = !has;
+    }
+
+    function nextMatch() { if (allMatches.length) goTo(curIdx + 1); }
+    function prevMatch() { if (allMatches.length) goTo(curIdx - 1); }
+
+    function clearPageSearch() {
+      document.getElementById('psb-input').value = '';
+      clearMarks(); allMatches = []; curIdx = -1;
+      document.getElementById('psb-count').textContent = '';
+      document.getElementById('match-info').textContent = '';
+      document.querySelectorAll('.card').forEach(c => c.classList.remove('hidden-by-search'));
+      upd();
+    }
+
+    document.getElementById('psb-input').addEventListener('input', function() {
+      const t = this.value.trim();
+      applyCardFilter(t); findAll(t);
+    });
+    document.getElementById('psb-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); e.shiftKey ? prevMatch() : nextMatch(); }
+      if (e.key === 'Escape') clearPageSearch();
+    });
+  </script>
+</body>
+</html>
