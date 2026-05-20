@@ -130,15 +130,7 @@ public class _08_Schedulers {
     /** Prints the current thread name with a label. */
     private static void printThread(String label) {
         System.out.println(label + &quot; → thread: [&quot; + Thread.currentThread().getName() + &quot;]&quot;);
-    }
-
-    // -------------------------------------------------------------------------
-    // Default threading
-    // -------------------------------------------------------------------------
-
-    /**
-     * Without any Scheduler, everything runs on the calling thread ({@code main}).
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demodefaultthread">
@@ -147,7 +139,14 @@ public class _08_Schedulers {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoDefaultThread() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // Default threading
+    // -------------------------------------------------------------------------
+
+    /**
+     * Without any Scheduler, everything runs on the calling thread ({@code main}).
+     */
+    private static void demoDefaultThread() {
         System.out.println(&quot;=== Default thread (no Scheduler) ===&quot;);
 
         Observable.just(&quot;Hello&quot;)
@@ -157,9 +156,16 @@ public class _08_Schedulers {
         //map → thread: [main]
         //subscriber → thread: [main]
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demosubscribeon">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoSubscribeOn()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // subscribeOn
     // -------------------------------------------------------------------------
 
@@ -169,16 +175,8 @@ public class _08_Schedulers {
      *
      * &lt;p&gt;Rule: only the *first* {@code subscribeOn} in a chain takes effect — subsequent
      * ones are ignored because the thread is already selected by the first one.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demosubscribeon">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoSubscribeOn()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoSubscribeOn() throws InterruptedException {
+     */
+    private static void demoSubscribeOn() throws InterruptedException {
         System.out.println(&quot;=== subscribeOn ===&quot;);
 
         Observable.just(&quot;data&quot;)
@@ -194,16 +192,7 @@ public class _08_Schedulers {
         //map → thread: [RxCachedThreadScheduler-1]
         //subscriber → thread: [RxCachedThreadScheduler-1]
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // observeOn
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code observeOn(Scheduler)} switches the thread for *all downstream* operators
-     * (from that point in the chain). It can appear multiple times to hop between threads.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demoobserveon">
@@ -212,7 +201,15 @@ public class _08_Schedulers {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoObserveOn() throws InterruptedException {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // observeOn
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code observeOn(Scheduler)} switches the thread for *all downstream* operators
+     * (from that point in the chain). It can appear multiple times to hop between threads.
+     */
+    private static void demoObserveOn() throws InterruptedException {
         System.out.println(&quot;=== observeOn ===&quot;);
 
         Observable.just(&quot;data&quot;)
@@ -227,9 +224,16 @@ public class _08_Schedulers {
         //map (after observeOn) → thread: [RxNewThreadScheduler-1]
         //subscriber → thread: [RxNewThreadScheduler-1]
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demosubscribeonandobserveon">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoSubscribeOnAndObserveOn()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // subscribeOn + observeOn together
     // -------------------------------------------------------------------------
 
@@ -240,16 +244,8 @@ public class _08_Schedulers {
      *   &lt;li&gt;{@code observeOn(Schedulers.single())} — deliver results on a specific thread
      *       (in Android this would be {@code AndroidSchedulers.mainThread()})&lt;/li&gt;
      * &lt;/ul&gt;
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demosubscribeonandobserveon">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoSubscribeOnAndObserveOn()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoSubscribeOnAndObserveOn() throws InterruptedException {
+     */
+    private static void demoSubscribeOnAndObserveOn() throws InterruptedException {
         System.out.println(&quot;=== subscribeOn + observeOn ===&quot;);
 
         Observable.fromCallable(() -&gt; {
@@ -271,17 +267,7 @@ public class _08_Schedulers {
         //subscriber (consuming result) → thread: [RxSingleScheduler-1]
         //Result: DB result
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // Schedulers.io()
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@link Schedulers#io()} maintains an elastic thread pool that grows as needed
-     * and reuses idle threads. Perfect for I/O-bound work (network calls, file access,
-     * database queries) where threads spend most of their time waiting.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demoioscheduler">
@@ -290,7 +276,16 @@ public class _08_Schedulers {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoIoScheduler() throws InterruptedException {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // Schedulers.io()
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@link Schedulers#io()} maintains an elastic thread pool that grows as needed
+     * and reuses idle threads. Perfect for I/O-bound work (network calls, file access,
+     * database queries) where threads spend most of their time waiting.
+     */
+    private static void demoIoScheduler() throws InterruptedException {
         System.out.println(&quot;=== Schedulers.io() — multiple parallel I/O tasks ===&quot;);
 
         // Three &quot;I/O&quot; tasks run in parallel on the IO pool
@@ -311,9 +306,16 @@ public class _08_Schedulers {
 
         Thread.sleep(400);
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-democomputationscheduler">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoComputationScheduler()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // Schedulers.computation()
     // -------------------------------------------------------------------------
 
@@ -323,16 +325,8 @@ public class _08_Schedulers {
      * where you want to saturate cores without overloading the system.
      *
      * &lt;p&gt;Do NOT use it for blocking I/O — a blocked computation thread wastes a CPU slot.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-democomputationscheduler">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoComputationScheduler()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoComputationScheduler() throws InterruptedException {
+     */
+    private static void demoComputationScheduler() throws InterruptedException {
         System.out.println(&quot;=== Schedulers.computation() ===&quot;);
 
         Observable.range(1, 4)
@@ -354,17 +348,7 @@ public class _08_Schedulers {
 
         Thread.sleep(1_000);
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // Schedulers.newThread()
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@link Schedulers#newThread()} creates a brand-new thread for every subscription.
-     * Unlike {@code io()}, threads are NOT pooled or reused — each subscribe spawns one
-     * fresh thread. Use sparingly; prefer {@code io()} for pooling efficiency.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demonewthreadscheduler">
@@ -373,7 +357,16 @@ public class _08_Schedulers {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoNewThreadScheduler() throws InterruptedException {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // Schedulers.newThread()
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@link Schedulers#newThread()} creates a brand-new thread for every subscription.
+     * Unlike {@code io()}, threads are NOT pooled or reused — each subscribe spawns one
+     * fresh thread. Use sparingly; prefer {@code io()} for pooling efficiency.
+     */
+    private static void demoNewThreadScheduler() throws InterruptedException {
         System.out.println(&quot;=== Schedulers.newThread() ===&quot;);
 
         Observable.just(&quot;Task&quot;)
@@ -385,9 +378,16 @@ public class _08_Schedulers {
 
         Thread.sleep(200);
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demosinglescheduler">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoSingleScheduler()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // Schedulers.single()
     // -------------------------------------------------------------------------
 
@@ -397,16 +397,8 @@ public class _08_Schedulers {
      *
      * &lt;p&gt;Useful when you need to serialize operations (e.g., write to a resource
      * that is not thread-safe) without using synchronization primitives.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demosinglescheduler">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoSingleScheduler()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoSingleScheduler() throws InterruptedException {
+     */
+    private static void demoSingleScheduler() throws InterruptedException {
         System.out.println(&quot;=== Schedulers.single() — tasks run one at a time ===&quot;);
 
         for (int i = 1; i &lt;= 3; i++) {

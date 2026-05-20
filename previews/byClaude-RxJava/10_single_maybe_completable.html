@@ -127,9 +127,16 @@ public class _10_SingleMaybeCompletable {
         demoCompletableAndThen();
         demoCompletableError();
         demoChainAll();
-    }
-
-    // =========================================================================
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demosinglejust">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoSingleJust()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // =========================================================================
     //  SINGLE
     // =========================================================================
 
@@ -140,16 +147,8 @@ public class _10_SingleMaybeCompletable {
     /**
      * {@code Single.just(value)} creates a Single that immediately emits the given value
      * and then signals success. The subscriber uses {@code onSuccess} (not {@code onNext}).
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demosinglejust">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoSingleJust()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoSingleJust() {
+     */
+    private static void demoSingleJust() {
         System.out.println(&quot;=== Single.just ===&quot;);
 
         Single.just(42)
@@ -160,16 +159,7 @@ public class _10_SingleMaybeCompletable {
         // === Single.just ===
         //Success: 42
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // Single.error
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code Single.error(Throwable)} creates a Single that immediately signals an error.
-     * No success value is ever emitted.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demosingleerror">
@@ -178,7 +168,15 @@ public class _10_SingleMaybeCompletable {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoSingleError() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // Single.error
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Single.error(Throwable)} creates a Single that immediately signals an error.
+     * No success value is ever emitted.
+     */
+    private static void demoSingleError() {
         System.out.println(&quot;=== Single.error ===&quot;);
 
         Single.error(new RuntimeException(&quot;Query failed&quot;))
@@ -189,16 +187,7 @@ public class _10_SingleMaybeCompletable {
         // === Single.error ===
         //Error: Query failed
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // Single.fromCallable
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code Single.fromCallable(Callable&lt;T&gt;)} lazily executes a {@link java.util.concurrent.Callable}
-     * when subscribed. Any checked exception thrown is forwarded to {@code onError}.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demosinglefromcallable">
@@ -207,7 +196,15 @@ public class _10_SingleMaybeCompletable {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoSingleFromCallable() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // Single.fromCallable
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Single.fromCallable(Callable&lt;T&gt;)} lazily executes a {@link java.util.concurrent.Callable}
+     * when subscribed. Any checked exception thrown is forwarded to {@code onError}.
+     */
+    private static void demoSingleFromCallable() {
         System.out.println(&quot;=== Single.fromCallable ===&quot;);
 
         Single&lt;String&gt; single = Single.fromCallable(() -&gt; {
@@ -222,9 +219,16 @@ public class _10_SingleMaybeCompletable {
         // === Single.fromCallable ===
         //Fetched: User{id=1, name=&#x27;Alice&#x27;}
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demosingleflatmap">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoSingleFlatMap()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // Single.flatMap
     // -------------------------------------------------------------------------
 
@@ -235,16 +239,8 @@ public class _10_SingleMaybeCompletable {
      *
      * &lt;p&gt;Use this to sequence asynchronous operations that depend on each other
      * (e.g., fetch a user, then fetch that user&#x27;s orders).
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demosingleflatmap">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoSingleFlatMap()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoSingleFlatMap() {
+     */
+    private static void demoSingleFlatMap() {
         System.out.println(&quot;=== Single.flatMap (chain two Singles) ===&quot;);
 
         Single&lt;Integer&gt; userId = Single.just(1);
@@ -260,9 +256,16 @@ public class _10_SingleMaybeCompletable {
         // === Single.flatMap (chain two Singles) ===
         //Result: User #1 → Alice (verified)
         System.out.println();
-    }
-
-    // =========================================================================
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demomaybejust">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoMaybeJust()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // =========================================================================
     //  MAYBE
     // =========================================================================
 
@@ -273,16 +276,8 @@ public class _10_SingleMaybeCompletable {
     /**
      * {@code Maybe.just(value)} creates a Maybe that emits exactly one item via
      * {@code onSuccess}, then completes. Behaves like a Single when a value is present.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demomaybejust">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoMaybeJust()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoMaybeJust() {
+     */
+    private static void demoMaybeJust() {
         System.out.println(&quot;=== Maybe.just ===&quot;);
 
         Maybe.just(&quot;Found it!&quot;)
@@ -294,16 +289,7 @@ public class _10_SingleMaybeCompletable {
         // === Maybe.just ===
         //onSuccess: Found it!
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // Maybe.empty
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code Maybe.empty()} creates a Maybe that emits NO item and immediately completes.
-     * Use this to represent a &quot;nothing found&quot; result (like an empty Optional).
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demomaybeempty">
@@ -312,7 +298,15 @@ public class _10_SingleMaybeCompletable {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoMaybeEmpty() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // Maybe.empty
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Maybe.empty()} creates a Maybe that emits NO item and immediately completes.
+     * Use this to represent a &quot;nothing found&quot; result (like an empty Optional).
+     */
+    private static void demoMaybeEmpty() {
         System.out.println(&quot;=== Maybe.empty ===&quot;);
 
         Maybe.empty()
@@ -324,15 +318,7 @@ public class _10_SingleMaybeCompletable {
         // === Maybe.empty ===
         //onComplete (empty)
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // Maybe.error
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code Maybe.error(Throwable)} signals an error immediately, with no item.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demomaybeerror">
@@ -341,7 +327,14 @@ public class _10_SingleMaybeCompletable {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoMaybeError() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // Maybe.error
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Maybe.error(Throwable)} signals an error immediately, with no item.
+     */
+    private static void demoMaybeError() {
         System.out.println(&quot;=== Maybe.error ===&quot;);
 
         Maybe.error(new IllegalArgumentException(&quot;Invalid ID&quot;))
@@ -353,16 +346,7 @@ public class _10_SingleMaybeCompletable {
         // === Maybe.error ===
         //onError: Invalid ID
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // Observable → Maybe via filter + firstElement
-    // -------------------------------------------------------------------------
-
-    /**
-     * A common way to obtain a {@code Maybe&lt;T&gt;} is by calling {@code firstElement()} on
-     * a filtered Observable — it emits the first matching item, or completes empty if none match.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demomaybefilter">
@@ -371,7 +355,15 @@ public class _10_SingleMaybeCompletable {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoMaybeFilter() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // Observable → Maybe via filter + firstElement
+    // -------------------------------------------------------------------------
+
+    /**
+     * A common way to obtain a {@code Maybe&lt;T&gt;} is by calling {@code firstElement()} on
+     * a filtered Observable — it emits the first matching item, or completes empty if none match.
+     */
+    private static void demoMaybeFilter() {
         System.out.println(&quot;=== Maybe from Observable.firstElement ===&quot;);
 
         // Find the first even number — exists
@@ -397,9 +389,16 @@ public class _10_SingleMaybeCompletable {
         //First even: 4
         //No even found
         System.out.println();
-    }
-
-    // =========================================================================
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-democompletablefromaction">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoCompletableFromAction()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // =========================================================================
     //  COMPLETABLE
     // =========================================================================
 
@@ -411,16 +410,8 @@ public class _10_SingleMaybeCompletable {
      * {@code Completable.fromAction(Action)} wraps a void operation in a Completable.
      * When subscribed, it runs the action and signals {@code onComplete} on success,
      * or {@code onError} if an exception is thrown.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-democompletablefromaction">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoCompletableFromAction()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoCompletableFromAction() {
+     */
+    private static void demoCompletableFromAction() {
         System.out.println(&quot;=== Completable.fromAction ===&quot;);
 
         Completable saveAction = Completable.fromAction(() -&gt; {
@@ -436,9 +427,16 @@ public class _10_SingleMaybeCompletable {
         //  [Action] Saving to database...
         //Save completed successfully
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-democompletableandthen">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoCompletableAndThen()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // Completable.andThen
     // -------------------------------------------------------------------------
 
@@ -453,16 +451,8 @@ public class _10_SingleMaybeCompletable {
      *   &lt;li&gt;{@code Completable.andThen(Single)}      — run action, then get a value&lt;/li&gt;
      *   &lt;li&gt;{@code Completable.andThen(Observable)}  — run action, then stream items&lt;/li&gt;
      * &lt;/ul&gt;
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-democompletableandthen">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoCompletableAndThen()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoCompletableAndThen() {
+     */
+    private static void demoCompletableAndThen() {
         System.out.println(&quot;=== Completable.andThen ===&quot;);
 
         Completable step1 = Completable.fromAction(() -&gt;
@@ -489,16 +479,7 @@ public class _10_SingleMaybeCompletable {
         //  Step 3: fetch confirmation
         //Final result: Confirmation #12345
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // Completable.error
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code Completable.error(Throwable)} creates a Completable that immediately errors.
-     * The {@code andThen} chain is aborted — subsequent steps are skipped.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-democompletableerror">
@@ -507,7 +488,15 @@ public class _10_SingleMaybeCompletable {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoCompletableError() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // Completable.error
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Completable.error(Throwable)} creates a Completable that immediately errors.
+     * The {@code andThen} chain is aborted — subsequent steps are skipped.
+     */
+    private static void demoCompletableError() {
         System.out.println(&quot;=== Completable chain with error ===&quot;);
 
         Completable failing = Completable.error(new RuntimeException(&quot;Permission denied&quot;));
@@ -523,9 +512,16 @@ public class _10_SingleMaybeCompletable {
         // === Completable chain with error ===
         //Chain failed: Permission denied
         System.out.println();
-    }
-
-    // =========================================================================
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demochainall">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoChainAll()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // =========================================================================
     //  Combined example
     // =========================================================================
 
@@ -536,16 +532,8 @@ public class _10_SingleMaybeCompletable {
      *   &lt;li&gt;Fetch user ID (Single)     — produces an Integer&lt;/li&gt;
      *   &lt;li&gt;Look up profile (Maybe)    — profile may or may not exist&lt;/li&gt;
      * &lt;/ol&gt;
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demochainall">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoChainAll()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoChainAll() {
+     */
+    private static void demoChainAll() {
         System.out.println(&quot;=== Real-world chain: Completable → Single → Maybe ===&quot;);
 
         Completable authenticate = Completable.fromAction(() -&gt;

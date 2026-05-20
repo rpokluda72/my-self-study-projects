@@ -179,7 +179,7 @@ function operatorSwitchMap(): void {
   of(1, 2, 3)
     .pipe(
       switchMap(n =&gt;
-        // Each inner emits n after 50 ms, but is cancelled by the next outer value
+        // Each inner emits n after 50 ms, but is canceled by the next outer value
         timer(50).pipe(map(() =&gt; `result for ${n}`))
       )
     )
@@ -278,9 +278,9 @@ function operatorReduce(): void {
 }
 
 /**
- * mergeMap vs switchMap contrast: shows the key behavioural difference.
+ * mergeMap vs switchMap contrast: shows the key behavioral difference.
  * - mergeMap: all inners run concurrently, results interleave
- * - switchMap: only the latest inner runs, previous are cancelled
+ * - switchMap: only the latest inner runs, previous are canceled
  */
 function mergeMapVsSwitchMap(): void {
   const source$ = interval(80).pipe(take(3)); // emits 0, 1, 2

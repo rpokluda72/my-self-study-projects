@@ -142,11 +142,20 @@ function createObservable(): void {
     complete: () =&gt; console.log(&#x27;complete&#x27;),
   });
 
+  obs$.subscribe({
+    next: val =&gt; console.log(&#x27;next-2:&#x27;, val),
+    complete: () =&gt; console.log(&#x27;complete-2&#x27;),
+  });
+
   // Expected output:
   // next: 1
   // next: 2
   // next: 3
   // complete
+  // next-2: 1
+  // next-2: 2
+  // next-2: 3
+  // complete-2
 }
 
 /**

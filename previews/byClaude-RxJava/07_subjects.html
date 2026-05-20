@@ -118,9 +118,16 @@ public class _07_Subjects {
         demoBehaviorSubject();
         demoReplaySubject();
         demoAsyncSubject();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demopublishsubject">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoPublishSubject()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // PublishSubject
     // -------------------------------------------------------------------------
 
@@ -130,16 +137,8 @@ public class _07_Subjects {
      *
      * &lt;p&gt;Good analogy: a live radio broadcast — you only hear what&#x27;s playing right now,
      * not what played before you tuned in.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demopublishsubject">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoPublishSubject()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoPublishSubject() {
+     */
+    private static void demoPublishSubject() {
         System.out.println(&quot;=== PublishSubject ===&quot;);
 
         PublishSubject&lt;String&gt; subject = PublishSubject.create();
@@ -163,9 +162,16 @@ public class _07_Subjects {
         //Subscriber-2: Item C
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demobehaviorsubject">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoBehaviorSubject()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // BehaviorSubject
     // -------------------------------------------------------------------------
 
@@ -176,16 +182,8 @@ public class _07_Subjects {
      *
      * &lt;p&gt;Good analogy: a thermostat display — a new viewer always sees the current temperature,
      * not a blank screen.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demobehaviorsubject">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoBehaviorSubject()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoBehaviorSubject() {
+     */
+    private static void demoBehaviorSubject() {
         System.out.println(&quot;=== BehaviorSubject ===&quot;);
 
         // Create with initial value &quot;Initial&quot;
@@ -224,9 +222,16 @@ public class _07_Subjects {
         //Subscriber-2: Update-3
         //Current value (after complete): null
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoreplaysubject">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoReplaySubject()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // ReplaySubject
     // -------------------------------------------------------------------------
 
@@ -243,16 +248,8 @@ public class _07_Subjects {
      *   &lt;li&gt;{@code ReplaySubject.createWithSize(n)} — keeps only the last N items&lt;/li&gt;
      *   &lt;li&gt;{@code ReplaySubject.createWithTime(t, unit, scheduler)} — time-based window&lt;/li&gt;
      * &lt;/ul&gt;
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demoreplaysubject">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoReplaySubject()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoReplaySubject() {
+     */
+    private static void demoReplaySubject() {
         System.out.println(&quot;=== ReplaySubject ===&quot;);
 
         ReplaySubject&lt;Integer&gt; subject = ReplaySubject.create();
@@ -294,9 +291,16 @@ public class _07_Subjects {
         //Limited replay: B
         //Limited replay: C
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoasyncsubject">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoAsyncSubject()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // AsyncSubject
     // -------------------------------------------------------------------------
 
@@ -309,16 +313,8 @@ public class _07_Subjects {
      *
      * &lt;p&gt;If the subject errors before completing, subscribers only receive the error
      * (no items at all).
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demoasyncsubject">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoAsyncSubject()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoAsyncSubject() {
+     */
+    private static void demoAsyncSubject() {
         System.out.println(&quot;=== AsyncSubject ===&quot;);
 
         AsyncSubject&lt;String&gt; subject = AsyncSubject.create();

@@ -144,7 +144,7 @@ public class TestArrayList {
 
         System.out.println(&quot;\n Iterator-while&quot;);
         // Getting Iterator
-        Iterator&lt;String&gt; namesIterator = names.listIterator();
+        Iterator&lt;String&gt; namesIterator = names.iterator();
 
         // Traversing elements using next() method
         while (namesIterator.hasNext()) {
@@ -242,10 +242,10 @@ public class TestLinkedList {
         names.add(&quot;Peter&quot;);
         names.add(&quot;Tom&quot;);
         names.add(&quot;George&quot;);
+
         System.out.println(&quot;\n Iterator-while&quot;);
         // Getting Iterator
-        Iterator&lt;String&gt; namesIterator
-                = names.listIterator();
+        Iterator&lt;String&gt; namesIterator = names.iterator();
 
         // Traversing elements using next() method
         while (namesIterator.hasNext()) {

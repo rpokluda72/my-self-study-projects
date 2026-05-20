@@ -130,6 +130,7 @@ import {
   asyncScheduler,
   queueScheduler,
   animationFrameScheduler,
+  asapScheduler,
   scheduled,
   of,
   interval,
@@ -284,6 +285,48 @@ function schedulerWithInterval(): void {
   // done
 }
 
+function subscribeOnExample2(): void {
+  const observable = new Observable((observer) =&gt; {
+    observer.next(1);
+    observer.next(2);
+    observer.next(3);
+    observer.complete();
+  }).pipe(
+      subscribeOn(asyncScheduler)
+  );
+
+  console.log(&#x27;subscribeOnExample2-just before subscribe&#x27;);
+  observable.subscribe({
+    next(x) { console.log(&#x27;subscribeOnExample2-got value &#x27; + x); },
+    complete() { console.log(&#x27;subscribeOnExample2-done&#x27;); },
+  });
+  console.log(&#x27;subscribeOnExample2-just after subscribe&#x27;);
+
+  // subscribeOnExample2-just before subscribe
+  // subscribeOnExample2-just after subscribe
+  // subscribeOnExample2-got value 1
+  // subscribeOnExample2-got value 2
+  // subscribeOnExample2-got value 3
+  // subscribeOnExample2-done
+}
+
+function schedulersInCreationOperators(): void {
+  // interval uses asyncScheduler by default
+  interval(1000, asyncScheduler).pipe(take(5)).subscribe(val =&gt; console.log(&#x27;asyncScheduler-val:&#x27; + val));
+
+  // of with a scheduler
+  of(1, 2, 3, asapScheduler).subscribe(val =&gt; console.log(&#x27;asapScheduler-val:&#x27; + val));
+
+  // asapScheduler-val:1
+  // asapScheduler-val:2
+  // asapScheduler-val:3
+  // asyncScheduler-val:0
+  // asyncScheduler-val:1
+  // asyncScheduler-val:2
+  // asyncScheduler-val:3
+  // asyncScheduler-val:4
+}
+
 function main(): void {
   console.log(&#x27;\n=== queueSchedulerExample ===&#x27;);
   queueSchedulerExample();
@@ -302,6 +345,12 @@ function main(): void {
 
   console.log(&#x27;\n=== schedulerWithInterval ===&#x27;);
   schedulerWithInterval();
+
+  console.log(&#x27;\n=== subscribeOnExample2 ===&#x27;);
+  subscribeOnExample2();
+
+  console.log(&#x27;\n=== schedulersInCreationOperators ===&#x27;);
+  schedulersInCreationOperators();
 }
 
 main();

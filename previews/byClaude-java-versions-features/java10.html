@@ -192,7 +192,8 @@ public class LocalVariableTypeInference {
         // Nested generics — var especially helpful
         var map = new HashMap&lt;String, List&lt;Integer&gt;&gt;();
         map.put(&quot;primes&quot;, new ArrayList&lt;&gt;(List.of(2, 3, 5)));
-        System.out.println(&quot;Map: &quot; + map); // Output: {primes=[2, 3, 5]}
+        map.put(&quot;primes2&quot;, List.of(2, 3, 5));
+        System.out.println(&quot;Map: &quot; + map); // Output: {primes=[2, 3, 5], primes2=[2, 3, 5]}
 
         // var in enhanced for loop
         for (var item : list) {
@@ -229,7 +230,7 @@ public class LocalVariableTypeInference {
 // text: Hello
 // pi: 3.14
 // List type: ArrayList
-// Map: {primes=[2, 3, 5]}
+// Map: {primes=[2, 3, 5], primes2=[2, 3, 5]}
 //   item: hello
 //   item: world
 // anon.name: Claude

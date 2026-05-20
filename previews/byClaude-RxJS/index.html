@@ -212,11 +212,20 @@ function createobservable(): void {
     complete: () => console.log('complete'),
   });
 
+  obs$.subscribe({
+    next: val => console.log('next-2:', val),
+    complete: () => console.log('complete-2'),
+  });
+
   // expected output:
   // next: 1
   // next: 2
   // next: 3
   // complete
+  // next-2: 1
+  // next-2: 2
+  // next-2: 3
+  // complete-2
 }
 
 /**
@@ -864,6 +873,7 @@ import {
   asyncscheduler,
   queuescheduler,
   animationframescheduler,
+  asapscheduler,
   scheduled,
   of,
   interval,
@@ -1018,6 +1028,48 @@ function schedulerwithinterval(): void {
   // done
 }
 
+function subscribeonexample2(): void {
+  const observable = new observable((observer) => {
+    observer.next(1);
+    observer.next(2);
+    observer.next(3);
+    observer.complete();
+  }).pipe(
+      subscribeon(asyncscheduler)
+  );
+
+  console.log('subscribeonexample2-just before subscribe');
+  observable.subscribe({
+    next(x) { console.log('subscribeonexample2-got value ' + x); },
+    complete() { console.log('subscribeonexample2-done'); },
+  });
+  console.log('subscribeonexample2-just after subscribe');
+
+  // subscribeonexample2-just before subscribe
+  // subscribeonexample2-just after subscribe
+  // subscribeonexample2-got value 1
+  // subscribeonexample2-got value 2
+  // subscribeonexample2-got value 3
+  // subscribeonexample2-done
+}
+
+function schedulersincreationoperators(): void {
+  // interval uses asyncscheduler by default
+  interval(1000, asyncscheduler).pipe(take(5)).subscribe(val => console.log('asyncscheduler-val:' + val));
+
+  // of with a scheduler
+  of(1, 2, 3, asapscheduler).subscribe(val => console.log('asapscheduler-val:' + val));
+
+  // asapscheduler-val:1
+  // asapscheduler-val:2
+  // asapscheduler-val:3
+  // asyncscheduler-val:0
+  // asyncscheduler-val:1
+  // asyncscheduler-val:2
+  // asyncscheduler-val:3
+  // asyncscheduler-val:4
+}
+
 function main(): void {
   console.log('\\n=== queueschedulerexample ===');
   queueschedulerexample();
@@ -1036,6 +1088,12 @@ function main(): void {
 
   console.log('\\n=== schedulerwithinterval ===');
   schedulerwithinterval();
+
+  console.log('\\n=== subscribeonexample2 ===');
+  subscribeonexample2();
+
+  console.log('\\n=== schedulersincreationoperators ===');
+  schedulersincreationoperators();
 }
 
 main();
@@ -1350,7 +1408,7 @@ function operatorswitchmap(): void {
   of(1, 2, 3)
     .pipe(
       switchmap(n =>
-        // each inner emits n after 50 ms, but is cancelled by the next outer value
+        // each inner emits n after 50 ms, but is canceled by the next outer value
         timer(50).pipe(map(() => \`result for \${n}\`))
       )
     )
@@ -1449,9 +1507,9 @@ function operatorreduce(): void {
 }
 
 /**
- * mergemap vs switchmap contrast: shows the key behavioural difference.
+ * mergemap vs switchmap contrast: shows the key behavioral difference.
  * - mergemap: all inners run concurrently, results interleave
- * - switchmap: only the latest inner runs, previous are cancelled
+ * - switchmap: only the latest inner runs, previous are canceled
  */
 function mergemapvsswitchmap(): void {
   const source$ = interval(80).pipe(take(3)); // emits 0, 1, 2
@@ -1973,7 +2031,7 @@ main();
  * @see https://rxjs.dev/guide/operators#utility-operators
  */
 
-import { of, interval, timer, subject, never } from 'rxjs';
+import { of, interval, timer, subject } from 'rxjs';
 import {
   tap,
   delay,

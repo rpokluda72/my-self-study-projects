@@ -154,9 +154,13 @@ public class TestConsumer {
     static void test1() {
         // Consumer to display a number
         Consumer&lt;Integer&gt; display = a -&gt; System.out.println(&quot;display-a : &quot; + a); // display-a : 10
+        Consumer&lt;Integer&gt; display2 = System.out::println; // 10
+        Consumer&lt;Integer&gt; display3 = (Integer a) -&gt; System.out.println(&quot;display2-a : &quot; + a); // display2-a : 10
 
         // Implement display using accept()
         display.accept(10);
+        display2.accept(10);
+        display3.accept(10);
 
         // Consumer to multiply 2 to every integer of a list
         Consumer&lt;List&lt;Integer&gt; &gt; modify = list -&gt; {
@@ -284,6 +288,9 @@ public class TestFunction {
         System.out.println(&quot;value2=&quot; + value2); //1
         Integer value3 = nameMap.computeIfAbsent(&quot;John&quot;, String::length);
         System.out.println(&quot;value3=&quot; + value3); //4
+
+        System.out.println(&quot;nameMap.size()=&quot; + nameMap.size()); // 2
+        System.out.println(&quot;nameMap.keySet()=&quot; + nameMap.keySet().toString()); // [A, John]
     }
 
     /*
@@ -339,6 +346,9 @@ public class TestFunction {
         Square s = (int x) -&gt; x * x; //interface Square { int calculate(int x); }
         System.out.println(&quot;s.calculate(1) : &quot; + s.calculate(1));//1
         System.out.println(&quot;s.calculate(3) : &quot; + s.calculate(3));//9
+
+        Function&lt;Integer, Integer&gt; square2 = x -&gt; x * x;
+        System.out.println(&quot;square2.apply(4): &quot; + square2.apply(4));//16
 
         // Function which takes in a number and returns half of it
         Function&lt;Integer, Double&gt; half = a -&gt; a / 2.0;

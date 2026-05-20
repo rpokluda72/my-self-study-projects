@@ -628,14 +628,18 @@ public class SequencedCollections {
     static void demonstrateAfter() {
         // ArrayList implements SequencedCollection
         List&lt;String&gt; list = new ArrayList&lt;&gt;(List.of(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;));
+        List&lt;String&gt; list2 = List.of(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;); // Immutable object
 
-        System.out.println(&quot;getFirst(): &quot; + list.getFirst()); // Output: A
-        System.out.println(&quot;getLast():  &quot; + list.getLast());  // Output: D
+        System.out.println(&quot;list.getFirst(): &quot; + list.getFirst()); // Output: A
+        System.out.println(&quot;list.getLast():  &quot; + list.getLast());  // Output: D
+        System.out.println(&quot;list2.getFirst(): &quot; + list2.getFirst()); // Output: A
+        System.out.println(&quot;list2.getLast():  &quot; + list2.getLast());  // Output: D
 
         // addFirst / addLast
         list.addFirst(&quot;Z&quot;);
         list.addLast(&quot;X&quot;);
         System.out.println(&quot;After addFirst(Z) + addLast(X): &quot; + list); // Output: [Z, A, B, C, D, X]
+        // list2.addFirst(&quot;Z&quot;); // Immutable object is modified - Wrap &#x27;list2&#x27; with &#x27;ArrayList&#x27;
 
         // removeFirst / removeLast
         String removedFirst = list.removeFirst();
@@ -684,8 +688,10 @@ public class SequencedCollections {
 // Reversed (copy): [D, C, B, A]
 //
 // === Java 21: SequencedCollection uniform API ===
-// getFirst(): A
-// getLast():  D
+// list.getFirst(): A
+// list.getLast():  D
+// list2.getFirst(): A
+// list2.getLast():  D
 // After addFirst(Z) + addLast(X): [Z, A, B, C, D, X]
 // Removed first: Z, last: X
 // After removes: [A, B, C, D]

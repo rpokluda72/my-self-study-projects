@@ -117,18 +117,7 @@ public class _01_ObservableBasics {
         demoNever();
         demoError();
         demoFullObserver();
-    }
-
-    // -------------------------------------------------------------------------
-    // Observable.just
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code Observable.just(...)} creates an Observable that emits each supplied value in order,
-     * then completes. It accepts 1–10 arguments (varargs overloads).
-     *
-     * &lt;p&gt;Use it when you already have a fixed set of known values.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demojust">
@@ -137,7 +126,17 @@ public class _01_ObservableBasics {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoJust() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // Observable.just
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.just(...)} creates an Observable that emits each supplied value in order,
+     * then completes. It accepts 1–10 arguments (varargs overloads).
+     *
+     * &lt;p&gt;Use it when you already have a fixed set of known values.
+     */
+    private static void demoJust() {
         System.out.println(&quot;=== Observable.just ===&quot;);
 
         Observable&lt;String&gt; observable = Observable.just(&quot;Alpha&quot;, &quot;Beta&quot;, &quot;Gamma&quot;);
@@ -149,16 +148,7 @@ public class _01_ObservableBasics {
         // → Received: Gamma
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // Observable.fromArray
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code Observable.fromArray(T[])} emits each element of an existing array.
-     * Equivalent to {@code Observable.just(...)} but works with a pre-existing array variable.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demofromarray">
@@ -167,7 +157,15 @@ public class _01_ObservableBasics {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoFromArray() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // Observable.fromArray
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.fromArray(T[])} emits each element of an existing array.
+     * Equivalent to {@code Observable.just(...)} but works with a pre-existing array variable.
+     */
+    private static void demoFromArray() {
         System.out.println(&quot;=== Observable.fromArray ===&quot;);
 
         Integer[] numbers = {10, 20, 30, 40, 50};
@@ -194,16 +192,7 @@ public class _01_ObservableBasics {
         // → Number 2: 50
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // Observable.fromIterable
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code Observable.fromIterable(Iterable&lt;T&gt;)} emits each element of any {@link Iterable}
-     * (List, Set, etc.). The elements are emitted in the iteration order of the collection.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demofromiterable">
@@ -212,7 +201,15 @@ public class _01_ObservableBasics {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoFromIterable() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // Observable.fromIterable
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.fromIterable(Iterable&lt;T&gt;)} emits each element of any {@link Iterable}
+     * (List, Set, etc.). The elements are emitted in the iteration order of the collection.
+     */
+    private static void demoFromIterable() {
         System.out.println(&quot;=== Observable.fromIterable ===&quot;);
 
         java.util.List&lt;String&gt; colors = java.util.Arrays.asList(&quot;Red&quot;, &quot;Green&quot;, &quot;Blue&quot;);
@@ -224,16 +221,7 @@ public class _01_ObservableBasics {
         // → Color: Blue
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // Observable.range
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code Observable.range(start, count)} emits {@code count} consecutive integers starting
-     * from {@code start}. Useful for generating sequences without creating a collection.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demorange">
@@ -242,7 +230,15 @@ public class _01_ObservableBasics {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoRange() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // Observable.range
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.range(start, count)} emits {@code count} consecutive integers starting
+     * from {@code start}. Useful for generating sequences without creating a collection.
+     */
+    private static void demoRange() {
         System.out.println(&quot;=== Observable.range ===&quot;);
 
         // Emits 1, 2, 3, 4, 5
@@ -255,16 +251,7 @@ public class _01_ObservableBasics {
         // → Value: 5
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // Observable.empty
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code Observable.empty()} emits nothing and immediately calls {@code onComplete()}.
-     * Useful as a no-op placeholder or base case in composition.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demoempty">
@@ -273,7 +260,15 @@ public class _01_ObservableBasics {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoEmpty() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // Observable.empty
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.empty()} emits nothing and immediately calls {@code onComplete()}.
+     * Useful as a no-op placeholder or base case in composition.
+     */
+    private static void demoEmpty() {
         System.out.println(&quot;=== Observable.empty ===&quot;);
 
         Observable.empty()
@@ -285,9 +280,16 @@ public class _01_ObservableBasics {
         // → Completed!
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demonever">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoNever()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // Observable.never
     // -------------------------------------------------------------------------
 
@@ -297,16 +299,8 @@ public class _01_ObservableBasics {
      *
      * &lt;p&gt;Because it never terminates, {@code onComplete} and {@code onError} are never called.
      * Here we just confirm subscription happened.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demonever">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoNever()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoNever() {
+     */
+    private static void demoNever() {
         System.out.println(&quot;=== Observable.never ===&quot;);
 
         Disposable d = Observable.never()
@@ -320,16 +314,7 @@ public class _01_ObservableBasics {
         d.dispose(); // clean up
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // Observable.error
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code Observable.error(Throwable)} immediately signals an error to the subscriber
-     * without emitting any items. Useful for propagating known errors in a pipeline.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demoerror">
@@ -338,7 +323,15 @@ public class _01_ObservableBasics {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoError() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // Observable.error
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code Observable.error(Throwable)} immediately signals an error to the subscriber
+     * without emitting any items. Useful for propagating known errors in a pipeline.
+     */
+    private static void demoError() {
         System.out.println(&quot;=== Observable.error ===&quot;);
 
         Observable.error(new RuntimeException(&quot;Something went wrong&quot;))
@@ -350,17 +343,7 @@ public class _01_ObservableBasics {
         // → Caught error: Something went wrong
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // Full Observer interface
-    // -------------------------------------------------------------------------
-
-    /**
-     * Instead of lambda shortcuts, you can implement the full {@link Observer} interface.
-     * This also gives you access to the {@link Disposable}, allowing you to cancel
-     * the subscription from within {@code onSubscribe}.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demofullobserver">
@@ -369,7 +352,16 @@ public class _01_ObservableBasics {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoFullObserver() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // Full Observer interface
+    // -------------------------------------------------------------------------
+
+    /**
+     * Instead of lambda shortcuts, you can implement the full {@link Observer} interface.
+     * This also gives you access to the {@link Disposable}, allowing you to cancel
+     * the subscription from within {@code onSubscribe}.
+     */
+    private static void demoFullObserver() {
         System.out.println(&quot;=== Full Observer interface ===&quot;);
 
         Observable&lt;Integer&gt; source = Observable.range(1, 3);

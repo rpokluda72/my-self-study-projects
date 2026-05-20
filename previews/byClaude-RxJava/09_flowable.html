@@ -128,9 +128,16 @@ public class _09_Flowable {
         demoBackpressureDrop();
         demoBackpressureLatest();
         demoFlowableFromRange();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoflowablebasic">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoFlowableBasic()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // Flowable basics
     // -------------------------------------------------------------------------
 
@@ -141,16 +148,8 @@ public class _09_Flowable {
      * &lt;p&gt;When you use the lambda {@code subscribe(onNext)} form, RxJava automatically
      * requests {@code Long.MAX_VALUE} items — effectively disabling backpressure control
      * and behaving like an Observable.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demoflowablebasic">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoFlowableBasic()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoFlowableBasic() {
+     */
+    private static void demoFlowableBasic() {
         System.out.println(&quot;=== Flowable basics ===&quot;);
 
         Flowable.just(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;)
@@ -161,9 +160,16 @@ public class _09_Flowable {
         //Item: C
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demobackpressurebuffer">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoBackpressureBuffer()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // BackpressureStrategy.BUFFER
     // -------------------------------------------------------------------------
 
@@ -175,16 +181,8 @@ public class _09_Flowable {
      * &lt;p&gt;Here we create a fast Observable (emits 1000 items), convert it to a Flowable
      * with BUFFER strategy, and slow down the consumer with {@code observeOn} so the
      * buffering kicks in.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demobackpressurebuffer">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoBackpressureBuffer()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoBackpressureBuffer() throws InterruptedException {
+     */
+    private static void demoBackpressureBuffer() throws InterruptedException {
         System.out.println(&quot;=== BackpressureStrategy.BUFFER ===&quot;);
 
         Observable.range(1, 10)
@@ -208,9 +206,16 @@ public class _09_Flowable {
 
         Thread.sleep(500);
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demobackpressuredrop">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoBackpressureDrop()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // BackpressureStrategy.DROP
     // -------------------------------------------------------------------------
 
@@ -220,16 +225,8 @@ public class _09_Flowable {
      *
      * &lt;p&gt;Use this when missing some data is acceptable (e.g., live stock price ticks —
      * you only care about the ones you can process; old ticks can be dropped).
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demobackpressuredrop">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoBackpressureDrop()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoBackpressureDrop() throws InterruptedException {
+     */
+    private static void demoBackpressureDrop() throws InterruptedException {
         System.out.println(&quot;=== BackpressureStrategy.DROP ===&quot;);
 
         // Fast source: 1..20; small downstream buffer: only some items will be delivered
@@ -252,9 +249,16 @@ public class _09_Flowable {
 
         Thread.sleep(500);
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demobackpressurelatest">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoBackpressureLatest()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // BackpressureStrategy.LATEST
     // -------------------------------------------------------------------------
 
@@ -265,16 +269,8 @@ public class _09_Flowable {
      *
      * &lt;p&gt;Use this when you always want the freshest data (e.g., GPS coordinates,
      * temperature readings — the latest reading is the most relevant).
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demobackpressurelatest">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoBackpressureLatest()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoBackpressureLatest() throws InterruptedException {
+     */
+    private static void demoBackpressureLatest() throws InterruptedException {
         System.out.println(&quot;=== BackpressureStrategy.LATEST ===&quot;);
 
         Observable.range(1, 20)
@@ -297,9 +293,16 @@ public class _09_Flowable {
 
         Thread.sleep(500);
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoflowablefromrange">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoFlowableFromRange()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // Flowable.range — natively backpressure-aware
     // -------------------------------------------------------------------------
 
@@ -310,16 +313,8 @@ public class _09_Flowable {
      *
      * &lt;p&gt;This is the preferred way to create large numeric sequences in a Flowable pipeline
      * because it never buffers: items are generated on demand.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demoflowablefromrange">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoFlowableFromRange()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoFlowableFromRange() throws InterruptedException {
+     */
+    private static void demoFlowableFromRange() throws InterruptedException {
         System.out.println(&quot;=== Flowable.range (native backpressure) ===&quot;);
 
         Flowable.range(1, 1_000_000)       // generates 1 million items on demand

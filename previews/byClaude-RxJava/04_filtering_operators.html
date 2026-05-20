@@ -122,16 +122,7 @@ public class _04_FilteringOperators {
         demoLast();
         demoElementAt();
         demoIgnoreElements();
-    }
-
-    // -------------------------------------------------------------------------
-    // filter
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code filter(Predicate&lt;T&gt;)} emits only those items for which the predicate returns
-     * {@code true}. Items that do not match are silently dropped.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demofilter">
@@ -140,7 +131,15 @@ public class _04_FilteringOperators {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoFilter() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // filter
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code filter(Predicate&lt;T&gt;)} emits only those items for which the predicate returns
+     * {@code true}. Items that do not match are silently dropped.
+     */
+    private static void demoFilter() {
         System.out.println(&quot;=== filter ===&quot;);
 
         Observable.range(1, 10)
@@ -153,16 +152,7 @@ public class _04_FilteringOperators {
         // Even: 8
         // Even: 10
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // take
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code take(n)} emits at most the first {@code n} items, then completes.
-     * Items after position {@code n} are never emitted (and the upstream may be disposed).
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demotake">
@@ -171,7 +161,15 @@ public class _04_FilteringOperators {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoTake() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // take
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code take(n)} emits at most the first {@code n} items, then completes.
+     * Items after position {@code n} are never emitted (and the upstream may be disposed).
+     */
+    private static void demoTake() {
         System.out.println(&quot;=== take(3) ===&quot;);
 
         Observable.range(1, 100)
@@ -182,16 +180,7 @@ public class _04_FilteringOperators {
         // Taken: 2
         // Taken: 3
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // skip
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code skip(n)} drops the first {@code n} items and emits everything after them.
-     * It is the complement of {@code take}.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demoskip">
@@ -200,7 +189,15 @@ public class _04_FilteringOperators {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoSkip() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // skip
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code skip(n)} drops the first {@code n} items and emits everything after them.
+     * It is the complement of {@code take}.
+     */
+    private static void demoSkip() {
         System.out.println(&quot;=== skip(3) from range(1,6) ===&quot;);
 
         Observable.range(1, 6)
@@ -212,16 +209,7 @@ public class _04_FilteringOperators {
         //After skip: 6
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // takeLast
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code takeLast(n)} waits for the source to complete, then emits only the
-     * last {@code n} items. It must buffer the last N items internally.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demotakelast">
@@ -230,7 +218,15 @@ public class _04_FilteringOperators {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoTakeLast() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // takeLast
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code takeLast(n)} waits for the source to complete, then emits only the
+     * last {@code n} items. It must buffer the last N items internally.
+     */
+    private static void demoTakeLast() {
         System.out.println(&quot;=== takeLast(3) ===&quot;);
 
         Observable.just(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;, &quot;e&quot;)
@@ -242,18 +238,7 @@ public class _04_FilteringOperators {
         //Last: e
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // distinct
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code distinct()} filters out items that have already been seen anywhere
-     * in the stream. It keeps an internal {@code Set} of all emitted items.
-     *
-     * &lt;p&gt;Use only on finite streams — an infinite stream would grow the set forever.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demodistinct">
@@ -262,7 +247,17 @@ public class _04_FilteringOperators {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoDistinct() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // distinct
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code distinct()} filters out items that have already been seen anywhere
+     * in the stream. It keeps an internal {@code Set} of all emitted items.
+     *
+     * &lt;p&gt;Use only on finite streams — an infinite stream would grow the set forever.
+     */
+    private static void demoDistinct() {
         System.out.println(&quot;=== distinct ===&quot;);
 
         Observable.just(1, 2, 2, 3, 1, 4, 3)
@@ -275,9 +270,16 @@ public class _04_FilteringOperators {
         //Distinct: 4
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demodistinctuntilchanged">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoDistinctUntilChanged()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // distinctUntilChanged
     // -------------------------------------------------------------------------
 
@@ -287,16 +289,8 @@ public class _04_FilteringOperators {
      *
      * &lt;p&gt;This is cheaper than {@code distinct()} because it only needs to remember
      * the last emitted value, not the entire history.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demodistinctuntilchanged">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoDistinctUntilChanged()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoDistinctUntilChanged() {
+     */
+    private static void demoDistinctUntilChanged() {
         System.out.println(&quot;=== distinctUntilChanged ===&quot;);
 
         Observable.just(1, 1, 2, 3, 3, 3, 2)
@@ -309,18 +303,7 @@ public class _04_FilteringOperators {
         //DUC: 2
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // first
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code first(defaultValue)} emits the very first item from the stream as a
-     * {@code Single&lt;T&gt;}, or the {@code defaultValue} if the source is empty.
-     *
-     * &lt;p&gt;Use {@code firstOrError()} if you want an error when the source is empty.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demofirst">
@@ -329,7 +312,17 @@ public class _04_FilteringOperators {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoFirst() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // first
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code first(defaultValue)} emits the very first item from the stream as a
+     * {@code Single&lt;T&gt;}, or the {@code defaultValue} if the source is empty.
+     *
+     * &lt;p&gt;Use {@code firstOrError()} if you want an error when the source is empty.
+     */
+    private static void demoFirst() {
         System.out.println(&quot;=== first ===&quot;);
 
         Observable.just(10, 20, 30)
@@ -347,16 +340,7 @@ public class _04_FilteringOperators {
         //First: 10
         //First (empty): -1
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // last
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code last(defaultValue)} waits for the source to complete, then emits
-     * only the last item as a {@code Single&lt;T&gt;}, or {@code defaultValue} if empty.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demolast">
@@ -365,7 +349,15 @@ public class _04_FilteringOperators {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoLast() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // last
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code last(defaultValue)} waits for the source to complete, then emits
+     * only the last item as a {@code Single&lt;T&gt;}, or {@code defaultValue} if empty.
+     */
+    private static void demoLast() {
         System.out.println(&quot;=== last ===&quot;);
 
         Observable.just(&quot;x&quot;, &quot;y&quot;, &quot;z&quot;)
@@ -376,16 +368,7 @@ public class _04_FilteringOperators {
                 );
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // elementAt
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code elementAt(index)} emits the item at the specified zero-based index
-     * as a {@code Maybe&lt;T&gt;}. If the source has fewer items, the Maybe completes empty.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demoelementat">
@@ -394,7 +377,15 @@ public class _04_FilteringOperators {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoElementAt() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // elementAt
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code elementAt(index)} emits the item at the specified zero-based index
+     * as a {@code Maybe&lt;T&gt;}. If the source has fewer items, the Maybe completes empty.
+     */
+    private static void demoElementAt() {
         System.out.println(&quot;=== elementAt ===&quot;);
 
         Observable.just(&quot;zero&quot;, &quot;one&quot;, &quot;two&quot;, &quot;three&quot;)
@@ -405,17 +396,7 @@ public class _04_FilteringOperators {
                 );
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // ignoreElements
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code ignoreElements()} discards all {@code onNext} items and converts the
-     * Observable to a {@code Completable} that only signals {@code onComplete} or
-     * {@code onError}. Useful when you only care whether a stream finished, not its values.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demoignoreelements">
@@ -424,7 +405,16 @@ public class _04_FilteringOperators {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoIgnoreElements() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // ignoreElements
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code ignoreElements()} discards all {@code onNext} items and converts the
+     * Observable to a {@code Completable} that only signals {@code onComplete} or
+     * {@code onError}. Useful when you only care whether a stream finished, not its values.
+     */
+    private static void demoIgnoreElements() {
         System.out.println(&quot;=== ignoreElements ===&quot;);
 
         Observable.just(1, 2, 3)

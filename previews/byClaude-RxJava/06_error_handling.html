@@ -118,9 +118,16 @@ public class _06_ErrorHandling {
         demoDoOnError();
         demoRetry();
         demoRetryWhen();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoonerrorreturn">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoOnErrorReturn()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // onErrorReturn
     // -------------------------------------------------------------------------
 
@@ -130,16 +137,8 @@ public class _06_ErrorHandling {
      *
      * &lt;p&gt;The stream terminates after the fallback item — you get the fallback and {@code onComplete},
      * NOT further items from the original source.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demoonerrorreturn">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoOnErrorReturn()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoOnErrorReturn() {
+     */
+    private static void demoOnErrorReturn() {
         System.out.println(&quot;=== onErrorReturn ===&quot;);
 
         Observable.just(1, 2, 3)
@@ -162,16 +161,7 @@ public class _06_ErrorHandling {
         //Item: -1
         //Completed normally
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // onErrorReturnItem
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code onErrorReturnItem(T item)} is a simpler variant of {@code onErrorReturn}
-     * that always returns the same fixed value, regardless of which error occurred.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demoonerrorreturnitem">
@@ -180,7 +170,15 @@ public class _06_ErrorHandling {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoOnErrorReturnItem() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // onErrorReturnItem
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code onErrorReturnItem(T item)} is a simpler variant of {@code onErrorReturn}
+     * that always returns the same fixed value, regardless of which error occurred.
+     */
+    private static void demoOnErrorReturnItem() {
         System.out.println(&quot;=== onErrorReturnItem ===&quot;);
 
         Observable.&lt;String&gt;error(new RuntimeException(&quot;Connection failed&quot;))
@@ -192,17 +190,7 @@ public class _06_ErrorHandling {
         // === onErrorReturnItem ===
         //Received: DEFAULT
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // onErrorResumeNext
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code onErrorResumeNext(Function&lt;Throwable, Observable&lt;T&gt;&gt;)} intercepts an error
-     * and switches to a fallback Observable. The fallback can emit multiple items,
-     * giving you a whole backup stream rather than just one item.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demoonerrorresumenext">
@@ -211,7 +199,16 @@ public class _06_ErrorHandling {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoOnErrorResumeNext() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // onErrorResumeNext
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code onErrorResumeNext(Function&lt;Throwable, Observable&lt;T&gt;&gt;)} intercepts an error
+     * and switches to a fallback Observable. The fallback can emit multiple items,
+     * giving you a whole backup stream rather than just one item.
+     */
+    private static void demoOnErrorResumeNext() {
         System.out.println(&quot;=== onErrorResumeNext ===&quot;);
 
         Observable&lt;String&gt; primary  = Observable.error(new RuntimeException(&quot;Primary failed&quot;));
@@ -233,17 +230,7 @@ public class _06_ErrorHandling {
         //Received: Fallback-2
         //Done
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // doOnError
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code doOnError(Consumer&lt;Throwable&gt;)} is a *side-effect* operator — it lets you
-     * observe (log, alert, etc.) an error without actually handling or intercepting it.
-     * The error continues to propagate downstream after the side-effect runs.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demodoonerror">
@@ -252,7 +239,16 @@ public class _06_ErrorHandling {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoDoOnError() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // doOnError
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code doOnError(Consumer&lt;Throwable&gt;)} is a *side-effect* operator — it lets you
+     * observe (log, alert, etc.) an error without actually handling or intercepting it.
+     * The error continues to propagate downstream after the side-effect runs.
+     */
+    private static void demoDoOnError() {
         System.out.println(&quot;=== doOnError ===&quot;);
 
         Observable.&lt;Integer&gt;error(new IllegalStateException(&quot;Bad state&quot;))
@@ -265,9 +261,16 @@ public class _06_ErrorHandling {
         //  [LOG] Error intercepted: Bad state
         //Subscriber caught: Bad state
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoretry">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoRetry()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // retry
     // -------------------------------------------------------------------------
 
@@ -278,16 +281,8 @@ public class _06_ErrorHandling {
      *
      * &lt;p&gt;Each retry re-subscribes from scratch — for cold Observables this means
      * restarting the whole sequence.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demoretry">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoRetry()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoRetry() {
+     */
+    private static void demoRetry() {
         System.out.println(&quot;=== retry(2) ===&quot;);
 
         AtomicInteger attemptCount = new AtomicInteger(0);
@@ -314,9 +309,16 @@ public class _06_ErrorHandling {
         //Result: Success on attempt 3
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoretrywhen">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoRetryWhen()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // retryWhen
     // -------------------------------------------------------------------------
 
@@ -328,16 +330,8 @@ public class _06_ErrorHandling {
      *
      * &lt;p&gt;This lets you implement strategies like exponential back-off or retry-only-on-specific-errors.
      * Below we do a simple &quot;retry up to 2 times, but only for RuntimeException&quot;.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demoretrywhen">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoRetryWhen()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoRetryWhen() throws InterruptedException {
+     */
+    private static void demoRetryWhen() throws InterruptedException {
         System.out.println(&quot;=== retryWhen ===&quot;);
 
         AtomicInteger counter = new AtomicInteger(0);

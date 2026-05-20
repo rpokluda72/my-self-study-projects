@@ -331,7 +331,7 @@ public class lambdaexpressions {
                 return a.compareto(b);
             }
         };
-        collections.sort(names, comparator);
+        collections.sort(names, comparator); // or names.sort(comparator);
         system.out.println("sorted: " + names); // output: [apple, banana, cherry]
 
         // runnable as anonymous class
@@ -363,7 +363,8 @@ public class lambdaexpressions {
             system.out.println("sum = " + sum); // output: sum = 7
             return sum;
         };
-        add.apply(3, 4);
+        int sum = add.apply(3, 4);
+        system.out.println("sum-result = " + sum); //7
 
         // expression lambda returning a value
         function<integer, integer> square = x -> x * x;
@@ -453,18 +454,20 @@ public class streamapi {
                 .collect(collectors.tolist());
         system.out.println("filtered names: " + result); // output: [alice, diana, elena]
 
-        // count terminal operation
+        // count terminal operation - returns the count of elements in this stream. this is a special case of a reduction
         long evencount = numbers.stream()
                 .filter(n -> n % 2 == 0)
                 .count();
         system.out.println("even count: " + evencount); // output: even count: 3
 
-        // reduce
+        // reduce - performs a reduction on the elements of this stream, using the provided identity value and an associative accumulation function, and returns the reduced value.
         int sum = numbers.stream()
                 .reduce(0, integer::sum);
         system.out.println("sum: " + sum); // output: sum: 21
 
         // sorted + distinct
+        //sorted - returns a stream consisting of the elements of this stream, sorted according to natural order.
+        //distinct - returns a stream consisting of the distinct elements (according to object.equals(object)) of this stream.
         list<integer> dupes = arrays.aslist(3, 1, 4, 1, 5, 9, 2, 6, 5);
         list<integer> sortedunique = dupes.stream()
                 .distinct()
@@ -519,12 +522,13 @@ import java.util.function.supplier;
 /**
  * <b>functional interfaces</b>
  * <p>
- * a functional interface has exactly one abstract method, making it compatible with lambda
- * expressions. the {@code java.util.function} package provides a standard vocabulary of
- * ready-made functional interfaces: {@code predicate} (test), {@code function} (transform),
- * {@code consumer} (consume), {@code supplier} (produce), and {@code bifunction} (combine two
- * inputs). they compose via {@code and}, {@code or}, {@code negate}, {@code andthen}, and
- * {@code compose}. introduced in java 8.
+ * a functional interface has exactly one abstract method, making it compatible with lambda expressions.
+ * the {@code java.util.function} package provides a standard vocabulary of ready-made functional interfaces:
+ * {@code predicate} (test),
+ * {@code function} (transform),
+ * {@code consumer} (consume),
+ * {@code supplier} (produce), and
+ * {@code bifunction} (combine two inputs). they compose via {@code and}, {@code or}, {@code negate}, {@code andthen}, and {@code compose}. introduced in java 8.
  *
  * @see <a href="https://docs.oracle.com/javase/8/docs/api/java/util/function/package-summary.html">java.util.function package</a>
  */
@@ -762,10 +766,9 @@ public class methodreferences {
 /**
  * <b>default and static methods in interfaces</b>
  * <p>
- * java 8 allowed interfaces to declare {@code default} methods with a full implementation and
- * {@code static} methods. this lets library authors add new methods to existing interfaces
- * without breaking all implementing classes. default methods can be overridden; when two
- * interfaces provide the same default method, the implementing class must resolve the conflict
+ * java 8 allowed interfaces to declare {@code default} methods with a full implementation and {@code static} methods.
+ * this lets library authors add new methods to existing interfaces without breaking all implementing classes.
+ * default methods can be overridden; when two interfaces provide the same default method, the implementing class must resolve the conflict
  * explicitly using {@code interfacea.super.method()}. introduced in java 8.
  *
  * @see <a href="https://docs.oracle.com/javase/tutorial/java/iandi/defaultmethods.html">default methods tutorial</a>
@@ -1026,10 +1029,14 @@ import java.util.set;
 /**
  * <b>collection factory methods</b>
  * <p>
- * java 9 added static factory methods {@code list.of()}, {@code set.of()}, {@code map.of()},
- * and {@code map.ofentries()} that create compact, unmodifiable collections in a single
- * expression. the resulting collections reject {@code null} elements and throw
- * {@code unsupportedoperationexception} on any mutation attempt. introduced in java 9 (jep 269).
+ * java 9 added static factory methods
+ * {@code list.of()},
+ * {@code set.of()},
+ * {@code map.of()},
+ * and {@code map.ofentries()}
+ * that create compact, unmodifiable collections in a single expression.
+ * the resulting collections reject {@code null} elements and throw {@code unsupportedoperationexception} on any mutation attempt.
+ * introduced in java 9 (jep 269).
  *
  * @see <a href="https://openjdk.org/jeps/269">jep 269 – convenience factory methods for collections</a>
  */
@@ -1289,7 +1296,8 @@ public class localvariabletypeinference {
         // nested generics — var especially helpful
         var map = new hashmap<string, list<integer>>();
         map.put("primes", new arraylist<>(list.of(2, 3, 5)));
-        system.out.println("map: " + map); // output: {primes=[2, 3, 5]}
+        map.put("primes2", list.of(2, 3, 5));
+        system.out.println("map: " + map); // output: {primes=[2, 3, 5], primes2=[2, 3, 5]}
 
         // var in enhanced for loop
         for (var item : list) {
@@ -1326,7 +1334,7 @@ public class localvariabletypeinference {
 // text: hello
 // pi: 3.14
 // list type: arraylist
-// map: {primes=[2, 3, 5]}
+// map: {primes=[2, 3, 5], primes2=[2, 3, 5]}
 //   item: hello
 //   item: world
 // anon.name: claude
@@ -3018,14 +3026,18 @@ public class sequencedcollections {
     static void demonstrateafter() {
         // arraylist implements sequencedcollection
         list<string> list = new arraylist<>(list.of("a", "b", "c", "d"));
+        list<string> list2 = list.of("a", "b", "c", "d"); // immutable object
 
-        system.out.println("getfirst(): " + list.getfirst()); // output: a
-        system.out.println("getlast():  " + list.getlast());  // output: d
+        system.out.println("list.getfirst(): " + list.getfirst()); // output: a
+        system.out.println("list.getlast():  " + list.getlast());  // output: d
+        system.out.println("list2.getfirst(): " + list2.getfirst()); // output: a
+        system.out.println("list2.getlast():  " + list2.getlast());  // output: d
 
         // addfirst / addlast
         list.addfirst("z");
         list.addlast("x");
         system.out.println("after addfirst(z) + addlast(x): " + list); // output: [z, a, b, c, d, x]
+        // list2.addfirst("z"); // immutable object is modified - wrap 'list2' with 'arraylist'
 
         // removefirst / removelast
         string removedfirst = list.removefirst();
@@ -3074,8 +3086,10 @@ public class sequencedcollections {
 // reversed (copy): [d, c, b, a]
 //
 // === java 21: sequencedcollection uniform api ===
-// getfirst(): a
-// getlast():  d
+// list.getfirst(): a
+// list.getlast():  d
+// list2.getfirst(): a
+// list2.getlast():  d
 // after addfirst(z) + addlast(x): [z, a, b, c, d, x]
 // removed first: z, last: x
 // after removes: [a, b, c, d]

@@ -176,16 +176,22 @@ def split_into_sections(src: str):
         if not m:
             continue
         method_name = m.group(1)
-        # Walk backwards to find the opening separator comment
+        # Walk backwards to find the opening separator comment.
+        # Keep updating section_start on every SEP_RE match so we land on the
+        # *first* dashes line (not the closing one).  Walk through: blank lines,
+        # // comments, JavaDoc lines (/** * */), and closing braces.
         section_start = i
-        for j in range(i - 1, max(i - 20, -1), -1):
+        for j in range(i - 1, max(i - 30, -1), -1):
             stripped = lines[j].strip()
             if SEP_RE.match(lines[j]):
-                section_start = j
-                break
-            # Stop if we hit a non-blank, non-comment line (end of previous method body)
-            if stripped and not stripped.startswith('//') and stripped != '}':
-                break
+                section_start = j   # update — want the earliest separator line
+                continue            # keep scanning; don't stop here
+            # Stop on any code line that isn't a comment, JavaDoc token, or closing brace
+            if stripped and stripped != '}':
+                if not (stripped.startswith('//') or
+                        stripped.startswith('/*') or
+                        stripped.startswith('*')):
+                    break
         method_starts.append((method_name, section_start))
 
     if not method_starts:

@@ -165,6 +165,7 @@ public class testarrays {
         // arrayofstrings : [aaa, null, ccc]
 
         string[] arrayofstrings2 = {"algocademy", "coding", "static arrays"};
+
         system.out.println("arrayofstrings2 : " + arrays.tostring(arrayofstrings2));
         // arrayofstrings2 : [algocademy, coding, static arrays]
     }
@@ -226,6 +227,8 @@ public class testarrays {
         system.out.println("sorted intarr : " + arrays.tostring(intarr));
         // sorted intarr : [10, 15, 20, 22, 35]
 
+        system.out.println("intarr.tostring() : " + intarr.tostring()); // intarr.tostring() : [i@72ea2f77
+        system.out.println("string.valueof(intarr) : " + string.valueof(intarr)); // string.valueof(intarr) : [i@72ea2f77
     }
 }
 `,
@@ -749,9 +752,13 @@ public class testconsumer {
     static void test1() {
         // consumer to display a number
         consumer<integer> display = a -> system.out.println("display-a : " + a); // display-a : 10
+        consumer<integer> display2 = system.out::println; // 10
+        consumer<integer> display3 = (integer a) -> system.out.println("display2-a : " + a); // display2-a : 10
 
         // implement display using accept()
         display.accept(10);
+        display2.accept(10);
+        display3.accept(10);
 
         // consumer to multiply 2 to every integer of a list
         consumer<list<integer> > modify = list -> {
@@ -870,6 +877,9 @@ public class testfunction {
         system.out.println("value2=" + value2); //1
         integer value3 = namemap.computeifabsent("john", string::length);
         system.out.println("value3=" + value3); //4
+
+        system.out.println("namemap.size()=" + namemap.size()); // 2
+        system.out.println("namemap.keyset()=" + namemap.keyset().tostring()); // [a, john]
     }
 
     /*
@@ -925,6 +935,9 @@ public class testfunction {
         square s = (int x) -> x * x; //interface square { int calculate(int x); }
         system.out.println("s.calculate(1) : " + s.calculate(1));//1
         system.out.println("s.calculate(3) : " + s.calculate(3));//9
+
+        function<integer, integer> square2 = x -> x * x;
+        system.out.println("square2.apply(4): " + square2.apply(4));//16
 
         // function which takes in a number and returns half of it
         function<integer, double> half = a -> a / 2.0;
@@ -1700,11 +1713,13 @@ public class testhashtable {
         ht.put(101,"vijay");
         ht.put(102,"ravi");
         ht.put(103,"rahul");
+        ht.put(104,"rahul");
         system.out.println("-------------hash table--------------");
         for (map.entry m:ht.entryset()) {
             system.out.println(m.getkey()+" "+m.getvalue());
         }
         // -------------hash table--------------
+        // 104 rahul
         // 103 rahul
         // 102 ravi
         // 101 vijay
@@ -1715,6 +1730,7 @@ public class testhashtable {
         hm.put(104,"amit");
         hm.put(100,"vijay");
         hm.put(102,"rahul");
+        hm.put(103,"rahul");
         system.out.println("-----------hash map-----------");
         for (map.entry m:hm.entryset()) {
             system.out.println(m.getkey()+" "+m.getvalue());
@@ -1722,6 +1738,7 @@ public class testhashtable {
         // -----------hash map-----------
         // 100 vijay
         // 102 rahul
+        // 103 rahul
         // 104 amit
 
         //----------------hashset--------------------------------
@@ -2095,7 +2112,7 @@ public class testarraylist {
 
         system.out.println("\\n iterator-while");
         // getting iterator
-        iterator<string> namesiterator = names.listiterator();
+        iterator<string> namesiterator = names.iterator();
 
         // traversing elements using next() method
         while (namesiterator.hasnext()) {
@@ -2184,10 +2201,10 @@ public class testlinkedlist {
         names.add("peter");
         names.add("tom");
         names.add("george");
+
         system.out.println("\\n iterator-while");
         // getting iterator
-        iterator<string> namesiterator
-                = names.listiterator();
+        iterator<string> namesiterator = names.iterator();
 
         // traversing elements using next() method
         while (namesiterator.hasnext()) {

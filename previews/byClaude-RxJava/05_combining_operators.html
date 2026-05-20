@@ -117,9 +117,16 @@ public class _05_CombiningOperators {
         demoCombineLatest();
         demoStartWith();
         demoAmb();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demomerge">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoMerge()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // merge
     // -------------------------------------------------------------------------
 
@@ -129,16 +136,8 @@ public class _05_CombiningOperators {
      *
      * &lt;p&gt;If any source errors, the merged stream errors immediately.
      * The merged stream completes when ALL sources have completed.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demomerge">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoMerge()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoMerge() {
+     */
+    private static void demoMerge() {
         System.out.println(&quot;=== merge ===&quot;);
 
         Observable&lt;String&gt; source1 = Observable.just(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;);
@@ -156,9 +155,16 @@ public class _05_CombiningOperators {
         //Merged: 3
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-democoncat">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoConcat()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // concat
     // -------------------------------------------------------------------------
 
@@ -168,16 +174,8 @@ public class _05_CombiningOperators {
      *
      * &lt;p&gt;The output order is always: all items from source1, then all from source2, etc.
      * Use this when strict ordering is required.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-democoncat">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoConcat()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoConcat() {
+     */
+    private static void demoConcat() {
         System.out.println(&quot;=== concat ===&quot;);
 
         Observable&lt;String&gt; first  = Observable.just(&quot;First-1&quot;,  &quot;First-2&quot;);
@@ -192,9 +190,16 @@ public class _05_CombiningOperators {
         //Concat: Second-2
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demozip">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoZip()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // zip
     // -------------------------------------------------------------------------
 
@@ -205,16 +210,8 @@ public class _05_CombiningOperators {
      *
      * &lt;p&gt;The output length equals the length of the *shortest* source.
      * Use zip to combine logically related items from parallel streams.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demozip">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoZip()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoZip() {
+     */
+    private static void demoZip() {
         System.out.println(&quot;=== zip ===&quot;);
 
         Observable&lt;String&gt; names  = Observable.just(&quot;Alice&quot;, &quot;Bob&quot;, &quot;Carol&quot;);
@@ -229,9 +226,16 @@ public class _05_CombiningOperators {
         //Zipped: Carol → 92
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-democombinelatest">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoCombineLatest()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // combineLatest
     // -------------------------------------------------------------------------
 
@@ -244,16 +248,8 @@ public class _05_CombiningOperators {
      *
      * &lt;p&gt;Common use case: combining multiple UI input fields — update the result whenever
      * any field changes.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-democombinelatest">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoCombineLatest()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoCombineLatest() throws InterruptedException {
+     */
+    private static void demoCombineLatest() throws InterruptedException {
         System.out.println(&quot;=== combineLatest ===&quot;);
 
         // Ticks every 100ms, takes 3 values; other ticks every 250ms, takes 2 values
@@ -271,16 +267,7 @@ public class _05_CombiningOperators {
 
         Thread.sleep(800); // wait for async sources
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
-    // startWithItem
-    // -------------------------------------------------------------------------
-
-    /**
-     * {@code startWithItem(item)} prepends a single item to the beginning of the stream
-     * before the source starts emitting. Useful for providing an initial/default value.
-     */</code></pre>
+    }</code></pre>
     </div>
   </div>
   <div class="card" id="card-demostartwith">
@@ -289,7 +276,15 @@ public class _05_CombiningOperators {
       <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
     </div>
     <div class="card-body">
-      <pre><code class="language-java">    private static void demoStartWith() {
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
+    // startWithItem
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code startWithItem(item)} prepends a single item to the beginning of the stream
+     * before the source starts emitting. Useful for providing an initial/default value.
+     */
+    private static void demoStartWith() {
         System.out.println(&quot;=== startWithItem ===&quot;);
 
         Observable.just(&quot;B&quot;, &quot;C&quot;, &quot;D&quot;)
@@ -302,9 +297,16 @@ public class _05_CombiningOperators {
         //Item: D
 
         System.out.println();
-    }
-
-    // -------------------------------------------------------------------------
+    }</code></pre>
+    </div>
+  </div>
+  <div class="card" id="card-demoamb">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="card-filename">demoAmb()</span>
+      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
+    </div>
+    <div class="card-body">
+      <pre><code class="language-java">    // -------------------------------------------------------------------------
     // amb (ambiguous)
     // -------------------------------------------------------------------------
 
@@ -315,16 +317,8 @@ public class _05_CombiningOperators {
      * &lt;p&gt;&quot;amb&quot; stands for &quot;ambiguous&quot; — you don&#x27;t know in advance which will be first.
      * Useful for racing multiple data sources (e.g., cache vs. network) and using
      * whichever responds first.
-     */</code></pre>
-    </div>
-  </div>
-  <div class="card" id="card-demoamb">
-    <div class="card-header" onclick="toggleCard(this)">
-      <span class="card-filename">demoAmb()</span>
-      <button class="toggle-btn" onclick="event.stopPropagation()">&#9660; Hide</button>
-    </div>
-    <div class="card-body">
-      <pre><code class="language-java">    private static void demoAmb() throws InterruptedException {
+     */
+    private static void demoAmb() throws InterruptedException {
         System.out.println(&quot;=== amb ===&quot;);
 
         // source1 emits after 100ms; source2 emits after 200ms — source1 wins
