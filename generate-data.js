@@ -26,7 +26,7 @@ const GROUPS_CONFIG = [
     id: 'byClaude',
     name: 'By Claude',
     root: 'C:/Users/roman/Work/claude/projects',
-    skip: ['MyStudyPages', 'MyStudyProjects', 'MyStudyProjectsWeb'],
+    skip: ['MyStudyProjects', 'MyStudyProjectsWeb'],
   },
 ];
 
